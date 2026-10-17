@@ -263,7 +263,9 @@ Every prompt has a defined non-interactive answer:
 **Tooling:** pnpm, TypeScript 6 (strict), tsdown, Vitest, ESLint + typescript-eslint, changesets, publint. Node `>=22.12`.
 TypeScript stays on `~6.0` until `typescript-eslint` supports TypeScript 7.
 
-The bundled registry is resolved at runtime with `fileURLToPath(new URL('../registry', import.meta.url))`, and verified by a smoke test that installs the packed tarball.
+The bundled registry is resolved at runtime by locating the package root (the nearest `package.json` above the running module, found via `import.meta.url`) and joining `registry/`. This works from both `src/` (tests) and `dist/` (published), and is verified by a smoke test that installs the packed tarball.
+
+**Tests:** unit tests live in `tests/<module>/*.test.ts` mirroring `src/`; end-to-end tests run the CLI against copies of `tests/fixtures/*`.
 
 ### 4.3 Core Types (`src/types.ts`)
 ```typescript
@@ -290,6 +292,8 @@ export interface ProjectProfile {
   frameworks: string[];                    // fragment ids; Next.js app + pages can coexist
   libraries: string[];                     // fragment ids
   architecture: { id: string; confidence: number };
+  /** Existing folders under srcDir (depth ≤ 2), used for the descriptive ARCHITECTURE.md */
+  folders: string[];
   agents: AgentTarget[];
   existingAgentFiles: string[];
   isMonorepo: boolean;
@@ -310,6 +314,8 @@ Every rule fragment follows the **3-Part Rule Formula**:
 2. **Directives:** imperative `ALWAYS` / `NEVER` / `PREFER` constraints, never vague suggestions.
 3. **Contract:** a brief Good vs. Anti-Pattern snippet.
 
+`check-registry` enforces the formula mechanically: every rule fragment contains at least one directive keyword (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`, `DEFAULT`) and at least one fenced code block.
+
 Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Workflow fragments follow the structure in §5.5.
 
 **Frontmatter schema** (validated with zod at build time and in CI):
@@ -324,8 +330,8 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 | `description` | ✓ | One line; shown in pickers and used for description-based activation |
 | `scope` | ✓ (rules) | `always` · `glob` · `auto` · `manual` (§5.3) |
 | `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}` |
-| `detect.packages` | | Package names that trigger auto-selection |
-| `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`) |
+| `detect.packages` | | Package names that trigger auto-selection; **all** listed packages must be present |
+| `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`); **all** listed files must exist |
 | `appliesTo` | | Package → semver range, e.g. `{ next: ">=15" }` |
 | `requires` | | Fragment ids auto-selected alongside this one (with a notice) |
 | `conflictsWith` | | Fragment ids that can't be manually selected together (warn + ask) |
@@ -336,10 +342,12 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 
 **Default scope by category:** architecture and language → `always`; framework and library → `glob` or `auto`; workflows have no scope.
 
-**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`). A section that references a missing script is dropped.
+**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner). A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, and a heading left with no content is dropped too. Unknown placeholders are an error.
+
+**Workflows** are always included; there is no per-workflow selection in v0.1.
 
 Example (`registry/frameworks/nextjs-app-router.md`):
-```markdown
+````markdown
 ---
 id: nextjs-app-router
 name: Next.js App Router
@@ -371,7 +379,20 @@ verifiedAt: 2026-10-17
 - **ALWAYS** fetch data in Server Components with `async/await` and shared data-access helpers.
 - **NEVER** create internal route handlers (`app/api/*`) only to fetch data for a Server Component.
 - **ALWAYS** validate Server Action inputs with Zod before mutating.
+
+### 3. Contract
+```tsx
+// ✅ Good: server page, client leaf
+export default async function Page() {
+  const posts = await getPosts();
+  return <PostList posts={posts} />; // PostList renders <LikeButton /> ('use client')
+}
+
+// ❌ Anti-pattern: whole page forced to the client
+'use client';
+export default function Page() { /* useEffect(() => fetch('/api/posts')) */ }
 ```
+````
 
 **Budgets:**
 - Each fragment ≤ **120 lines** (~800 tokens).
@@ -435,7 +456,7 @@ paths:
   - "src/app/**/*.tsx"
 ---
 ```
-Workflows are skills (`.claude/skills/new-feature/SKILL.md`, invoked as `/new-feature`) with `name`, `description`, and `argument-hint` frontmatter.
+Workflows are skills (`.claude/skills/new-feature/SKILL.md`, invoked as `/new-feature`) with `name`, `description`, `argument-hint`, and `disable-model-invocation: true`, so workflows run only when the user invokes them.
 
 **Windsurf** — root `AGENTS.md` is always-on in Windsurf; scoped rules use triggers:
 ```markdown
