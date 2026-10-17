@@ -1,9 +1,10 @@
 # `@agentinit/cli` — Product Requirements & Architecture
 
-> **One-Line Pitch:** An open-source, zero-config CLI (`npx @agentinit/cli`) that detects your TypeScript project's stack and generates scoped, version-aware AI coding agent rules, slash-command workflows, and an `ARCHITECTURE.md` for Cursor, Claude Code, Windsurf, and GitHub Copilot from a single curated registry.
+> **One-Line Pitch:** An open-source, zero-config CLI (`npx @agentinit/cli`) that detects your TypeScript project's stack and generates scoped, version-aware AI coding agent rules, slash-command workflows, and an `ARCHITECTURE.md` for Cursor, Claude Code, Windsurf, and GitHub Copilot — then checks that they stay in sync with your project.
+
 ---
 
-## 1. Executive Summary & Core Philosophy
+## 1. Executive Summary
 
 ### 1.1 The Problem
 Modern software engineering relies heavily on AI coding agents (Cursor, Claude Code, Windsurf, GitHub Copilot, Codex). However:
@@ -11,24 +12,47 @@ Modern software engineering relies heavily on AI coding agents (Cursor, Claude C
 2. **Rule Fatigue:** Developers repeatedly rewrite or copy-paste `AGENTS.md`, `CLAUDE.md`, and Cursor rules across projects, and keep each tool's format in sync by hand.
 3. **Prompt Blindness:** Many developers don't know how to write structured, token-efficient rules or workflow prompts that agents reliably follow.
 4. **Context Bloat:** A single 1,500-line rule file, or the same rules duplicated across several tool-specific files, overwhelms the agent's context window and gets critical constraints ignored.
+5. **Silent Rot:** Rules are written once and never updated. After a library upgrade or a new dependency, agents follow outdated guidance and nobody notices.
 
 ### 1.2 The Solution
-A fast, interactive CLI that acts as **ESLint + Prettier + npm for AI coding agents**:
+A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it generates correct rules (`init`) and checks they stay correct (`doctor`).
 - **100% CLI & open source:** no web dashboard, sign-ups, API keys, token costs, or telemetry.
-- **Smart detection:** reads `package.json`, installed versions, lockfiles, and `tsconfig.json` in existing repositories, or guides empty repositories through a short wizard.
-- **Composable registry:** stitches curated Markdown fragments into conflict-free, tool-native configuration.
+- **Smart detection:** reads `package.json`, installed versions, lockfiles, `tsconfig.json`, and folder layout, or guides empty repositories through a short wizard.
+- **Curated registry:** stitches reviewed, version-aware Markdown fragments into tool-native configuration.
 - **Write once, no duplication:** always-on rules are written once to `AGENTS.md`; scoped rules go to each tool's native scoped format.
-- **Safe and repeatable:** never overwrites user-written content; tracks what it generated so it can update, remove, and detect drift.
+- **Safe and repeatable:** never overwrites user-written content; re-running is idempotent; `doctor` detects drift and fails CI.
 
-### 1.3 Positioning
+### 1.3 Target Users
+
+| Persona | Situation | What they need | v0.1 priority |
+| :--- | :--- | :--- | :--- |
+| **Solo developer** | Building a TypeScript web app with one or two agents | Good rules in under a minute, without learning each tool's format | Primary |
+| **Tech lead** (team of 3–15) | Team members use different agents in the same repo | One consistent, committed rule set; CI check that it stays current | Primary |
+| **Open-source maintainer** | Contributors arrive with their own agents | Contributors' agents follow project conventions | Secondary |
+
+### 1.4 Key Use Cases
+- **UC1 — Existing repo:** run `npx @agentinit/cli` in a Next.js repo, confirm the detected stack, get rules for every agent the team uses.
+- **UC2 — New project:** run it in an empty folder, answer a short wizard, get rules + `ARCHITECTURE.md`, scaffold the app, re-run to refine.
+- **UC3 — Mixed-agent team:** one command writes Cursor, Claude Code, Windsurf, and Copilot files with no duplicated content.
+- **UC4 — Keep rules current:** after adding a library, re-run `init`; in CI, `doctor` fails when rules drift from `package.json`.
+- **UC5 — Try and leave:** remove everything AgentInit generated with one command (v0.2), leaving user content intact.
+
+### 1.5 Positioning
 - An unrelated unscoped `agentinit` npm package exists in the same space. Docs and the README always show the scoped command (`npx @agentinit/cli`).
-- Other tools already compile one rule source to many agents (e.g., `ruler`, `rulesync`). Our differentiation is the **curated, version-aware registry + auto-detection + workflows + `ARCHITECTURE.md`**, not multi-agent compilation alone.
+- Other tools already compile one rule source to many agents (e.g., `ruler`, `rulesync`). Our differentiation is the **curated, version-aware registry + auto-detection + workflows + `ARCHITECTURE.md` + drift detection**, not multi-agent compilation alone.
 
-### 1.4 Non-Goals
+### 1.6 Non-Goals
 - Generating application code or installing project dependencies.
-- Creating folders or running framework generators (`create-next-app`, `create vite`).
+- Creating folders, moving files, or running framework generators (`create-next-app`, `create vite`).
 - Calling any LLM or remote API at runtime.
 - Supporting JavaScript-only, Python, Go, or mobile projects in v0.1 (see roadmap).
+
+### 1.7 Terminology
+- **Fragment:** one Markdown rule or workflow file in `registry/`, with YAML frontmatter.
+- **Target:** an agent output adapter (Cursor, Claude Code, Windsurf, Copilot). `AGENTS.md` is always written and is not a selectable target.
+- **Profile:** the detected (or wizard-provided) description of a project.
+- **Managed block:** a marked section inside a shared file that AgentInit owns.
+- **Manifest:** `.agentinit/manifest.json`, the record of selections and generated content.
 
 ---
 
@@ -36,12 +60,12 @@ A fast, interactive CLI that acts as **ESLint + Prettier + npm for AI coding age
 
 | Pillar | Name | Description | Output Artifact(s) |
 | :--- | :--- | :--- | :--- |
-| **1** | **Scoped Micro-Rules Engine** | Compiles modular rules scoped by file globs so agents only load relevant context (e.g., Zustand rules only load when touching store files). Always-on content is written once. | `AGENTS.md`, `.cursor/rules/*.mdc`, `.claude/rules/*.md`, `.windsurf/rules/*.md`, `.github/instructions/*.instructions.md` |
-| **2** | **Pre-Built Workflows** | Generates structured slash commands so developers can trigger senior-level workflows without writing prompts. | `.cursor/commands/*.md`, `.claude/skills/*/SKILL.md`, `.windsurf/workflows/*.md`, `.github/prompts/*.prompt.md` |
-| **3** | **Architecture Map** | Documents where every kind of file belongs and how modules may depend on each other, for both detected and greenfield projects. No folders are created. | `ARCHITECTURE.md` |
-| **4** | **Composable Fragment Registry** | Atomic, version-aware Markdown fragments with validated YAML frontmatter, bundled in the npm package and contributed via PRs. | Internal `registry/**/*.md` |
+| **1** | **Scoped Micro-Rules Engine** | Compiles modular rules so agents only load relevant context. Always-on content is written once. | `AGENTS.md`, `.cursor/rules/*.mdc`, `.claude/rules/*.md`, `.windsurf/rules/*.md`, `.github/instructions/*.instructions.md` |
+| **2** | **Pre-Built Workflows** | Generates structured slash commands (§5.5) so developers can trigger senior-level workflows without writing prompts. | `.cursor/commands/*.md`, `.claude/skills/*/SKILL.md`, `.windsurf/workflows/*.md`, `.github/prompts/*.prompt.md` |
+| **3** | **Architecture Map** | Describes the project's **current** layout, what belongs where, and allowed dependency directions. Target conventions apply to new code only. No folders are created or moved. | `ARCHITECTURE.md` |
+| **4** | **Composable Fragment Registry** | Atomic, version-aware Markdown fragments with validated frontmatter and cited sources, bundled in the npm package and contributed via PRs. | Internal `registry/**/*.md` |
 | **5** | **Zero-API Customizer** *(v0.2)* | A slash command that uses the developer's own IDE agent to interview them about business logic and write domain rules into a managed section. | `/agentinit-customize` in every target |
-| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, and `update` / `remove` / `doctor` commands that keep rules in sync with the project. | `.agentinit/manifest.json` |
+| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, idempotent re-runs, and a read-only `doctor` check (v0.1); `add` / `remove` / `update` in v0.2. | `.agentinit/manifest.json` |
 
 ---
 
@@ -49,7 +73,7 @@ A fast, interactive CLI that acts as **ESLint + Prettier + npm for AI coding age
 
 ### 3.1 Command Interface
 ```bash
-# Default interactive mode (detects existing vs. empty repo)
+# Default interactive mode (detects existing vs. empty repo; re-syncs if already initialized)
 npx @agentinit/cli
 npx @agentinit/cli init
 
@@ -62,6 +86,9 @@ npx @agentinit/cli init --dry-run
 # Target specific agents
 npx @agentinit/cli init --agents cursor,claude
 
+# Check that generated rules match the project (read-only; exit 2 on issues)
+npx @agentinit/cli doctor
+
 # Browse available fragments
 npx @agentinit/cli list
 npx @agentinit/cli list --category library
@@ -69,63 +96,90 @@ npx @agentinit/cli list --category library
 # Lifecycle (v0.2)
 npx @agentinit/cli add zustand tanstack-query
 npx @agentinit/cli remove zustand
+npx @agentinit/cli remove --all
 npx @agentinit/cli update
-npx @agentinit/cli doctor
 ```
 
 **Global flags**
 
 | Flag | Behavior |
 | :--- | :--- |
-| `--yes`, `-y` | Accept detected defaults; skip prompts. Required when stdin is not a TTY. |
+| `--yes`, `-y` | Never prompt; use the defaults in §3.5. Required when stdin is not a TTY. |
 | `--dry-run` | Print the planned file tree and diffs; write nothing. |
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
-| `--force` | Replace unmanaged files after backing them up to `*.bak`. |
+| `--force` | Replace unmanaged and edited files after backing them up (§6.4). |
 | `--json` | Machine-readable output (for `list`, `doctor`, and `--dry-run`). |
 
 **Exit codes:** `0` success · `1` error (including unsupported project) · `2` `doctor` found issues · `130` cancelled by the user.
 
 ### 3.2 Flow A: Empty / Greenfield Project
-Triggered when the directory contains no `package.json` and nothing other than ignorable files (`.git`, `README.md`, `LICENSE`, `.gitignore`, `.editorconfig`).
+Triggered when the directory contains no `package.json` and nothing other than ignorable files (`.git`, `README.md`, `LICENSE`, `.gitignore`, `.editorconfig`, `.agentinit/`).
 
-1. **Application Domain:** `Frontend Web App` · `Full-Stack Web App` · `Backend / API Service`
-2. **Framework (filtered by domain):**
-   - *Frontend:* React (Vite), Next.js (App Router)
-   - *Full-Stack:* Next.js (App Router), Next.js (Pages Router)
-   - *Backend:* Node.js + Express, Node.js + Fastify
-3. **TypeScript Strictness:** `Strict (no any, explicit return types)` — *recommended* · `Standard`
-4. **Libraries (multi-select, filtered by framework compatibility):**
+1. **Framework** (single list, grouped by type):
+   - *Web frontend:* React (Vite)
+   - *Full-stack web:* Next.js (App Router), Next.js (Pages Router)
+   - *Backend / API:* Node.js + Express, Node.js + Fastify
+2. **TypeScript Strictness:** `Strict (strict compiler options, no any)` — *recommended* · `Standard`
+3. **Libraries** (multi-select, filtered by framework compatibility):
    - *State & Data:* Zustand, TanStack Query
    - *Styling & UI:* Tailwind CSS v4, shadcn/ui
    - *Forms & Validation:* React Hook Form + Zod
    - *Testing:* Vitest, Playwright
-5. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal`
-6. **Target Agents (multi-select, all pre-selected):** Cursor · Claude Code · Windsurf · GitHub Copilot
-7. **Review & Write:** shows the file list and always-on token estimate, then writes rules + `ARCHITECTURE.md`.
-8. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest .`) and recommends running `npx @agentinit/cli init` again after scaffolding so detection can refine globs and versions. Selections are kept in the manifest, so the re-run asks no repeated questions.
+4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal`
+5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot
+6. **Review & Write:** shows the file list and always-on token estimate, then writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
+7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4).
 
 > Some framework generators refuse to run in a non-empty directory. The hint tells users to scaffold first when possible, or to scaffold into a subfolder and move files.
+
+Greenfield mode requires interactive input: with `--yes` it exits with code `1` and asks the user to run interactively.
 
 ### 3.3 Flow B: Existing Project (Auto-Detection)
 Triggered when `package.json` exists in the target directory.
 
-1. **TypeScript Gate:** the project must have `tsconfig.json` or a `typescript` dependency. Otherwise the CLI prints *"JavaScript projects aren't supported yet"* and exits with code `1`.
+1. **TypeScript Gate:** the project must have `tsconfig.json` or a `typescript` dependency. Otherwise the CLI prints *"JavaScript projects aren't supported yet"* and exits with code `1`, writing nothing.
 2. **Repository Scan:**
    - **Packages:** resolves real versions from `node_modules/<pkg>/package.json`, then the lockfile, then the semver range in `package.json` (handles `^`, `~`, `workspace:*`, `catalog:`, `npm:` aliases).
+   - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`).
    - **Package manager:** `packageManager` field, then lockfile (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`).
    - **Scripts:** only scripts that actually exist (`build`, `dev`, `lint`, `test`, `typecheck`) are documented, using the detected package manager.
-   - **TypeScript:** parses `tsconfig.json` as JSONC, resolves `extends`, reads `strict` and `paths` aliases.
-   - **Layout:** `src/` vs. root, Next.js `app/` and/or `pages/`, and architecture inference with a confidence score.
-   - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.cursorrules`, `.windsurfrules`, `.windsurf/rules/`, `.github/copilot-instructions.md`.
-   - **Monorepo:** detects workspaces (pnpm, npm, yarn, Turborepo, Nx). v0.1 warns and asks the user to run the CLI inside a single package.
-   - **Subdirectory:** if run below the git root, warns and offers to use the git root.
-3. **Summary Confirmation:** a formatted box showing the detected stack, versions, package manager, layout, and architecture (with confidence).
+   - **TypeScript:** parses `tsconfig.json` as JSONC, resolves `extends`, reads `strict` (suggests `typescript-strict` when `true`) and `paths` aliases.
+   - **Layout:** `src/` vs. root; Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.
+   - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.cursorrules`, `.claude/`, `.windsurfrules`, `.windsurf/`, `.github/copilot-instructions.md`, `.github/instructions/`.
+   - **Monorepo:** detects workspaces (pnpm, npm, yarn, Turborepo, Nx). v0.1 asks the user to run the CLI inside a single package and exits.
+   - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
+3. **Version Check:** a detected package whose version is outside every fragment's `appliesTo` range (e.g., Tailwind v3 when only a v4 fragment exists) is skipped with a notice: *"tailwindcss@3 detected — no matching rules yet."*
+4. **Summary Confirmation:** a formatted box showing the detected stack, versions, package manager, layout, and architecture (with confidence).
    - *"Use this configuration, or customize?"*
-   - Low-confidence architecture (< 0.7) always prompts instead of guessing.
-4. **Agent Selection:** multi-select (skipped with `--agents` or `--yes`).
-5. **Conflict Resolution** (per existing unmanaged file, see §6.3).
-6. **Write & Report:** writes files, prints the generated tree, the always-on token estimate, and next steps.
+   - Low-confidence architecture (< 0.7) prompts instead of guessing.
+5. **Agent Selection:** multi-select, pre-selecting agents whose config already exists (all four if none).
+6. **Conflict Resolution:** per existing unmanaged file (§6.3).
+7. **Write & Report:** writes files, prints the generated tree, the always-on token estimate, and next steps.
+
+### 3.4 Re-Running `init`
+`init` is idempotent and is the update path in v0.1.
+- When a manifest exists, its selections become the defaults. The CLI re-detects the project and shows only what changed (new or removed packages, version changes, layout changes).
+- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."*
+- A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
+
+### 3.5 Non-Interactive Defaults (`--yes`)
+Every prompt has a defined non-interactive answer:
+
+| Prompt | Default with `--yes` |
+| :--- | :--- |
+| Greenfield wizard | Exit `1`: interactive input required |
+| JavaScript-only project | Exit `1` |
+| Monorepo root | Exit `1` with instructions to run inside a package |
+| Below the git root | Stay in the current directory |
+| Use detected configuration | Yes |
+| Low-confidence architecture | `flat` (makes the fewest structural claims), with a notice |
+| Agent selection | Agents whose config already exists; all four if none |
+| Existing unmanaged shared file | Adopt (§6.3) |
+| Existing unmanaged non-shared file | Skip and report |
+| Managed content edited by hand | Skip and report |
+
+`conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both).
 
 ---
 
@@ -135,9 +189,9 @@ Triggered when `package.json` exists in the target directory.
 **detect → resolve → plan → apply**
 
 - `detect` builds a `ProjectProfile` from disk (or from wizard answers).
-- `resolve` selects registry fragments for that profile (compatibility, semver ranges, requires/conflicts).
+- `resolve` selects registry fragments for that profile (compatibility, `appliesTo`, requires/conflicts).
 - `plan` turns fragments into a list of `FileOp`s per target. **Pure and snapshot-tested.**
-- `apply` is the only step that touches disk: diff, conflict prompts, atomic writes, backups, manifest update. `--dry-run` stops before `apply`.
+- `apply` is the only step that touches disk: diff, conflict prompts, atomic writes, backups, manifest update. `--dry-run` stops before `apply`; `doctor` compares the plan with disk and never writes.
 
 ### 4.2 Repository Structure
 ```text
@@ -147,14 +201,14 @@ Triggered when `package.json` exists in the target directory.
 │   ├── commands/
 │   │   ├── init.ts
 │   │   ├── list.ts
+│   │   ├── doctor.ts
 │   │   ├── add.ts                   # v0.2
 │   │   ├── remove.ts                # v0.2
-│   │   ├── update.ts                # v0.2
-│   │   └── doctor.ts                # v0.2
+│   │   └── update.ts                # v0.2
 │   ├── detect/
 │   │   ├── index.ts                 # Orchestrator → ProjectProfile
 │   │   ├── typescript-gate.ts
-│   │   ├── packages.ts              # Installed versions, lockfile, package manager, scripts
+│   │   ├── packages.ts              # Installed versions, lockfile, package manager, scripts, marker files
 │   │   ├── tsconfig.ts              # JSONC + extends (get-tsconfig)
 │   │   ├── layout.ts                # srcDir, app/pages, architecture + confidence
 │   │   ├── workspace.ts             # Monorepo detection
@@ -162,10 +216,10 @@ Triggered when `package.json` exists in the target directory.
 │   ├── registry/
 │   │   ├── schema.ts                # zod schema for frontmatter
 │   │   ├── load.ts                  # Bundled registry (+ team fragments in v0.2)
-│   │   └── resolve.ts               # Compatibility, semver, requires/conflicts
+│   │   └── resolve.ts               # Compatibility, appliesTo, requires/conflicts
 │   ├── plan/
 │   │   ├── build-plan.ts            # Fragments → FileOp[]
-│   │   └── placeholders.ts          # {{src}} and other glob placeholders
+│   │   └── placeholders.ts          # {{src}}, {{pm}}, {{scripts.*}}
 │   ├── targets/                     # One adapter per output; pure functions
 │   │   ├── agents-md.ts
 │   │   ├── cursor.ts
@@ -187,11 +241,19 @@ Triggered when `package.json` exists in the target directory.
 │   ├── workflows/       new-feature.md · review-arch.md · refactor.md · write-tests.md
 │   └── meta/            customize.md (v0.2)
 ├── tests/
-│   ├── fixtures/                    # Sample repos (see §8)
+│   ├── fixtures/                    # Sample repos (§8)
 │   └── *.test.ts
 ├── scripts/
-│   └── check-registry.ts            # CI: schema, line budget, required sections, valid globs
-├── docs/                            # PRD.md
+│   └── check-registry.ts            # CI: schema, budgets, required sections, glob rules, freshness
+├── docs/
+│   └── PRD.md
+├── .changeset/
+├── .github/
+│   ├── workflows/                   # ci.yml, release.yml
+│   └── CODEOWNERS
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
 ├── package.json
 ├── tsconfig.json
 └── tsdown.config.ts
@@ -207,47 +269,48 @@ The bundled registry is resolved at runtime with `fileURLToPath(new URL('../regi
 ```typescript
 export type AgentTarget = 'cursor' | 'claude' | 'windsurf' | 'copilot';
 
-export type AppDomain = 'frontend' | 'fullstack' | 'backend';
-
 export type Language = 'typescript-strict' | 'typescript';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
 export type FragmentCategory = 'architecture' | 'language' | 'framework' | 'library' | 'workflow';
 
-export type FragmentScope = 'always' | 'glob' | 'manual';
+/** How a rule is activated; see the mapping in §5.3 */
+export type FragmentScope = 'always' | 'glob' | 'auto' | 'manual';
 
 export interface ProjectProfile {
   root: string;
   mode: 'existing' | 'greenfield';
-  domain: AppDomain;
-  packageManager: PackageManager;
+  packageManager: PackageManager | null;   // null in greenfield mode
   srcDir: '' | 'src';
   language: Language;
   /** Package name → resolved version (e.g. { next: '15.3.1' }) */
   packages: Record<string, string>;
   scripts: Record<string, string>;
-  framework: string;                // registry fragment id
-  libraries: string[];              // registry fragment ids
+  frameworks: string[];                    // fragment ids; Next.js app + pages can coexist
+  libraries: string[];                     // fragment ids
   architecture: { id: string; confidence: number };
+  agents: AgentTarget[];
   existingAgentFiles: string[];
   isMonorepo: boolean;
 }
 
 export interface FileOp {
-  path: string;                     // POSIX, relative to root
+  path: string;                            // POSIX, relative to root
   kind: 'file' | 'managed-block';
-  blockId?: string;                 // for managed blocks
+  blockId?: string;                        // for managed blocks
   content: string;
   target: AgentTarget | 'shared';
 }
 ```
 
 ### 4.4 Registry Fragment Standard (`registry/**/*.md`)
-Every fragment follows the **3-Part Rule Formula**:
+Every rule fragment follows the **3-Part Rule Formula**:
 1. **Boundary:** where the code lives and how modules interact.
 2. **Directives:** imperative `ALWAYS` / `NEVER` / `PREFER` constraints, never vague suggestions.
 3. **Contract:** a brief Good vs. Anti-Pattern snippet.
+
+Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Workflow fragments follow the structure in §5.5.
 
 **Frontmatter schema** (validated with zod at build time and in CI):
 
@@ -256,17 +319,24 @@ Every fragment follows the **3-Part Rule Formula**:
 | `id` | ✓ | Stable kebab-case id; never renamed once published |
 | `name` | ✓ | Display name |
 | `category` | ✓ | `architecture` · `language` · `framework` · `library` · `workflow` |
-| `version` | ✓ | Fragment content version (semver), used by `update` |
+| `version` | ✓ | Fragment content version (semver) |
 | `order` | ✓ | Sort order in shared files (10 arch, 20 lang, 30 framework, 40 library) |
-| `description` | ✓ | One line; shown in pickers and used for model-decided activation |
-| `scope` | ✓ | `always` (goes into `AGENTS.md`) · `glob` (scoped files) · `manual` |
-| `globs` | if `scope: glob` | YAML list; supports `{{src}}` placeholder (`src/` or empty) |
+| `description` | ✓ | One line; shown in pickers and used for description-based activation |
+| `scope` | ✓ (rules) | `always` · `glob` · `auto` · `manual` (§5.3) |
+| `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}` |
 | `detect.packages` | | Package names that trigger auto-selection |
+| `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`) |
 | `appliesTo` | | Package → semver range, e.g. `{ next: ">=15" }` |
-| `requires` | | Fragment ids that must also be selected |
-| `conflictsWith` | | Fragment ids that cannot be selected together (warn + ask) |
+| `requires` | | Fragment ids auto-selected alongside this one (with a notice) |
+| `conflictsWith` | | Fragment ids that can't be manually selected together (warn + ask) |
 | `compatibleWith` | | Framework ids this library supports (wizard filtering) |
 | `argumentHint` | workflows | Hint shown after the slash command (e.g. `<feature-name>`) |
+| `sources` | ✓ | Official documentation URLs the guidance was checked against |
+| `verifiedAt` | ✓ | Date (`YYYY-MM-DD`) the content was last verified against `sources` |
+
+**Default scope by category:** architecture and language → `always`; framework and library → `glob` or `auto`; workflows have no scope.
+
+**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`). A section that references a missing script is dropped.
 
 Example (`registry/frameworks/nextjs-app-router.md`):
 ```markdown
@@ -285,6 +355,9 @@ detect:
   packages: ["next"]
 appliesTo:
   next: ">=15"
+sources:
+  - https://nextjs.org/docs/app
+verifiedAt: 2026-10-17
 ---
 
 ## Next.js App Router Guardrails
@@ -303,6 +376,7 @@ appliesTo:
 **Budgets:**
 - Each fragment ≤ **120 lines** (~800 tokens).
 - The always-on core in `AGENTS.md` should stay ≤ **~1,500 tokens**; the CLI reports the estimate and warns above it.
+- Token estimate = `ceil(characters / 4)`; it's a guide, not an exact count.
 - Windsurf rule files must stay below **12,000 characters** (enforced by the compiler).
 
 ---
@@ -312,7 +386,7 @@ appliesTo:
 ### 5.1 Layered Output Model
 Most agents read `AGENTS.md` **and** their own files. To avoid loading the same rules twice:
 
-1. **Always-on core → `AGENTS.md` only.** Architecture summary, language rules, project commands, and fragments with `scope: always`, sorted by `order`, with a short table of contents.
+1. **Always-on core → `AGENTS.md` only.** Project commands, the architecture summary (with a link to `ARCHITECTURE.md`), language rules, and other `scope: always` fragments, sorted by `order`, with a short table of contents.
 2. **Scoped fragments → each tool's native scoped format only.** Never copied into `AGENTS.md`.
 3. **Tool entry files reference `AGENTS.md`** instead of duplicating it.
 4. **Workflows → each tool's native slash-command format.**
@@ -328,9 +402,21 @@ Most agents read `AGENTS.md` **and** their own files. To avoid loading the same 
 | **GitHub Copilot** | `.github/copilot-instructions.md` → `AGENTS.md` | `.github/instructions/agentinit-<id>.instructions.md` | `.github/prompts/<id>.prompt.md` |
 | **Architecture** | `ARCHITECTURE.md` (linked from `AGENTS.md`) | — | — |
 
-Owned files use the `agentinit-` prefix (rules) or registry ids (workflows) so they are never confused with user files.
+- **Rule files** use the `agentinit-` prefix and are fully managed.
+- **Workflow files** use plain names so commands stay short (`/new-feature`). They are tracked by path and hash in the manifest; an existing file at the same path is a conflict handled by §6.3, never overwritten silently.
 
-### 5.3 Per-Target Formats
+### 5.3 Scope Mapping per Agent
+
+| Scope | Cursor | Claude Code | Windsurf | Copilot |
+| :--- | :--- | :--- | :--- | :--- |
+| `always` | `AGENTS.md` | `AGENTS.md` (via `@AGENTS.md`) | `AGENTS.md` | `AGENTS.md` (via pointer) |
+| `glob` | `.mdc` with `globs` | rule with `paths` | `trigger: glob` | `applyTo` |
+| `auto` | `.mdc` with `description`, no `globs` (agent decides) | rule with `paths` (glob fallback) | `trigger: model_decision` | `applyTo` (glob fallback) |
+| `manual` | `.mdc` with no `globs` or `description` (`@`-mention) | skill with `disable-model-invocation: true` (`/id`) | `trigger: manual` (`@`-mention) | prompt file `agentinit-<id>.prompt.md` |
+
+`auto` exists because glob-scoped rules load only when the agent reads a matching file, so they can miss the moment a new file of that kind is created. Description-based activation covers that case where an agent supports it.
+
+### 5.4 Per-Target Formats
 
 **Cursor** — `globs` is serialized as a comma-separated string:
 ```markdown
@@ -351,14 +437,13 @@ paths:
 ```
 Workflows are skills (`.claude/skills/new-feature/SKILL.md`, invoked as `/new-feature`) with `name`, `description`, and `argument-hint` frontmatter.
 
-**Windsurf** — root `AGENTS.md` is always-on in Windsurf; scoped rules use glob triggers:
+**Windsurf** — root `AGENTS.md` is always-on in Windsurf; scoped rules use triggers:
 ```markdown
 ---
 trigger: glob
 globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
 ```
-`manual` fragments use `trigger: manual`.
 
 **GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules:
 ```markdown
@@ -367,7 +452,19 @@ applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ---
 ```
 
-**`ARCHITECTURE.md`** — generated from the architecture fragment, framework, and detected (or planned) layout: a directory map, what belongs where, allowed dependency directions between layers, and naming conventions.
+**`ARCHITECTURE.md`** — **descriptive**: it documents the layout that exists today (detected folders mapped onto the chosen architecture's vocabulary), what belongs where, allowed dependency directions, and naming conventions. Target conventions are stated as rules for **new** code; it never instructs agents to move or restructure existing files unless the user asks. In greenfield mode it describes the planned layout.
+
+**Minimum agent versions** that load each output are listed in the README and re-verified at every release; older versions silently ignore newer formats.
+
+### 5.5 Workflow Specifications
+Every workflow fragment has the sections **Purpose**, **Input**, **Steps**, **Output**, and **Guardrails**, and references project commands through placeholders (e.g. `{{scripts.test}}`).
+
+| Workflow | Input | Steps | Output |
+| :--- | :--- | :--- | :--- |
+| `/new-feature` | `<feature-name>` + description | Read `AGENTS.md` and `ARCHITECTURE.md` → propose a file plan (paths, responsibilities) and **wait for confirmation** → implement following active rules → add tests if a test library is selected → run typecheck, lint, and tests | Summary of files created, decisions, and check results |
+| `/review-arch` | optional `[path]` (default: uncommitted changes) | Read `ARCHITECTURE.md` and active rules → check boundaries, dependency directions, naming, and rule violations | Findings grouped by severity with `file:line` and a suggested fix. **Read-only.** |
+| `/refactor` | `<target>` + goal | Confirm tests cover the target (write characterization tests first if not) → refactor in small steps → run checks after each step | Summary of changes; behavior and public API unchanged unless requested |
+| `/write-tests` | `<target>` | Detect the test library from active rules → cover the happy path, edge cases, and error paths → never mock the unit under test → run tests | Tests written and their results |
 
 ---
 
@@ -380,7 +477,7 @@ Shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCH
 ...generated content...
 <!-- agentinit:end id=core -->
 ```
-Content outside the markers is never modified. Owned files (`agentinit-*`) are fully managed.
+Content outside the markers is never modified.
 
 ### 6.2 Manifest (`.agentinit/manifest.json`, committed)
 ```json
@@ -389,7 +486,7 @@ Content outside the markers is never modified. Owned files (`agentinit-*`) are f
   "mode": "existing",
   "selections": {
     "language": "typescript-strict",
-    "framework": "nextjs-app-router",
+    "frameworks": ["nextjs-app-router"],
     "libraries": ["tailwind", "zustand"],
     "architecture": "feature-based",
     "agents": ["cursor", "claude", "windsurf", "copilot"]
@@ -397,78 +494,90 @@ Content outside the markers is never modified. Owned files (`agentinit-*`) are f
   "fragments": { "nextjs-app-router": "1.0.0", "zustand": "1.0.0" },
   "files": {
     ".cursor/rules/agentinit-zustand.mdc": { "sha256": "…" },
+    ".claude/skills/new-feature/SKILL.md": { "sha256": "…" },
     "AGENTS.md#core": { "sha256": "…" }
   }
 }
 ```
+- Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
 - Hash matches → safe to regenerate silently.
 - Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report.
 
-### 6.3 Conflicts With Existing Unmanaged Files
-For each existing file without AgentInit markers:
-- **Adopt** — keep the user's content and add the managed block (default for `AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md`).
-- **Backup & replace** — write `<file>.bak`, then generate fresh.
-- **Skip** — leave the file untouched.
+### 6.3 Conflicts With Existing Files
+For each existing file AgentInit wants to write that it doesn't already own:
+- **Adopt** — keep the user's content and add the managed block (shared files only; the `--yes` default for them).
+- **Backup & replace** — back up (§6.4), then generate fresh.
+- **Skip** — leave the file untouched (the `--yes` default for non-shared files, including same-named workflows).
 
-With `--yes`, the default is **Adopt** for shared files and **Skip** for everything else; nothing is destroyed unless `--force` is passed. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules.
+Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules.
 
 ### 6.4 Write Guarantees
 - All files are written to a temp path and renamed (atomic); Ctrl-C leaves no partial output.
+- Backups go to `.agentinit/backups/<timestamp>/<original-path>`. AgentInit writes `.agentinit/.gitignore` containing `backups/`, so backups are never committed and the user's `.gitignore` is untouched.
 - Globs always use forward slashes; existing line endings (LF/CRLF) are preserved when merging.
 - Permission errors produce a readable message, not a stack trace.
 
-### 6.5 Lifecycle Commands *(v0.2)*
+### 6.5 `doctor` (v0.1, read-only)
+Compares the manifest, the current project, and the files on disk. Never writes. Exits `2` when any issue is found, so it can run in CI:
+- No manifest found (suggests `init`).
+- A managed file or block is missing, or was edited by hand.
+- A detected package has a matching fragment that isn't selected.
+- A selected fragment's package was removed, or its version left the `appliesTo` range.
+- The always-on core is over budget.
+- Legacy rule files (`.cursorrules`, `.windsurfrules`) are still present.
+
+Each issue includes the command that fixes it (usually re-running `init`). `--json` emits a machine-readable report.
+
+### 6.6 Lifecycle Commands *(v0.2)*
 - **`add <id...>` / `remove <id...>`:** update selections in the manifest and regenerate affected files. Unknown ids get fuzzy suggestions.
-- **`update`:** re-detects the project, applies newer fragment versions, and handles framework upgrades (e.g., Next 15 → 16).
-- **`doctor`:** reports, and exits with code `2` on:
-  - a detected package with an available fragment that isn't selected;
-  - a selected fragment whose package was removed or whose `appliesTo` range no longer matches;
-  - managed content edited by hand;
-  - an always-on core over budget;
-  - legacy rule files still present.
+- **`remove --all`:** deletes every AgentInit-owned file and managed block, the manifest, and `.agentinit/`; user content is left intact. Edited files still prompt.
+- **`update`:** non-interactive re-sync (equivalent to `init --yes` with a manifest) that also lists fragment version changes since the last run.
 
 ---
 
 ## 7. Phased Roadmap
 
-### v0.1 — TypeScript web, every major agent (~3 weeks)
+### v0.1 — TypeScript web, every major agent (~5 weeks)
 
 **M1 — Foundation (2 days)**
-- [ ] `tsconfig.json` (strict), `tsdown.config.ts`, ESLint, Vitest, changesets, MIT `LICENSE`.
-- [ ] CLI skeleton with `cac`: `init`, `list`, global flags, exit codes, non-TTY handling.
+- [ ] `tsconfig.json` (strict), `tsdown.config.ts`, ESLint, Vitest, changesets, MIT `LICENSE`, `CODEOWNERS`, CI workflow.
+- [ ] CLI skeleton with `cac`: `init`, `list`, `doctor`, global flags, exit codes, non-TTY handling.
 
-**M2 — Registry (5 days)**
-- [ ] zod schema, loader, resolver (compatibility, semver, requires/conflicts), `{{src}}` placeholders.
-- [ ] `scripts/check-registry.ts` for CI (schema, 120-line budget, required sections, valid globs).
-- [ ] Author fragments: 4 architectures, 2 languages, 5 frameworks, 7 libraries, 4 workflows (see §4.2).
+**M2 — Registry (8 days)**
+- [ ] zod schema, loader, resolver (compatibility, `appliesTo`, requires/conflicts), placeholders.
+- [ ] `scripts/check-registry.ts` for CI: schema, 120-line budget, required sections, no brace globs, `verifiedAt` older than 6 months warns.
+- [ ] Author and verify fragments against official docs: 4 architectures, 2 languages, 5 frameworks, 7 libraries, 4 workflows (§4.2, §5.5).
 
 **M3 — Detection (3 days)**
-- [ ] TypeScript gate, packages and versions, package manager, scripts, tsconfig (JSONC + extends).
-- [ ] Layout and architecture inference with confidence; existing agent files; monorepo warning.
-- [ ] Wizard for greenfield mode and summary confirmation for existing projects.
+- [ ] TypeScript gate, packages and versions, marker files, package manager, scripts, tsconfig (JSONC + extends).
+- [ ] Layout and architecture inference with confidence; existing agent files; monorepo and git-root handling.
+- [ ] Greenfield wizard and existing-project summary confirmation.
 
 **M4 — Targets (4 days)**
-- [ ] `AGENTS.md`, Cursor, Claude Code, Windsurf, GitHub Copilot, and `ARCHITECTURE.md` adapters.
+- [ ] `AGENTS.md`, Cursor, Claude Code, Windsurf, GitHub Copilot, and `ARCHITECTURE.md` adapters with the scope mapping in §5.3.
 - [ ] Token estimate and budget warnings.
 
-**M5 — Safe IO (2 days)**
-- [ ] Managed blocks, manifest with hashes, conflict prompts, diff preview, atomic writes, backups.
+**M5 — Safe IO & Doctor (3 days)**
+- [ ] Managed blocks, manifest with normalized hashes, conflict prompts, diff preview, atomic writes, backups.
+- [ ] Idempotent re-run (§3.4) and `doctor` (§6.5).
 
-**M6 — Quality & Launch (3 days)**
+**M6 — Quality & Launch (4 days)**
 - [ ] Snapshot tests per target over fixtures (§8); CI on Ubuntu, macOS, and Windows.
 - [ ] Packed-tarball smoke test (`npm pack` → install → run).
-- [ ] `README.md` (demo GIF, generated tree, token report) and `CONTRIBUTING.md`.
+- [ ] Rule-effectiveness check (§8.3) passes.
+- [ ] `README.md` (demo GIF, generated tree, token report, minimum agent versions) and `CONTRIBUTING.md`.
 - [ ] `.github/workflows/release.yml`: changesets release PRs, publish with provenance using the `NPM_TOKEN` secret.
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
 ### v0.2 — Lifecycle
-- `add`, `remove`, `update`, `doctor`.
+- `add`, `remove`, `remove --all`, `update`.
 - Team fragments in `.agentinit/fragments/*.md`, compiled to every target alongside registry fragments.
 - `/agentinit-customize` workflow (Pillar 5) writing into a managed `project-domain` block.
+- Opt-in inline mode for Copilot surfaces that ignore `AGENTS.md`.
 
 ### v0.3 — Breadth
-- Full monorepo support (per-package globs or nested `AGENTS.md`).
-- More frameworks (Angular, Vue/Nuxt, NestJS, Expo) and libraries (Redux Toolkit, Prisma, Drizzle).
+- Full monorepo support (per-package globs or nested `AGENTS.md`), with a `{{pkg}}` placeholder.
+- More frameworks (Angular, Vue/Nuxt, NestJS, Expo) and libraries (Redux Toolkit, Prisma, Drizzle, Tailwind v3).
 - Gemini CLI target (`GEMINI.md` or `.gemini/settings.json` → `AGENTS.md`).
 - Optional, opt-in folder scaffolding.
 
@@ -476,16 +585,52 @@ With `--yes`, the default is **Adopt** for shared files and **Skip** for everyth
 - JavaScript projects (JSDoc rules).
 - Python (`pyproject.toml`), Go (`go.mod`), Flutter (`pubspec.yaml`).
 - Opt-in remote registries (`--registry <git-url>`, pinned to a commit and recorded in the manifest).
-- Rule-effectiveness evaluation harness.
+- Automated rule-effectiveness evaluation harness.
 
 ---
 
 ## 8. Quality Strategy
 
-**Fixture repositories** (`tests/fixtures/`), each with snapshot output for every target:
-`next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `js-only` (must be rejected) · `empty` · `pnpm-monorepo` (must warn) · `existing-claude-md` (adopt) · `edited-managed-block` (must not overwrite) · `jsonc-tsconfig-extends`.
+### 8.1 v0.1 Acceptance Criteria
+Each criterion is covered by an automated test unless marked *(manual)*.
+
+**Detection & gating**
+- A JavaScript-only project exits `1` and writes nothing, with or without `--yes`.
+- A monorepo root exits `1` with instructions; running inside a workspace package works.
+- Versions are resolved from `node_modules` first; a `workspace:*` or `catalog:` specifier never crashes detection.
+- A `tsconfig.json` with comments, trailing commas, and `extends` is parsed correctly.
+- A project with both `app/` and `pages/` gets both Next.js fragments.
+- An unsupported version (e.g., Tailwind v3) is skipped with a notice.
+
+**Output**
+- No rule text appears in more than one generated file (excluding pointers and imports).
+- Every generated Cursor, Claude, Windsurf, and Copilot file matches its format in §5.4 and the scope mapping in §5.3.
+- Globs resolve correctly for `src/` and root layouts and always use forward slashes.
+- `AGENTS.md` lists only scripts that exist, using the detected package manager.
+
+**Safety**
+- Content outside managed blocks is byte-for-byte unchanged after `init`.
+- Re-running `init` with no project changes writes nothing and prints "Already up to date."
+- A hand-edited managed block is never overwritten with `--yes`.
+- An existing same-named workflow file is never overwritten without confirmation or `--force`.
+- Interrupting `init` (SIGINT) leaves no partial files.
+- `--dry-run` writes nothing, including the manifest.
+
+**Doctor**
+- Exits `0` on a freshly initialized project and `2` after adding a supported package to `package.json`.
+- Never modifies any file.
+
+**Experience**
+- *(manual)* Time from `npx @agentinit/cli` to written files on an existing project is under 60 seconds, excluding download time.
+
+### 8.2 Fixture Repositories
+`tests/fixtures/`, each with snapshot output for every target:
+`next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
+
+### 8.3 Rule-Effectiveness Check (release gate)
+Before each minor release, run 5 fixed tasks (e.g., "add a feature with a form and server action") in two agents on a fixture project, with and without generated rules. Record convention violations per run in `docs/evals/`. Ship only if the rules reduce violations in at least 4 of 5 tasks. This is manual in v0.1 and automated in v0.4+.
 
 ---
 
@@ -507,24 +652,46 @@ Rule fixes ship as patch releases via changesets. Team fragments (v0.2) and opt-
 1. **No CLI code required:** adding a library or framework means adding one `.md` file under `registry/` with valid frontmatter.
 2. **Token budget:** each fragment stays under **120 lines** (~800 tokens).
 3. **Actionable directives only:** imperative verbs (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`); no textbook explanations.
-4. **Version-aware:** set `appliesTo` when guidance depends on a major version.
-5. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
-6. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
+4. **Version-aware and sourced:** set `appliesTo` when guidance depends on a major version; cite official docs in `sources` and set `verifiedAt`.
+5. **Portable globs:** no brace patterns; use one glob per extension.
+6. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
+7. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
+8. **Freshness:** fragments with `verifiedAt` older than 6 months are flagged in CI and re-verified or deprecated.
 
 ---
 
 ## 11. Success Metrics
 
-- **Time to first rules:** under 60 seconds from `npx @agentinit/cli` to written files on an existing project.
-- **Context efficiency:** default always-on core ≤ 1,500 tokens; zero duplicated rule content across generated files.
-- **Safety:** zero reported cases of user content being overwritten.
-- **Adoption:** weekly npm downloads and GitHub stars after launch.
-- **Community:** number of merged community fragments per month.
+There is no telemetry, so every metric uses public signals. Targets are for the first **3 months after v0.1** and will be revisited after launch.
+
+| Metric | Target | Measured by |
+| :--- | :--- | :--- |
+| Weekly npm downloads | 500 | npm download stats |
+| GitHub stars | 300 | GitHub |
+| Merged community fragments | 10 | GitHub PRs |
+| Rule effectiveness | Fewer violations in ≥ 4 of 5 eval tasks | §8.3 |
+| User content overwritten | 0 confirmed reports | GitHub issues labeled `data-loss` |
+| Time to first rules | < 60 s | Manual check each release |
 
 ---
 
-## 12. Known Limitations (v0.1)
+## 12. Risks & Mitigations
 
-- **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. Revisit in v0.2 with an opt-in inline mode.
+| Risk | Mitigation |
+| :--- | :--- |
+| Agent file formats change (e.g., Windsurf → `.devin/rules`) | One isolated adapter per target, snapshot tests, minimum-version table, fast patch releases |
+| Rule content goes stale as libraries evolve | `appliesTo`, `sources`, `verifiedAt`, 6-month freshness check, `doctor` version checks |
+| Low-quality or harmful community rules | 3-part formula, CI checks, CODEOWNERS review, safety rules, effectiveness gate |
+| Generated rules don't change agent behavior | Effectiveness check before each minor release; prune fragments that don't help |
+| Overlap with `ruler`, `rulesync`, and the `agentinit` package | Lead with curated content, detection, workflows, and `doctor`; always show the scoped package name |
+| Maintainer burden of many fragments | Narrow v0.1 scope; clear contribution guide; deprecate unmaintained fragments |
+
+---
+
+## 13. Known Limitations (v0.1)
+
+- **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. An opt-in inline mode is planned for v0.2.
+- **Glob-scoped rules in Claude Code and Copilot** may not load when a new file is being created, because those tools have no description-based rule activation; `auto` falls back to globs there.
 - **Monorepos** are detected but not compiled; users run the CLI inside one package.
 - **Legacy files** (`.cursorrules`, `.windsurfrules`) are left untouched and keep loading alongside the new rules.
+- **Greenfield mode** can't run with `--yes`.
