@@ -1,0 +1,79 @@
+{
+  "name": "@agentinit/cli",
+  "version": "0.0.0",
+  "description": "Bootstrap scoped AI coding agent rules, workflows, and architecture docs for Cursor, Claude Code, Windsurf, and GitHub Copilot",
+  "keywords": [
+    "ai",
+    "agents",
+    "agents-md",
+    "cursor",
+    "cursor-rules",
+    "claude-code",
+    "claude-md",
+    "windsurf",
+    "github-copilot",
+    "copilot-instructions",
+    "cli",
+    "scaffold"
+  ],
+  "license": "MIT",
+  "author": "Kazi Tajnur Islam <tajnur007@gmail.com>",
+  "homepage": "https://github.com/qivora-labs/agentinit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qivora-labs/agentinit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qivora-labs/agentinit/issues"
+  },
+  "type": "module",
+  "bin": {
+    "agentinit": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "registry"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:package": "publint",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "cac": "^7.1.0",
+    "diff": "^9.0.0",
+    "get-tsconfig": "^4.14.3",
+    "picocolors": "^1.1.1",
+    "semver": "^7.8.5",
+    "tinyglobby": "^0.2.17",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "@types/semver": "^7.8.0",
+    "eslint": "^10.13.0",
+    "publint": "^0.3.25",
+    "tsdown": "^0.23.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}

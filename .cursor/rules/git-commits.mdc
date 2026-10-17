@@ -1,0 +1,27 @@
+---
+description: Git commit message conventions for this repository
+alwaysApply: true
+---
+
+# Git Commits
+
+- ALWAYS use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<optional scope>): <subject>`
+  - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+  - Scopes (optional): `cli`, `detect`, `registry`, `targets`, `io`, `ui`, `docs`, `deps`, `release`
+  - Subject: imperative mood, lowercase, no trailing period, ≤ 72 characters
+  - Breaking changes: add `!` after the type/scope and a `BREAKING CHANGE:` footer
+- Body is optional; use it to explain *why*, wrapped at 72 characters.
+- NEVER add `Co-authored-by:` trailers or any AI/tool attribution (e.g. "Generated with…", "Made with…") to commit messages.
+- One logical change per commit.
+
+```text
+# ✅ Good
+feat(detect): resolve installed package versions from node_modules
+fix(targets): serialize cursor globs as comma-separated string
+
+# ❌ Bad
+Added detection stuff.
+feat: add detector
+
+Co-authored-by: Some Agent <agent@example.com>
+```
