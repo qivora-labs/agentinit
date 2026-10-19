@@ -5,6 +5,7 @@ This file is for AI coding agents (and humans) developing this repository. It is
 ## Source of Truth
 - **What to build:** [`docs/PRD.md`](docs/PRD.md). Never contradict it silently.
 - **What to build next:** [`docs/tasks/`](docs/tasks/README.md). Work on exactly one task per session.
+- **Where code goes:** [`ARCHITECTURE.md`](ARCHITECTURE.md) — folder map, dependency rules, which modules may touch disk.
 - If the PRD and a task disagree, or the PRD is silent on something you need, **stop and ask** instead of inventing behavior. If the user decides, update the PRD in the same change.
 
 ## Commands
@@ -15,39 +16,38 @@ pnpm typecheck        # tsc --noEmit
 pnpm test             # Vitest (run once)
 pnpm build            # tsdown → dist/cli.js
 pnpm check:package    # publint
+pnpm registry:check   # registry content checks (from T08)
 node dist/cli.js --help
 ```
 Before finishing any task, `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must pass.
 
-## Project Layout
-- `src/` — CLI source. Pipeline: `detect → resolve → plan → apply` (PRD §4.1).
-- `registry/` — bundled rule and workflow fragments (Markdown + YAML frontmatter).
-- `tests/` — unit tests mirror `src/` (`tests/registry/resolve.test.ts`); `tests/fixtures/` holds sample repos.
-- `scripts/` — repo tooling (e.g., `check-registry.ts`).
-- `docs/` — PRD and task files.
-
-## Code Conventions
+## Core Conventions
 - TypeScript strict, ESM only, Node `>=22.12`. Named exports only; no default exports.
-- **Purity boundaries:** `registry/resolve.ts`, `plan/`, and `targets/` are pure functions (no `fs`, no `process`, no prompts, no clock). Only `detect/`, `registry/load.ts`, `io/`, and `commands/` touch the filesystem. Only `ui/` and `commands/` prompt or print.
-- Output must be deterministic: stable ordering, no timestamps in generated content, trailing newline at end of file.
-- Paths in generated output and `FileOp.path` are POSIX (`/`) relative to the project root. Use `node:path` for disk access and convert at the boundary.
-- Errors meant for users are `AgentInitError` (with an exit code) and must be readable without a stack trace.
-- Keep dependencies to those listed in PRD §4.2. Ask before adding a new runtime dependency.
+- Respect the purity boundaries in `ARCHITECTURE.md`: `registry/resolve.ts`, `plan/`, and `targets/` never touch disk, `process`, prompts, or the clock.
+- User-facing errors are `AgentInitError` with an exit code, readable without a stack trace.
+- Keep dependencies to those listed in PRD §4.2. Ask before adding a runtime dependency.
+- Every task adds or updates tests for the behavior it introduces.
 - Comments explain constraints the code can't show, not what the next line does.
 
-## Testing Conventions
-- Every task adds or updates tests for the behavior it introduces.
-- Pure modules: table-driven unit tests. Filesystem modules: tests run in temp directories (`fs.mkdtemp`), never in the repo.
-- Generated output: Vitest file snapshots (`toMatchFileSnapshot`) so diffs are reviewable.
-- Fixtures may contain fake `node_modules/<pkg>/package.json` files; they are committed on purpose.
+## Area-Specific Rules
+Detailed rules for each area live in `.cursor/rules/`. Cursor loads them automatically when you touch matching files; **other agents must read the matching file before editing that area**:
 
-## Registry Content
-- Follow PRD §4.4 and §10: 3-part formula, ≤ 120 lines, cited `sources`, current `verifiedAt`, no brace globs.
-- Verify guidance against the **current official documentation** for the version in `appliesTo` before writing it. Do not rely on memory for API details.
-- Never write instructions that tell agents to run network commands, install packages, read secrets, or move existing files.
+| Editing | Read |
+| :--- | :--- |
+| `registry/**/*.md` | `.cursor/rules/registry-content.mdc` |
+| `src/plan/**`, `src/targets/**`, `src/registry/resolve.ts`, `src/doctor/**` | `.cursor/rules/pure-modules.mdc` |
+| `src/io/**` | `.cursor/rules/io-safety.mdc` |
+| `tests/**` | `.cursor/rules/tests.mdc` |
+| Writing a commit message | `.cursor/rules/git-commits.mdc` |
+
+## Workflows
+Reusable procedures live in `docs/workflows/` and are exposed as slash commands (`.cursor/commands/`, `.claude/skills/`):
+- `/implement-task <id>` — implement one task from `docs/tasks/`.
+- `/review-task <id>` — read-only review of a finished task.
+- `/write-fragment <id>` — author or revise a registry fragment.
+
+Agents without slash commands can open the matching file in `docs/workflows/` and follow it.
 
 ## Git
-- Conventional Commits: `<type>(<scope>): <subject>` — imperative, lowercase, no trailing period, ≤ 72 characters.
-- Scopes: `cli`, `detect`, `registry`, `plan`, `targets`, `io`, `ui`, `docs`, `deps`, `ci`, `release`.
-- **Never** add `Co-authored-by:` trailers or AI/tool attribution to commit messages.
+- Conventional Commits; **never** add `Co-authored-by:` trailers or AI/tool attribution. Full convention: `.cursor/rules/git-commits.mdc`.
 - One task = one branch (`task/T05-registry-loader`) = one PR, unless the task file says otherwise.

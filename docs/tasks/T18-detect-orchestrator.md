@@ -40,6 +40,7 @@ End-to-end detection tests on fixtures (create minimal ones; T29 completes the f
 - [ ] `next15-src` → frameworks `['nextjs-app-router']`, `srcDir: 'src'`, correct package manager and scripts.
 - [ ] `next-app-and-pages` → both Next.js fragments.
 - [ ] `tailwind-v3` → no Tailwind fragment + `unsupported-version` notice.
+- [ ] `node-cli-ts` (TypeScript CLI, no web framework) → existing mode, `frameworks: []`, no error (PRD §3.6).
 
 ## Verify
 ```bash

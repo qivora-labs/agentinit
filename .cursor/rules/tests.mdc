@@ -1,0 +1,28 @@
+---
+description: Testing conventions (unit tests, fixtures, snapshots, end-to-end runs)
+globs: tests/**/*.ts
+alwaysApply: false
+---
+
+# Tests
+
+- Unit tests mirror `src/` (`src/registry/resolve.ts` → `tests/registry/resolve.test.ts`); end-to-end tests live in `tests/e2e/`.
+- PREFER table-driven tests (`it.each`) for pure modules; name each case after the behavior it proves.
+- ALWAYS run filesystem tests in a temp directory (`fs.mkdtemp`) and clean up; NEVER write inside the repo or a fixture.
+- End-to-end tests copy a fixture to a temp dir and call `run([...args, '--cwd', dir])`; NEVER spawn the CLI unless the test is about the binary itself.
+- ALWAYS snapshot generated files with `toMatchFileSnapshot` so diffs are reviewable; NEVER update snapshots without reviewing the diff.
+- Fixtures are minimal but realistic; fake installed packages go in `tests/fixtures/<name>/node_modules/<pkg>/package.json` (committed on purpose).
+- Inject time and prompts (fake `Prompter`) instead of mocking globals.
+- NEVER make network calls in tests.
+
+```ts
+// ✅ Good: isolated, behavior-named, temp dir
+it('keeps user content outside managed blocks byte-for-byte', async () => {
+  const dir = await copyFixture('existing-claude-md');
+  await run(['init', '--yes', '--cwd', dir]);
+  expect(await readUserSection(dir)).toBe(original);
+});
+
+// ❌ Anti-pattern: runs in the fixture itself and mutates it
+await run(['init', '--yes', '--cwd', 'tests/fixtures/existing-claude-md']);
+```

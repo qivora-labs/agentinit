@@ -26,6 +26,8 @@ Topics to cover (verify each):
 - **Vitest:** test behavior not implementation, `describe`/`it` naming, `vi.mock` boundaries, fake timers, no snapshot overuse, run with `{{scripts.test}}`.
 - **Playwright:** locators by role/label, web-first assertions, no fixed waits, isolated test data, page object usage only when it reduces duplication.
 
+- `vitest` and `playwright` have **no** `compatibleWith`, so TypeScript projects without a framework (PRD §3.6) still get them; `react-hook-form-zod` sets `compatibleWith` to the React-based frameworks.
+
 ## Out of scope
 - Jest support (not in v0.1).
 

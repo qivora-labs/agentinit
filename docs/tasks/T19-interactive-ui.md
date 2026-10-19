@@ -13,7 +13,7 @@ All user interaction for `init`: the greenfield wizard, the existing-project sum
 
 ## Scope
 - Use the `Prompter` interface and fake prompter from T03 (`src/ui/prompter.ts`).
-- `src/ui/wizard.ts`: `runGreenfieldWizard(prompter, registry) → Selection` — framework (grouped by type), strictness, libraries filtered by `compatibleWith`, architecture (Feature-Based recommended), agents (all preselected).
+- `src/ui/wizard.ts`: `runGreenfieldWizard(prompter, registry) → Selection` — framework (grouped by type, plus "Other TypeScript project (library, CLI, scripts)" → `frameworks: []`, PRD §3.6), strictness, libraries filtered by `compatibleWith`, architecture (Feature-Based recommended), agents (all preselected).
 - `src/ui/summary.ts`: `confirmDetected(prompter, draft, registry) → Selection` — summary box (stack, versions, package manager, layout, architecture with confidence, notices); "Use this configuration / Customize"; customize lets the user change language, frameworks, libraries, architecture; low-confidence architecture always prompts.
 - `src/ui/agents.ts`: agent multiselect with preselection from detection.
 - `src/ui/git-root.ts`: when running below the git root, ask whether to use the git root instead (default: stay).
@@ -31,6 +31,7 @@ All user interaction for `init`: the greenfield wizard, the existing-project sum
 
 ## Acceptance criteria
 - [ ] Wizard happy path with the fake prompter produces the expected `Selection`; library list excludes incompatible options.
+- [ ] Choosing "Other TypeScript project" yields `frameworks: []` and offers only framework-agnostic libraries; the summary shows "Framework: none detected" for such projects.
 - [ ] Summary "Use detected" returns the draft unchanged; "Customize" changes are reflected.
 - [ ] Low-confidence architecture prompts even when "Use detected" is chosen.
 - [ ] Every row of PRD §3.5 has a unit test for `nonInteractiveSelection`.

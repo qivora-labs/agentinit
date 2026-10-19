@@ -26,6 +26,7 @@ Pure functions that (1) suggest fragments from detected project facts and (2) tu
    - Adds `requires` transitively (notice `required-by`).
    - Reports `conflicts` only between pairs where at least one side is `manual`; detected pairs are always honored.
    - Drops libraries whose `compatibleWith` excludes every selected framework (notice `incompatible`).
+   - `frameworks` may be empty (PRD §3.6): then libraries **with** `compatibleWith` are dropped (notice `incompatible`) and libraries without it are kept; add notice `no-framework`.
    - Always includes all workflow fragments.
    - Unknown ids → `AgentInitError`.
    - Output sorted by `order`, then `id`.
@@ -47,6 +48,7 @@ Table-driven tests using `registry-sample` (extend it if needed) covering:
 - [ ] `requires` is added transitively, without duplicates.
 - [ ] Conflict between two manual selections is reported; between two detected selections it is not.
 - [ ] Incompatible library is dropped with a notice.
+- [ ] Empty `frameworks`: framework-bound libraries dropped, framework-agnostic libraries kept, `no-framework` notice present, no error.
 - [ ] Workflows are always included; output order is stable.
 
 ## Verify

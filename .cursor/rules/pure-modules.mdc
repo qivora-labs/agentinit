@@ -1,0 +1,29 @@
+---
+description: Purity and determinism rules for resolver, planning, target adapters, and doctor checks
+globs: src/plan/**/*.ts,src/targets/**/*.ts,src/registry/resolve.ts,src/doctor/**/*.ts
+alwaysApply: false
+---
+
+# Pure Modules
+
+These modules turn data into data. They are snapshot-tested and must produce identical output on every run and OS.
+
+- NEVER import `node:fs`, `node:child_process`, `process`, `ui/`, `io/`, or `detect/` here. Receive everything as parameters.
+- NEVER read the clock, randomness, or environment variables; pass them in if ever needed.
+- ALWAYS produce deterministic output: sort by `order` then `id` (fragments) or by path (file ops); no timestamps or CLI versions in generated content; end files with exactly one `\n`.
+- ALWAYS emit POSIX paths relative to the project root in `FileOp.path`.
+- Target adapters are independent: NEVER import one adapter from another; shared helpers go in `src/plan/`.
+- ALWAYS-on content goes only into `AGENTS.md` (PRD §5.1); agent adapters NEVER duplicate it.
+- Managed-block ops carry `blockId` + inner content only; markers are added by `src/io/`.
+- Serialize frontmatter exactly as each agent expects (PRD §5.3–§5.4), and round-trip test it with `yaml.parse`.
+
+```ts
+// ✅ Good: pure, data in → data out
+export function cursorAdapter(ctx: TargetContext): FileOp[] { /* ... */ }
+
+// ❌ Anti-pattern: hidden I/O in a pure module
+export function cursorAdapter(ctx: TargetContext): FileOp[] {
+  const existing = fs.readFileSync('.cursor/rules/x.mdc', 'utf8');
+  /* ... */
+}
+```

@@ -6,15 +6,11 @@ The v0.1 scope from [`PRD.md`](../PRD.md) is split into small, self-contained ta
 
 1. Pick a task whose dependencies are all `done` (see the index below).
 2. Create a branch: `task/<id>-<slug>` (e.g., `task/T05-registry-loader`).
-3. Start a **fresh** agent session and use this prompt:
-   ```text
-   Implement docs/tasks/<file>.md.
-   Read AGENTS.md and the PRD sections listed in the task before writing code.
-   Stay within the task's scope. If something is unclear or the PRD is silent, stop and ask.
-   When done, run the Verify commands, check off the acceptance criteria in the task file,
-   set the task's status to `done` in docs/tasks/README.md, and commit.
-   ```
-4. Review the diff yourself, run the Verify commands, then merge.
+3. Start a **fresh** agent session and run `/implement-task <id>` (e.g., `/implement-task T05`). Agents without slash commands: *"Follow docs/workflows/implement-task.md for task T05."*
+4. Optionally, in another fresh session, run `/review-task <id>` for an independent read-only review.
+5. Review the diff yourself, run the Verify commands, then merge.
+
+For registry content (T09–T13), `/write-fragment <id>` guides authoring one fragment at a time.
 
 **Why fresh sessions:** a new session starts with a clean context window, so earlier tasks' details don't crowd out the current one. Everything a task needs is in its file, `AGENTS.md`, and the referenced PRD sections.
 
@@ -89,6 +85,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 
 | ID | Task | Milestone | Depends on | Size | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| T00 | Repository agent setup (`AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, scoped rules, workflows) | — | — | S | done |
 | [T01](T01-tooling-setup.md) | Tooling setup | M1 | — | M | todo |
 | [T02](T02-ci-and-changesets.md) | CI, changesets, CODEOWNERS | M1 | T01 | S | todo |
 | [T03](T03-cli-skeleton.md) | CLI skeleton, types, errors | M1 | T01 | M | todo |
@@ -120,7 +117,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T29](T29-fixtures-and-acceptance-tests.md) | Fixtures & acceptance tests | M6 | T27, T28, T09–T13 | L | todo |
 | [T30](T30-package-smoke-test.md) | Packed-tarball smoke test | M6 | T27 | S | todo |
 | [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | todo |
-| [T32](T32-release-workflow.md) | Release workflow & launch checklist | M6 | T02, T30, T31 | S | todo |
+| [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | todo |
 | [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | todo |
 
 ## Task File Template

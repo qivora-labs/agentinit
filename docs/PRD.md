@@ -120,6 +120,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Web frontend:* React (Vite)
    - *Full-stack web:* Next.js (App Router), Next.js (Pages Router)
    - *Backend / API:* Node.js + Express, Node.js + Fastify
+   - *Other:* Other TypeScript project (library, CLI, scripts) — no framework rules; base rules only (§3.6)
 2. **TypeScript Strictness:** `Strict (strict compiler options, no any)` — *recommended* · `Standard`
 3. **Libraries** (multi-select, filtered by framework compatibility):
    - *State & Data:* Zustand, TanStack Query
@@ -129,7 +130,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
 4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal`
 5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot
 6. **Review & Write:** shows the file list and always-on token estimate, then writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
-7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4).
+7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`.
 
 > Some framework generators refuse to run in a non-empty directory. The hint tells users to scaffold first when possible, or to scaffold into a subfolder and move files.
 
@@ -150,6 +151,7 @@ Triggered when `package.json` exists in the target directory.
    - **Monorepo:** detects workspaces (pnpm, npm, yarn, Turborepo, Nx). v0.1 asks the user to run the CLI inside a single package and exits.
    - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
 3. **Version Check:** a detected package whose version is outside every fragment's `appliesTo` range (e.g., Tailwind v3 when only a v4 fragment exists) is skipped with a notice: *"tailwindcss@3 detected — no matching rules yet."*
+   - No supported framework detected (e.g., a CLI, library, or an unsupported framework) → continue with base rules (§3.6).
 4. **Summary Confirmation:** a formatted box showing the detected stack, versions, package manager, layout, and architecture (with confidence).
    - *"Use this configuration, or customize?"*
    - Low-confidence architecture (< 0.7) prompts instead of guessing.
@@ -180,6 +182,13 @@ Every prompt has a defined non-interactive answer:
 | Managed content edited by hand | Skip and report |
 
 `conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both).
+
+### 3.6 Projects Without a Supported Framework
+TypeScript libraries, CLIs, scripts, and projects using a framework the registry doesn't cover yet are **supported with base rules**:
+- Generated: architecture, language, compatible libraries, workflows, `ARCHITECTURE.md`, and project commands.
+- Libraries with `compatibleWith` are dropped (they target specific frameworks); libraries without it (e.g., Vitest) are kept.
+- The summary shows *"Framework: none detected"* and a notice: *"No framework rules matched; generating base rules."* With `--yes`, this is not an error.
+- `doctor` doesn't report a missing framework as an issue.
 
 ---
 
@@ -289,7 +298,7 @@ export interface ProjectProfile {
   /** Package name → resolved version (e.g. { next: '15.3.1' }) */
   packages: Record<string, string>;
   scripts: Record<string, string>;
-  frameworks: string[];                    // fragment ids; Next.js app + pages can coexist
+  frameworks: string[];                    // fragment ids; may be empty (§3.6); Next.js app + pages can coexist
   libraries: string[];                     // fragment ids
   architecture: { id: string; confidence: number };
   /** Existing folders under srcDir (depth ≤ 2), used for the descriptive ARCHITECTURE.md */
@@ -588,6 +597,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 - [ ] Rule-effectiveness check (§8.3) passes.
 - [ ] `README.md` (demo GIF, generated tree, token report, minimum agent versions) and `CONTRIBUTING.md`.
 - [ ] `.github/workflows/release.yml`: changesets release PRs, publish with provenance using the `NPM_TOKEN` secret.
+- [ ] Dogfood: run `agentinit init` on this repository (hand-written content stays outside managed blocks) and run `agentinit doctor` in CI.
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
 ### v0.2 — Lifecycle
@@ -598,7 +608,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 
 ### v0.3 — Breadth
 - Full monorepo support (per-package globs or nested `AGENTS.md`), with a `{{pkg}}` placeholder.
-- More frameworks (Angular, Vue/Nuxt, NestJS, Expo) and libraries (Redux Toolkit, Prisma, Drizzle, Tailwind v3).
+- More frameworks (Angular, Vue/Nuxt, NestJS, Expo, and a `node-library` fragment for TypeScript CLIs and libraries) and libraries (Redux Toolkit, Prisma, Drizzle, Tailwind v3).
 - Gemini CLI target (`GEMINI.md` or `.gemini/settings.json` → `AGENTS.md`).
 - Optional, opt-in folder scaffolding.
 
@@ -621,6 +631,7 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 - Versions are resolved from `node_modules` first; a `workspace:*` or `catalog:` specifier never crashes detection.
 - A `tsconfig.json` with comments, trailing commas, and `extends` is parsed correctly.
 - A project with both `app/` and `pages/` gets both Next.js fragments.
+- A TypeScript project with no supported framework (e.g., a CLI) gets base rules and a notice, and exits `0` with `--yes`.
 - An unsupported version (e.g., Tailwind v3) is skipped with a notice.
 
 **Output**
@@ -646,7 +657,7 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 
 ### 8.2 Fixture Repositories
 `tests/fixtures/`, each with snapshot output for every target:
-`next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
+`next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
 

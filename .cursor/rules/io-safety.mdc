@@ -1,0 +1,26 @@
+---
+description: Safety rules for writing to users' projects (manifest, managed blocks, apply engine)
+globs: src/io/**/*.ts
+alwaysApply: false
+---
+
+# Safe Writes
+
+The product promise is "never overwrite user content." Every change here must keep that promise.
+
+- NEVER modify bytes outside a managed block (`<!-- agentinit:begin id=… -->` … `<!-- agentinit:end id=… -->`).
+- NEVER guess on malformed markers (missing end, nested, duplicate ids); throw an `AgentInitError` naming the file.
+- NEVER overwrite a file that is unmanaged or hand-edited (hash mismatch) without the user's choice or `--force`; `--force` ALWAYS backs up first to `.agentinit/backups/<timestamp>/`.
+- ALWAYS hash content with line endings normalized to LF; ALWAYS preserve a file's existing line endings when writing.
+- ALWAYS write atomically: temp file in the same directory, then rename; write the manifest last.
+- ALWAYS make `dryRun` and `doctor` paths write nothing, including `.agentinit/`.
+- Inject the clock and the `Prompter`; NEVER call `Date.now()` or prompt directly.
+- ALWAYS test in temp directories and assert byte-for-byte preservation of user content.
+
+```ts
+// ✅ Good: replace only the block's inner content
+const next = upsertBlock(current, 'core', inner);
+
+// ❌ Anti-pattern: regenerate the whole file
+await writeFile('AGENTS.md', renderAgentsMd(plan));
+```

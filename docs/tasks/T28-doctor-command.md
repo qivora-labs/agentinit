@@ -20,6 +20,7 @@ A read-only check that reports drift between the manifest, the project, and gene
 - Selected fragment whose package is gone, or whose version left `appliesTo` → issue.
 - Always-on content over 1,500 tokens → issue.
 - Legacy `.cursorrules` / `.windsurfrules` present → issue.
+- A project with no supported framework is **not** an issue (PRD §3.6).
 - Output: grouped human report with a fix command per issue; `--json` → `{ ok, issues: [{ kind, path?, message, fix }] }`.
 - Exit `0` when clean, `2` when issues exist, `1` on errors (e.g., unsupported project).
 
