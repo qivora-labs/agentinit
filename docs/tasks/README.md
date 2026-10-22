@@ -10,6 +10,8 @@ The v0.1 scope from [`PRD.md`](../PRD.md) is split into small, self-contained ta
 4. Optionally, in another fresh session, run `/review-task <id>` for an independent read-only review.
 5. Review the diff yourself, run the Verify commands, then merge.
 
+`/commit-changes` commits the working tree when you need a commit outside `/implement-task`. `/pr-summary` drafts the pull request title and description against `main`. Neither command pushes or opens the pull request.
+
 For registry content (T09–T13), `/write-fragment <id>` guides authoring one fragment at a time.
 
 **Why fresh sessions:** a new session starts with a clean context window, so earlier tasks' details don't crowd out the current one. Everything a task needs is in its file, `AGENTS.md`, and the referenced PRD sections.

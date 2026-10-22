@@ -45,6 +45,8 @@ Reusable procedures live in `docs/workflows/` and are exposed as slash commands 
 - `/implement-task <id>` — implement one task from `docs/tasks/`.
 - `/review-task <id>` — read-only review of a finished task.
 - `/write-fragment <id>` — author or revise a registry fragment.
+- `/commit-changes` — commit the working tree (conventional commits, no co-author trailer, no push).
+- `/pr-summary` — draft the pull request title and description against `main`. Does not open the pull request.
 
 Agents without slash commands can open the matching file in `docs/workflows/` and follow it.
 
