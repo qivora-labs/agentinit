@@ -33,11 +33,11 @@ A working TypeScript toolchain: `pnpm build` produces `dist/cli.js`, and `node d
 - TypeScript is pinned to `~6.0` on purpose (PRD §4.2); don't upgrade it.
 
 ## Acceptance criteria
-- [ ] `pnpm install --frozen-lockfile` succeeds on a clean clone.
-- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass.
-- [ ] `dist/cli.js` exists, starts with `#!/usr/bin/env node`, and `node dist/cli.js --version` prints `0.0.0`.
-- [ ] `pnpm check:package` passes (a warning about a missing README is acceptable until T31).
-- [ ] A file under `tests/fixtures/x/node_modules/` is not ignored by git (`git check-ignore` returns nothing).
+- [x] `pnpm install --frozen-lockfile` succeeds on a clean clone.
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` all pass.
+- [x] `dist/cli.js` exists, starts with `#!/usr/bin/env node`, and `node dist/cli.js --version` prints `0.0.0`.
+- [x] `pnpm check:package` passes (a warning about a missing README is acceptable until T31).
+- [x] A file under `tests/fixtures/x/node_modules/` is not ignored by git (`git check-ignore` returns nothing).
 
 ## Verify
 ```bash
@@ -52,4 +52,12 @@ pnpm check:package
 `build: set up typescript, tsdown, eslint, and vitest toolchain`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- tsdown with `platform: "node"` emits `.mjs` unless `fixedExtension: false`. That flag keeps `dist/cli.js` aligned with `bin`. The shebang stays on line 1 because it is the first line of `src/cli.ts`; tsdown's shebang plugin preserves it. `banner` was not used.
+- `tseslint.config()` is deprecated under typescript-eslint 8.72 and fails `@typescript-eslint/no-deprecated`. The flat config uses `defineConfig` and `globalIgnores` from `eslint/config`.
+- `allowJs: true` is set so `eslint.config.js` is part of the program that `projectService` type-checks. It is not in the compiler-option list above; without it, including that config file is a `tsc` error.
+- Tool configs default-export because tsdown, Vitest, and ESLint require it. `src/cli.ts` has no exports.
+- The gitignore exception was checked with a temporary `tests/fixtures/x/node_modules/example/package.json` (`git check-ignore` printed nothing). That file is not committed; a dummy fixture would be picked up by later `tests/fixtures/*` runs. `git check-ignore -v` still prints the negating pattern; that is git showing which rule un-ignores the path, and the path is not ignored.
+- publint 0.3.25 reported "All good!" with no missing-README warning.
+- TypeScript stayed on `~6.0` (resolved 6.0.3).
+- `engines.node` is `^22.18.0 || ^24.11.0 || >=26.0.0` because `tsdown@0.23.1` refuses to run below that. `>=22.12` satisfies Vitest and typescript-eslint, but not the build.
+- `.gitignore` also ignores `.pnpm-store/`. pnpm used that directory as its content-addressable store in this environment; it must not be committed.

@@ -269,7 +269,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 ```
 
 **Runtime dependencies:** `@clack/prompts`, `picocolors`, `cac`, `zod`, `yaml`, `semver`, `get-tsconfig`, `tinyglobby`, `diff`.
-**Tooling:** pnpm, TypeScript 6 (strict), tsdown, Vitest, ESLint + typescript-eslint, changesets, publint. Node `>=22.12`.
+**Tooling:** pnpm, TypeScript 6 (strict), tsdown, Vitest, ESLint + typescript-eslint, changesets, publint. Node `^22.18.0 || ^24.11.0 || >=26.0.0`.
 TypeScript stays on `~6.0` until `typescript-eslint` supports TypeScript 7.
 
 The bundled registry is resolved at runtime by locating the package root (the nearest `package.json` above the running module, found via `import.meta.url`) and joining `registry/`. This works from both `src/` (tests) and `dist/` (published), and is verified by a smoke test that installs the packed tarball.

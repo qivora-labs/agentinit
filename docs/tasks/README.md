@@ -88,7 +88,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | ID | Task | Milestone | Depends on | Size | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | T00 | Repository agent setup (`AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, scoped rules, workflows) | — | — | S | done |
-| [T01](T01-tooling-setup.md) | Tooling setup | M1 | — | M | todo |
+| [T01](T01-tooling-setup.md) | Tooling setup | M1 | — | M | done |
 | [T02](T02-ci-and-changesets.md) | CI, changesets, CODEOWNERS | M1 | T01 | S | todo |
 | [T03](T03-cli-skeleton.md) | CLI skeleton, types, errors | M1 | T01 | M | todo |
 | [T04](T04-fragment-schema-and-parser.md) | Fragment schema & parser | M2 | T03 | M | todo |
