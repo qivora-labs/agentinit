@@ -59,4 +59,5 @@ pnpm check:package
 - The gitignore exception was checked with a temporary `tests/fixtures/x/node_modules/example/package.json` (`git check-ignore` printed nothing). That file is not committed; a dummy fixture would be picked up by later `tests/fixtures/*` runs. `git check-ignore -v` still prints the negating pattern; that is git showing which rule un-ignores the path, and the path is not ignored.
 - publint 0.3.25 reported "All good!" with no missing-README warning.
 - TypeScript stayed on `~6.0` (resolved 6.0.3).
+- `engines.node` is `^22.18.0 || ^24.11.0 || >=26.0.0` because `tsdown@0.23.1` refuses to run below that. `>=22.12` satisfies Vitest and typescript-eslint, but not the build.
 - `.gitignore` also ignores `.pnpm-store/`. pnpm used that directory as its content-addressable store in this environment; it must not be committed.

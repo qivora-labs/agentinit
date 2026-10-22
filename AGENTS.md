@@ -22,7 +22,7 @@ node dist/cli.js --help
 Before finishing any task, `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must pass.
 
 ## Core Conventions
-- TypeScript strict, ESM only, Node `>=22.12`. Named exports only; no default exports.
+- TypeScript strict, ESM only, Node `^22.18.0 || ^24.11.0 || >=26.0.0`. Named exports only; no default exports.
 - Respect the purity boundaries in `ARCHITECTURE.md`: `registry/resolve.ts`, `plan/`, and `targets/` never touch disk, `process`, prompts, or the clock.
 - User-facing errors are `AgentInitError` with an exit code, readable without a stack trace.
 - Keep dependencies to those listed in PRD §4.2. Ask before adding a runtime dependency.
