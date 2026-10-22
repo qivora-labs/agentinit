@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+*.tgz
+
+# Fixtures ship fake installed packages and must stay in git.
+!tests/fixtures/**/node_modules/
+!tests/fixtures/**/node_modules/**
