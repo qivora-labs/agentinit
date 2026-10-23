@@ -32,7 +32,7 @@ Every push and PR runs lint, typecheck, tests, build, and package checks on Linu
 
 ## Acceptance criteria
 - [x] `ci.yml` is valid (run `actionlint` locally if available, or push the branch and confirm the run starts).
-- [ ] All 6 matrix jobs pass on the PR for this task.
+- [x] All 6 matrix jobs pass on the PR for this task.
 - [x] `pnpm changeset status` runs without error.
 - [x] CODEOWNERS uses the handle confirmed by the user.
 
@@ -51,4 +51,4 @@ pnpm changeset status
 - `permissions` includes `actions: write` as well as `contents: read`. `setup-node`'s pnpm cache is `actions/cache`, and a workflow `permissions` block drops every unlisted scope, so a cache save fails without `actions: write`.
 - `@changesets/cli` 3.0.3 makes `changeset init` interactive (GitHub changelog, auto-commit, access, base branch). Answers were no GitHub integration, no auto-commit, public access, and base branch `main`. The written config has `access: "public"` and `baseBranch: "main"`.
 - No new unit test. The acceptance criteria are workflow validity, `changeset status`, and the CI matrix. `actionlint` v1.7.12 reported no problems. The existing smoke test still runs in CI.
-- The matrix-jobs criterion stays unchecked until the pull request run is green.
+- All 6 matrix jobs passed on pull request #2 (run `39959329313`).
