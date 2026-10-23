@@ -31,10 +31,10 @@ Every push and PR runs lint, typecheck, tests, build, and package checks on Linu
 - Windows runners: make sure no step relies on POSIX shell features (`shell: bash` if needed).
 
 ## Acceptance criteria
-- [ ] `ci.yml` is valid (run `actionlint` locally if available, or push the branch and confirm the run starts).
+- [x] `ci.yml` is valid (run `actionlint` locally if available, or push the branch and confirm the run starts).
 - [ ] All 6 matrix jobs pass on the PR for this task.
-- [ ] `pnpm changeset status` runs without error.
-- [ ] CODEOWNERS uses the handle confirmed by the user.
+- [x] `pnpm changeset status` runs without error.
+- [x] CODEOWNERS uses the handle confirmed by the user.
 
 ## Verify
 ```bash
@@ -46,4 +46,9 @@ pnpm changeset status
 `ci: add ci workflow, changesets, and codeowners`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- CODEOWNERS owner is `@tajnur007` for both `*` and `/registry/`, confirmed by the user.
+- Actions are pinned to the current majors: `actions/checkout@v7`, `pnpm/action-setup@v6`, `actions/setup-node@v7`. The pnpm `version` input is omitted so `pnpm/action-setup` reads `packageManager` (`pnpm@10.14.0`).
+- `permissions` includes `actions: write` as well as `contents: read`. `setup-node`'s pnpm cache is `actions/cache`, and a workflow `permissions` block drops every unlisted scope, so a cache save fails without `actions: write`.
+- `@changesets/cli` 3.0.3 makes `changeset init` interactive (GitHub changelog, auto-commit, access, base branch). Answers were no GitHub integration, no auto-commit, public access, and base branch `main`. The written config has `access: "public"` and `baseBranch: "main"`.
+- No new unit test. The acceptance criteria are workflow validity, `changeset status`, and the CI matrix. `actionlint` v1.7.12 reported no problems. The existing smoke test still runs in CI.
+- The matrix-jobs criterion stays unchecked until the pull request run is green.
