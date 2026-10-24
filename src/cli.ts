@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// Inlined by tsdown. Reading package.json from disk would miss the packed binary.
-import pkg from '../package.json' with { type: 'json' };
+import { CANCELLED } from './exit-codes.js';
+import { run } from './main.js';
 
-if (process.argv.includes('--version')) {
-  console.log(pkg.version);
-}
+// A listener replaces Node's default SIGINT exit, so exit explicitly.
+process.on('SIGINT', () => {
+  process.exitCode = CANCELLED;
+  process.exit();
+});
+
+process.exitCode = await run(process.argv);
