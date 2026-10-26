@@ -68,6 +68,20 @@ describe('run', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('Not a directory');
     expect(result.stderr).toContain(file);
+    expect(result.stderr).not.toContain('This is a bug');
+  });
+
+  it('rejects a --cwd path nested under a file', async () => {
+    const dir = await tempDir();
+    const file = path.join(dir, 'notes.txt');
+    await writeFile(file, 'hello');
+    const nested = path.join(file, 'child');
+    const result = await runCli(['list', '--cwd', nested]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Not a directory');
+    expect(result.stderr).toContain(nested);
+    expect(result.stderr).not.toContain('This is a bug');
+    expect(result.stderr).not.toContain('ENOTDIR');
   });
 
   it('resolves a relative --cwd against the current directory', async () => {

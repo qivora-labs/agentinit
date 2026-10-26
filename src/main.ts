@@ -128,11 +128,18 @@ async function resolveCwd(value: unknown): Promise<string> {
     return resolved;
   } catch (error) {
     if (error instanceof AgentInitError) throw error;
-    if (nodeErrorCode(error) === 'ENOENT') {
-      throw new AgentInitError(`Directory not found: ${resolved}`);
-    }
+    const code = nodeErrorCode(error);
+    // A user path can fail stat for reasons other than a missing leaf
+    // (ENOTDIR, EACCES, ELOOP). Those are input errors, not defects.
+    if (code !== undefined) throw new AgentInitError(cwdStatMessage(code, resolved));
     throw error;
   }
+}
+
+function cwdStatMessage(code: string, resolved: string): string {
+  if (code === 'ENOENT') return `Directory not found: ${resolved}`;
+  if (code === 'ENOTDIR') return `Not a directory: ${resolved}`;
+  return `Cannot access directory: ${resolved}`;
 }
 
 function readAgents(value: unknown): RunContext['agents'] {
