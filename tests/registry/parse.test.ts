@@ -205,6 +205,84 @@ describe('parseFragment', () => {
       parts: ['appliesTo.next', 'must be a valid semver range'],
     },
     {
+      behavior: 'rejects an empty appliesTo range',
+      sourcePath: 'registry/frameworks/nextjs-app-router.md',
+      text: document({ ...baseRule, appliesTo: { next: '' } }),
+      parts: ['appliesTo.next', 'must be a valid semver range'],
+    },
+    {
+      behavior: 'rejects a whitespace appliesTo range',
+      sourcePath: 'registry/frameworks/nextjs-app-router.md',
+      text: document({ ...baseRule, appliesTo: { next: '   ' } }),
+      parts: ['appliesTo.next', 'must be a valid semver range'],
+    },
+    {
+      behavior: 'rejects an empty appliesTo mapping',
+      sourcePath: 'registry/frameworks/nextjs-app-router.md',
+      text: document({ ...baseRule, appliesTo: {} }),
+      parts: ['appliesTo:', 'must list at least one package'],
+    },
+    {
+      behavior: 'rejects an empty detect.packages list',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, detect: { packages: [] } }),
+      parts: ['detect.packages', 'must list at least one entry'],
+    },
+    {
+      behavior: 'rejects an empty detect.files list',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, detect: { files: [] } }),
+      parts: ['detect.files', 'must list at least one entry'],
+    },
+    {
+      behavior: 'rejects an empty requires list',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, requires: [] }),
+      parts: ['requires:', 'must list at least one id'],
+    },
+    {
+      behavior: 'rejects an empty conflictsWith list',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, conflictsWith: [] }),
+      parts: ['conflictsWith:', 'must list at least one id'],
+    },
+    {
+      behavior: 'rejects an empty compatibleWith list',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, compatibleWith: [] }),
+      parts: ['compatibleWith:', 'must list at least one id'],
+    },
+    {
+      behavior: 'rejects an id that is not kebab-case',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, id: 'Zustand' }),
+      parts: ['id:', 'must be kebab-case'],
+    },
+    {
+      behavior: 'rejects a version that is not semver',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, version: '1.2' }),
+      parts: ['version:', 'must be valid semver'],
+    },
+    {
+      behavior: 'rejects a non-integer order',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, order: 1.5 }),
+      parts: ['order:', 'must be an integer'],
+    },
+    {
+      behavior: 'rejects a name that spans lines',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, name: 'line one\nline two' }),
+      parts: ['name:', 'must be a single line'],
+    },
+    {
+      behavior: 'rejects a description that spans lines',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, description: 'line one\nline two' }),
+      parts: ['description:', 'must be a single line'],
+    },
+    {
       behavior: 'rejects a bad verifiedAt date',
       sourcePath: 'registry/libraries/zustand.md',
       text: document({ ...baseRule, verifiedAt: '2026-02-31' }),
@@ -359,6 +437,18 @@ describe('getSections', () => {
     expect([...sections.keys()]).toEqual(['Steps', 'Output']);
     expect(sections.get('Steps')).toContain('## Not a section');
     expect(sections.get('Output')).toBe('A summary.');
+  });
+
+  it('keeps the later body when a ## heading is repeated', () => {
+    const body = ['## Summary', 'first body', '## Summary', 'later body', '## Map', 'src/features'].join(
+      '\n',
+    );
+
+    const sections = getSections(body);
+
+    expect([...sections.keys()]).toEqual(['Summary', 'Map']);
+    expect(sections.get('Summary')).toBe('later body');
+    expect(sections.get('Map')).toBe('src/features');
   });
 });
 
