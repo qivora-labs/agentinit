@@ -71,6 +71,7 @@ describe('run', () => {
     expect(result.stderr).not.toContain('This is a bug');
   });
 
+  // Windows stat returns ENOENT here; POSIX returns ENOTDIR.
   it('rejects a --cwd path nested under a file', async () => {
     const dir = await tempDir();
     const file = path.join(dir, 'notes.txt');

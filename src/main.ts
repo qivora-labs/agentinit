@@ -123,7 +123,7 @@ async function resolveCwd(value: unknown): Promise<string> {
   try {
     const info = await stat(resolved);
     if (!info.isDirectory()) {
-      throw new AgentInitError(`Not a directory: ${resolved}`);
+      throw new AgentInitError(notADirectory(resolved));
     }
     return resolved;
   } catch (error) {
@@ -131,15 +131,39 @@ async function resolveCwd(value: unknown): Promise<string> {
     const code = nodeErrorCode(error);
     // A user path can fail stat for reasons other than a missing leaf
     // (ENOTDIR, EACCES, ELOOP). Those are input errors, not defects.
-    if (code !== undefined) throw new AgentInitError(cwdStatMessage(code, resolved));
+    if (code !== undefined) throw new AgentInitError(await cwdStatMessage(code, resolved));
     throw error;
   }
 }
 
-function cwdStatMessage(code: string, resolved: string): string {
+async function cwdStatMessage(code: string, resolved: string): Promise<string> {
+  // Windows reports ENOENT when an ancestor is a file. POSIX reports ENOTDIR
+  // for that path, so walk parents and use the same message on both.
+  if (code === 'ENOENT' && (await ancestorIsFile(resolved))) return notADirectory(resolved);
   if (code === 'ENOENT') return `Directory not found: ${resolved}`;
-  if (code === 'ENOTDIR') return `Not a directory: ${resolved}`;
+  if (code === 'ENOTDIR') return notADirectory(resolved);
   return `Cannot access directory: ${resolved}`;
+}
+
+function notADirectory(resolved: string): string {
+  return `Not a directory: ${resolved}`;
+}
+
+async function ancestorIsFile(resolved: string): Promise<boolean> {
+  let parent = path.dirname(resolved);
+  while (parent !== resolved) {
+    try {
+      const info = await stat(parent);
+      return !info.isDirectory();
+    } catch (error) {
+      const code = nodeErrorCode(error);
+      if (code === 'ENOTDIR') return true;
+      if (code !== 'ENOENT') return false;
+    }
+    resolved = parent;
+    parent = path.dirname(parent);
+  }
+  return false;
 }
 
 function readAgents(value: unknown): RunContext['agents'] {
