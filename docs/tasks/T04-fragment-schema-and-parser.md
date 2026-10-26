@@ -35,10 +35,10 @@ Parse a registry Markdown file into a validated, typed fragment, with error mess
 - Format zod issues into one readable line per issue (`path: message`).
 
 ## Acceptance criteria
-- [ ] The PRD §4.4 example fragment parses successfully.
-- [ ] Each of these is rejected with the file and field in the message: brace glob, `scope: glob` without `globs`, `scope: always` with `globs`, invalid semver range in `appliesTo`, bad `verifiedAt`, missing `sources`, unknown key, workflow with `scope`.
-- [ ] `getSections` returns `Summary` and `Map` for an architecture-style body and ignores `###` subheadings as section boundaries.
-- [ ] Types narrow: after checking `meta.category === 'workflow'`, `meta.scope` is a type error.
+- [x] The PRD §4.4 example fragment parses successfully.
+- [x] Each of these is rejected with the file and field in the message: brace glob, `scope: glob` without `globs`, `scope: always` with `globs`, invalid semver range in `appliesTo`, bad `verifiedAt`, missing `sources`, unknown key, workflow with `scope`.
+- [x] `getSections` returns `Summary` and `Map` for an architecture-style body and ignores `###` subheadings as section boundaries.
+- [x] Types narrow: after checking `meta.category === 'workflow'`, `meta.scope` is a type error.
 
 ## Verify
 ```bash
@@ -49,4 +49,9 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(registry): add fragment frontmatter schema and parser`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Globs may contain the PRD §4.4 placeholders `{{src}}`, `{{pm}}`, and `{{scripts.<name>}}`. Any other `{` or `}` is rejected as a brace pattern, which keeps the §4.4 example (`{{src}}app/**/*.ts`) valid.
+- `globs` is required for `scope: glob` and `scope: auto`, forbidden for `scope: always`, and optional for `scope: manual`. When `manual` includes `globs`, each entry is still validated.
+- `getSections` does not treat a `##` heading inside a fenced code block as a section boundary. A repeated `##` heading keeps the later body.
+- An empty frontmatter block is validated as `{}`. Zod's discriminated union reports the missing `category` and stops there.
+- `semver.validRange('')` returns `*`, so an empty `appliesTo` range is rejected before that call.
+- When present, `detect.packages`, `detect.files`, `requires`, `conflictsWith`, `compatibleWith`, and `appliesTo` must be non-empty. `detect` lists are a conjunction: every entry must be present (PRD §4.4).
