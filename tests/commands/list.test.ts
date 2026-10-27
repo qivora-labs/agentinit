@@ -15,19 +15,26 @@ const multipleDir = fileURLToPath(new URL('../fixtures/registry-invalid/multiple
 
 const SAMPLE_TEXT = [
   'architecture',
-  '  layered            Layered             One direction of dependencies.',
+  '  layered              Layered               One direction of dependencies.',
   '',
   'language',
-  '  typescript-strict  TypeScript strict   Strict TypeScript for application and test code.',
+  '  typescript           TypeScript            TypeScript without strict compiler options.',
+  '  typescript-strict    TypeScript strict     Strict TypeScript for application and test code.',
   '',
   'framework',
-  '  nextjs-app-router  Next.js App Router  React Server Components by default.',
+  '  nextjs-app-router    Next.js App Router    React Server Components by default.',
+  '  nextjs-pages-router  Next.js Pages Router  Page-based Next.js routing.',
   '',
   'library',
-  '  zustand            Zustand             Small client-side state.',
+  '  forms                Forms                 Form state and validation.',
+  '  shadcn               shadcn/ui             Accessible components from a local registry.',
+  '  tailwind             Tailwind CSS          Utility-first styling.',
+  '  vitest               Vitest                Unit tests on Vite.',
+  '  zustand              Zustand               Small client-side state.',
   '',
   'workflow',
-  '  new-feature        New feature         Plan and implement a feature.',
+  '  new-feature          New feature           Plan and implement a feature.',
+  '  review-arch          Review architecture   Read-only architecture review.',
 ].join('\n');
 
 const SAMPLE_JSON = [
@@ -37,6 +44,13 @@ const SAMPLE_JSON = [
     category: 'architecture',
     version: '1.0.0',
     description: 'One direction of dependencies.',
+  },
+  {
+    id: 'typescript',
+    name: 'TypeScript',
+    category: 'language',
+    version: '1.0.0',
+    description: 'TypeScript without strict compiler options.',
   },
   {
     id: 'typescript-strict',
@@ -53,6 +67,41 @@ const SAMPLE_JSON = [
     description: 'React Server Components by default.',
   },
   {
+    id: 'nextjs-pages-router',
+    name: 'Next.js Pages Router',
+    category: 'framework',
+    version: '1.0.0',
+    description: 'Page-based Next.js routing.',
+  },
+  {
+    id: 'forms',
+    name: 'Forms',
+    category: 'library',
+    version: '1.0.0',
+    description: 'Form state and validation.',
+  },
+  {
+    id: 'shadcn',
+    name: 'shadcn/ui',
+    category: 'library',
+    version: '1.0.0',
+    description: 'Accessible components from a local registry.',
+  },
+  {
+    id: 'tailwind',
+    name: 'Tailwind CSS',
+    category: 'library',
+    version: '1.0.0',
+    description: 'Utility-first styling.',
+  },
+  {
+    id: 'vitest',
+    name: 'Vitest',
+    category: 'library',
+    version: '1.0.0',
+    description: 'Unit tests on Vite.',
+  },
+  {
     id: 'zustand',
     name: 'Zustand',
     category: 'library',
@@ -65,6 +114,13 @@ const SAMPLE_JSON = [
     category: 'workflow',
     version: '1.0.0',
     description: 'Plan and implement a feature.',
+  },
+  {
+    id: 'review-arch',
+    name: 'Review architecture',
+    category: 'workflow',
+    version: '1.0.0',
+    description: 'Read-only architecture review.',
   },
 ];
 
@@ -119,7 +175,17 @@ describe('list', () => {
     const result = await runList({ category: 'library' });
     expect(result.code).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toBe('library\n  zustand  Zustand  Small client-side state.\n');
+    expect(result.stdout).toBe(
+      [
+        'library',
+        '  forms     Forms         Form state and validation.',
+        '  shadcn    shadcn/ui     Accessible components from a local registry.',
+        '  tailwind  Tailwind CSS  Utility-first styling.',
+        '  vitest    Vitest        Unit tests on Vite.',
+        '  zustand   Zustand       Small client-side state.',
+        '',
+      ].join('\n'),
+    );
   });
 
   it('prints sample fragments as json', async () => {

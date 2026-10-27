@@ -58,20 +58,43 @@ describe('loadRegistry', () => {
     const registry = await loadRegistry(sampleDir);
     expect(registry.fragments.map((fragment) => fragment.meta.id)).toEqual([
       'layered',
+      'typescript',
       'typescript-strict',
       'nextjs-app-router',
+      'nextjs-pages-router',
+      'forms',
+      'shadcn',
+      'tailwind',
+      'vitest',
       'zustand',
       'new-feature',
+      'review-arch',
     ]);
     expect([...registry.byId.keys()]).toEqual([
       'layered',
+      'typescript',
       'typescript-strict',
       'nextjs-app-router',
+      'nextjs-pages-router',
+      'forms',
+      'shadcn',
+      'tailwind',
+      'vitest',
       'zustand',
       'new-feature',
+      'review-arch',
     ]);
-    expect(registry.byCategory('library').map((fragment) => fragment.meta.id)).toEqual(['zustand']);
-    expect(registry.byCategory('workflow').map((fragment) => fragment.meta.id)).toEqual(['new-feature']);
+    expect(registry.byCategory('library').map((fragment) => fragment.meta.id)).toEqual([
+      'forms',
+      'shadcn',
+      'tailwind',
+      'vitest',
+      'zustand',
+    ]);
+    expect(registry.byCategory('workflow').map((fragment) => fragment.meta.id)).toEqual([
+      'new-feature',
+      'review-arch',
+    ]);
     expect(registry.byId.get('zustand')?.sourcePath).toBe('libraries/zustand.md');
 
     const zustand = registry.byId.get('zustand');

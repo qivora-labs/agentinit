@@ -93,7 +93,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T03](T03-cli-skeleton.md) | CLI skeleton, types, errors | M1 | T01 | M | done |
 | [T04](T04-fragment-schema-and-parser.md) | Fragment schema & parser | M2 | T03 | M | done |
 | [T05](T05-registry-loader-and-list.md) | Registry loader & `list` | M2 | T04 | M | done |
-| [T06](T06-resolver.md) | Fragment resolver | M2 | T04 | M | todo |
+| [T06](T06-resolver.md) | Fragment resolver | M2 | T04 | M | done |
 | [T07](T07-placeholders.md) | Placeholder rendering | M2 | T04 | S | todo |
 | [T08](T08-check-registry.md) | `check-registry` script | M2 | T05, T07 | M | todo |
 | [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | todo |
