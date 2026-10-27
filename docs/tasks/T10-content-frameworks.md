@@ -38,9 +38,9 @@ Topics to cover (verify each):
 - Don't duplicate TypeScript rules from T09.
 
 ## Acceptance criteria
-- [ ] Five fragments exist and `pnpm registry:check` passes with no errors.
-- [ ] Each has `sources` pointing to official docs for the targeted major and a current `verifiedAt`.
-- [ ] Scope choices are explained in **Notes** (one line each).
+- [x] Five fragments exist and `pnpm registry:check` passes with no errors.
+- [x] Each has `sources` pointing to official docs for the targeted major and a current `verifiedAt`.
+- [x] Scope choices are explained in **Notes** (one line each).
 - [ ] Content checklist complete; a human reviewed the content.
 
 ## Verify
@@ -52,4 +52,12 @@ pnpm registry:check
 `feat(registry): add framework fragments`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `verifiedAt` is 2026-10-28. Directives were checked against the official pages listed in each fragment's `sources`.
+- Scope: `nextjs-app-router` is `glob` on `{{src}}app/**` because App Router files live in `app/`. `nextjs-pages-router` is `glob` on `{{src}}pages/**` for the same reason. `react-vite` is `auto` with a `{{src}}**/*.tsx` fallback because component paths vary by project. `express` is `auto` with routes, controllers, and middleware globs because those folders are not fixed. `fastify` is `auto` with routes and plugins globs for the same reason.
+- `nextjs-app-router` uses `next: ">=16.3.0"`, not the table's `>=15`. Current docs are Next.js 16.4.3. Synchronous `params` / `cookies()` / `headers()` are gone in 16, `revalidateTag` requires a `cacheLife` profile, and `error.tsx` `retry` is stable from 16.3.0 (`reset` remains for a re-render without a refetch). Cache Components are the getting-started cache model and the default for new `create-next-app` apps; `'use cache'` is forbidden when `cacheComponents` is off. A Next 15 app gets the version-mismatch notice instead of these rules.
+- `nextjs-pages-router` stays `next: ">=13"`. The 16.4.3 Pages docs still describe `getServerSideProps`, `getStaticProps` with `revalidate`, and `pages/api`. The `app` and `pages` directories co-exist; a navigation between them is a full page load. No App Router APIs in `pages/`.
+- `react-vite` stays `react: ">=19"` and `vite: ">=6"`. Current releases are React 19.3 and Vite 8.3.5. `use`, Actions, and `lazy` are React 19. The `VITE_` prefix and `import.meta.env` string replacement are unchanged in the Vite 8 env guide. `use(browser())` is 19.3-only and is left out so the range can stay `>=19`.
+- `express` stays `express: ">=5"`. Current release is 5.3.0. Rejected promises reach error middleware only in v5. `req.query` is a getter. A named wildcard is an array, and an unmatched optional param is omitted.
+- `fastify` stays `fastify: ">=5"`. Latest docs are v5.12.x. The fragment does not name a TypeBox import path, because that package name changed inside the v5 line. It tells the agent to use the type provider already configured.
+- Zod is not required. Next.js docs show Zod as one schema option for Server Actions; the directive is "validate on the server", so a project without Zod is not told to add it. TypeScript rules from T09 are not repeated.
+- The shared content checklist was re-checked for these five fragments. A human still needs to review the content before merge, so that acceptance criterion stays open.

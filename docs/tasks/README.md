@@ -39,7 +39,7 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] `pnpm registry:check` passes.
 - [ ] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10–T13 must clear these boxes and re-check every item for the fragments they add before treating the list as done.
+T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11–T13 must clear these boxes and re-check every item for the fragments they add before treating the list as done. Human review before merge stays open.
 
 ## Dependency Graph
 
@@ -99,7 +99,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T07](T07-placeholders.md) | Placeholder rendering | M2 | T04 | S | done |
 | [T08](T08-check-registry.md) | `check-registry` script | M2 | T05, T07 | M | done |
 | [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | done |
-| [T10](T10-content-frameworks.md) | Content: frameworks | M2 | T08 | L | todo |
+| [T10](T10-content-frameworks.md) | Content: frameworks | M2 | T08 | L | done |
 | [T11](T11-content-libraries-ui-state.md) | Content: Tailwind, shadcn, TanStack Query, Zustand | M2 | T08 | L | todo |
 | [T12](T12-content-libraries-forms-testing.md) | Content: RHF + Zod, Vitest, Playwright | M2 | T08 | M | todo |
 | [T13](T13-content-workflows.md) | Content: workflows | M2 | T08 | M | todo |
