@@ -42,12 +42,12 @@ New work for one product area lives under `{{src}}features/<feature>/`. Code use
 
 ## Contract
 ```ts
-// ✅ Good: billing depends on the invoices public API
-import { getInvoice } from '{{src}}features/invoices';
+// ✅ Good: {{src}}features/billing/charge.ts imports the invoices public API
+import { getInvoice } from '../invoices';
 
-// ❌ Anti-pattern: billing reaches into an invoices internal module
-import { getInvoice } from '{{src}}features/invoices/api/get-invoice';
+// ❌ Anti-pattern: {{src}}features/billing/charge.ts reaches into an invoices internal module
+import { getInvoice } from '../invoices/api/get-invoice';
 
 // ❌ Anti-pattern: {{src}}shared/format.ts depends on a feature
-import type { Invoice } from '{{src}}features/invoices';
+import type { Invoice } from '../features/invoices';
 ```

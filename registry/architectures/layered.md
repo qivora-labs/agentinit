@@ -34,18 +34,19 @@ New code goes in the layer that owns that responsibility. `presentation/` and `i
 - **NEVER** import `application/`, `infrastructure/`, or `presentation/` from `domain/`.
 - **NEVER** import a framework, database client, HTTP client, or filesystem module from `domain/`.
 - **NEVER** import `infrastructure/` or `presentation/` from `application/`.
+- **NEVER** import `presentation/` from `infrastructure/`, or `infrastructure/` from `presentation/`.
 - **PREFER** a port type declared in `application/` or `domain/` when a use case needs I/O, with the implementation in `infrastructure/`.
 
 ## Contract
 ```ts
-// ✅ Good: a use case depends on the domain and an inward port
-import type { Invoice } from '{{src}}domain/invoice';
-import type { InvoiceStore } from '{{src}}application/invoice-store';
+// ✅ Good: {{src}}application/load-invoice.ts depends on the domain and an inward port
+import type { Invoice } from '../domain/invoice';
+import type { InvoiceStore } from './invoice-store';
 
 export function loadInvoice(store: InvoiceStore, id: string): Promise<Invoice> {
   return store.find(id);
 }
 
-// ❌ Anti-pattern: domain code naming an outer adapter
-import { db } from '{{src}}infrastructure/db';
+// ❌ Anti-pattern: {{src}}domain/invoice.ts names an outer adapter
+import { db } from '../infrastructure/db';
 ```

@@ -39,6 +39,8 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] `pnpm registry:check` passes.
 - [ ] A human reviewed the content before merge.
 
+T09 checked this list for its six fragments. T10–T13 must clear these boxes and re-check every item for the fragments they add before treating the list as done.
+
 ## Dependency Graph
 
 ```mermaid

@@ -30,19 +30,19 @@ verifiedAt: 2026-10-28
 | `{{src}}pages/` | A concrete page. Use the project's route directory when one is already present. |
 
 ## Boundary
-New UI lands in the lowest level that describes it. Atoms are the floor. Molecules sit on atoms, organisms on molecules and atoms, templates on organisms, and pages on templates. A page uses the route directory the project already has (`app/` or `pages/` under the source root) when that directory is present.
+New UI lands in the lowest level that describes it. Atoms are the floor. A component composes only from lower levels, and it may skip a level. A page uses the route directory the project already has (`app/` or `pages/` under the source root) when that directory is present.
 
 ## Directives
-- **ALWAYS** import only from a lower level: `molecules/` from `atoms/`; `organisms/` from `atoms/` and `molecules/`; `templates/` from `organisms/`; pages from `templates/`.
+- **ALWAYS** import a component only from a lower level. Skipping a level is allowed.
 - **NEVER** import a component from the same level or a higher level.
 - **NEVER** fetch data or branch on a business rule in `{{src}}components/atoms/`.
 - **PREFER** an existing atom or molecule with the same role over a new component.
 
 ## Contract
 ```tsx
-// ✅ Good: a molecule composes atoms
-import { Button } from '{{src}}components/atoms/button';
-import { Input } from '{{src}}components/atoms/input';
+// ✅ Good: {{src}}components/molecules/search-form.tsx composes atoms
+import { Button } from '../atoms/button';
+import { Input } from '../atoms/input';
 
 export function SearchForm() {
   return (
@@ -53,6 +53,6 @@ export function SearchForm() {
   );
 }
 
-// ❌ Anti-pattern: an atom imports a molecule
-import { SearchForm } from '{{src}}components/molecules/search-form';
+// ❌ Anti-pattern: {{src}}components/atoms/button.tsx imports a molecule
+import { SearchForm } from '../molecules/search-form';
 ```

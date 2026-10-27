@@ -42,11 +42,12 @@ type Invoice =
   | { status: 'paid'; id: InvoiceId; total: number; paidOn: string };
 
 type RGB = [red: number, green: number, blue: number];
+type ThemeName = 'danger' | 'ok';
 
 export const theme = {
   danger: [255, 0, 0],
   ok: '#00ff00',
-} satisfies Record<string, string | RGB>;
+} satisfies Record<ThemeName, string | RGB>;
 
 export function label(invoice: Invoice): string {
   switch (invoice.status) {
