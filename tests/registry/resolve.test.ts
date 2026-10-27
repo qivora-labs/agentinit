@@ -252,6 +252,20 @@ const resolveCases: readonly ResolveCase[] = [
     conflicts: [{ a: 'layered', b: 'zustand' }],
   },
   {
+    name: 'reports a conflict when one side has no origin entry',
+    selection: selection({
+      libraries: ['zustand'],
+      origin: {
+        'typescript-strict': 'detected',
+        'nextjs-app-router': 'detected',
+        zustand: 'detected',
+      },
+    }),
+    fragmentIds: ['layered', 'typescript-strict', 'nextjs-app-router', 'zustand'],
+    notices: [],
+    conflicts: [{ a: 'layered', b: 'zustand' }],
+  },
+  {
     name: 'reports a conflict for a required fragment that inherits a manual origin',
     selection: selection({
       libraries: ['forms'],
