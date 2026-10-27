@@ -41,15 +41,15 @@ Pure functions that (1) suggest fragments from detected project facts and (2) tu
 
 ## Acceptance criteria
 Table-driven tests using `registry-sample` (extend it if needed) covering:
-- [ ] Package present + version in range → suggested.
-- [ ] Version out of range → not suggested + `unsupported-version` notice (e.g., Tailwind 3 vs. a `>=4` fragment).
-- [ ] `null` version → suggested + `unknown-version` notice.
-- [ ] `detect.packages` requires **all** packages; `detect.files` requires all files.
-- [ ] `requires` is added transitively, without duplicates.
-- [ ] Conflict between two manual selections is reported; between two detected selections it is not.
-- [ ] Incompatible library is dropped with a notice.
-- [ ] Empty `frameworks`: framework-bound libraries dropped, framework-agnostic libraries kept, `no-framework` notice present, no error.
-- [ ] Workflows are always included; output order is stable.
+- [x] Package present + version in range → suggested.
+- [x] Version out of range → not suggested + `unsupported-version` notice (e.g., Tailwind 3 vs. a `>=4` fragment).
+- [x] `null` version → suggested + `unknown-version` notice.
+- [x] `detect.packages` requires **all** packages; `detect.files` requires all files.
+- [x] `requires` is added transitively, without duplicates.
+- [x] Conflict between two manual selections is reported; between two detected selections it is not.
+- [x] Incompatible library is dropped with a notice.
+- [x] Empty `frameworks`: framework-bound libraries dropped, framework-agnostic libraries kept, `no-framework` notice present, no error.
+- [x] Workflows are always included; output order is stable.
 
 ## Verify
 ```bash
@@ -60,4 +60,11 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(registry): resolve fragment selections from project facts`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `RegistryNotice` is the shared discriminated union. `unknown-version` is `{ kind, package, fragmentId }` and is emitted only when the fragment is still suggested, for a `null` version of a `detect` package or an `appliesTo` package. A known version with no `appliesTo` entry is silent. If any package is outside its range, the fragment is omitted and only `unsupported-version` notices are emitted for it.
+- `suggestFragments` returns framework and library ids only. Both Next.js fragments are suggested from the `next` package alone; router filtering stays in T18. Marker files match `facts.files` by exact string.
+- Version checks use `semver.satisfies(version, range, { includePrerelease: true })`, so `15.0.0-canary.1` matches `>=15`.
+- Unknown ids and ids from the wrong category throw `AgentInitError`. A `requires` id missing from the registry throws as well; `loadRegistry` already rejects that for real registries.
+- Conflicts are `{ a, b }` with `a < b`, sorted, and only include fragments that remain after incompatible libraries are dropped. Both sides stay in `fragments` (prompting is T19). An origin entry that is omitted counts as `manual`. A required fragment inherits the origin of the fragment that pulled it in.
+- Incompatible libraries are removed before their `requires` are kept, so a dropped library does not pull dependencies. `no-framework` is a single notice when the final list contains no framework. Compatibility is decided against frameworks present after the first `requires` expansion.
+- `fragments` excludes workflows. `workflows` is always every workflow fragment, sorted by `order` then `id`.
+- The sample registry gained the extra fragments these cases need (`typescript`, `nextjs-pages-router`, `tailwind`, `shadcn`, `vitest`, `forms`, `review-arch`). Loader and `list` expectations were updated to match.
