@@ -12,6 +12,7 @@ import {
   reportStatus,
   type RegistryProblem,
 } from '../../src/registry/check.js';
+import { loadRegistry } from '../../src/registry/load.js';
 import { defaultRegistryDir } from '../../src/registry/locate.js';
 import { parseFragment, type Fragment } from '../../src/registry/parse.js';
 
@@ -274,11 +275,23 @@ describe('formatReport', () => {
 });
 
 describe('runRegistryCheck', () => {
-  it('passes on the empty bundled registry and on registry-sample', async () => {
+  it('passes on the bundled registry and on registry-sample', async () => {
     const bundled = await run(defaultRegistryDir());
     const sample = await run(SAMPLE);
     expect(bundled).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
     expect(sample).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
+  });
+
+  it('includes the architecture and typescript fragments', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    expect(registry.fragments.map((fragment) => fragment.meta.id)).toEqual([
+      'atomic-design',
+      'feature-based',
+      'flat',
+      'layered',
+      'typescript',
+      'typescript-strict',
+    ]);
   });
 
   it('prints every load error and exits 1', async () => {

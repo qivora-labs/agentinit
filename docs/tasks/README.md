@@ -32,12 +32,14 @@ For registry content (T09–T13), `/write-fragment <id>` guides authoring one fr
 
 ## Content Tasks (T09–T13) Checklist
 Rule and workflow fragments need extra care because agents will follow them literally:
-- [ ] Every directive was checked against current official docs for the `appliesTo` version; those URLs are in `sources`.
-- [ ] Directives are specific to the library, not generic advice ("write clean code").
-- [ ] Each rule fragment has Boundary, Directives (`ALWAYS`/`NEVER`/`PREFER`/`FORBID`/`DEFAULT`), and a Good vs. Anti-Pattern code block.
-- [ ] No instructions to move existing files, run network commands, install packages, or read secrets.
-- [ ] `pnpm registry:check` passes.
+- [x] Every directive was checked against current official docs for the `appliesTo` version; those URLs are in `sources`.
+- [x] Directives are specific to the library, not generic advice ("write clean code").
+- [x] Each rule fragment has Boundary, Directives (`ALWAYS`/`NEVER`/`PREFER`/`FORBID`/`DEFAULT`), and a Good vs. Anti-Pattern code block.
+- [x] No instructions to move existing files, run network commands, install packages, or read secrets.
+- [x] `pnpm registry:check` passes.
 - [ ] A human reviewed the content before merge.
+
+T09 checked this list for its six fragments. T10–T13 must clear these boxes and re-check every item for the fragments they add before treating the list as done.
 
 ## Dependency Graph
 
@@ -96,7 +98,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T06](T06-resolver.md) | Fragment resolver | M2 | T04 | M | done |
 | [T07](T07-placeholders.md) | Placeholder rendering | M2 | T04 | S | done |
 | [T08](T08-check-registry.md) | `check-registry` script | M2 | T05, T07 | M | done |
-| [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | todo |
+| [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | done |
 | [T10](T10-content-frameworks.md) | Content: frameworks | M2 | T08 | L | todo |
 | [T11](T11-content-libraries-ui-state.md) | Content: Tailwind, shadcn, TanStack Query, Zustand | M2 | T08 | L | todo |
 | [T12](T12-content-libraries-forms-testing.md) | Content: RHF + Zod, Vitest, Playwright | M2 | T08 | M | todo |
