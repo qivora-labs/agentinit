@@ -53,6 +53,11 @@ export function findPlaceholders(text: string): string[] {
   return names;
 }
 
+/** `src`, `pm`, and `scripts.<name>` (`<name>` is non-empty and has no whitespace). */
+export function isKnownPlaceholder(name: string): boolean {
+  return classify(name).kind !== 'unknown';
+}
+
 export function renderBody(text: string, ctx: PlaceholderContext): string {
   assertKnownPlaceholders(text);
   const { lines, endedWithNewline } = splitLines(text);

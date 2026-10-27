@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AgentInitError } from '../../src/errors.js';
 import {
   findPlaceholders,
+  isKnownPlaceholder,
   renderBody,
   renderGlobs,
   scriptCommand,
@@ -187,5 +188,15 @@ describe('findPlaceholders', () => {
       'scripts.test',
       'src',
     ]);
+  });
+});
+
+describe('isKnownPlaceholder', () => {
+  it.each(['src', 'pm', 'scripts.test', ' scripts.test '])('accepts %j', (name) => {
+    expect(isKnownPlaceholder(name)).toBe(true);
+  });
+
+  it.each(['foo', 'scripts.', 'scripts.my test', 'Scripts.test'])('rejects %j', (name) => {
+    expect(isKnownPlaceholder(name)).toBe(false);
   });
 });

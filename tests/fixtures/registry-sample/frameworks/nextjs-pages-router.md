@@ -20,3 +20,9 @@ verifiedAt: 2026-10-17
 
 ## Summary
 Pages Router conventions for Next.js.
+
+ALWAYS keep page data loading in the page module.
+
+```tsx
+const example = true;
+```

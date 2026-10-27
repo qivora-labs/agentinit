@@ -33,10 +33,10 @@ A CI-enforced quality gate for registry content, so content tasks (T09–T13) ge
 - The forbidden-phrase check should ignore content inside Anti-Pattern code blocks only if clearly marked; when in doubt, flag it and let a human decide.
 
 ## Acceptance criteria
-- [ ] Unit tests cover each check with a passing and failing case.
-- [ ] `pnpm registry:check` passes on the (empty) real registry and on `registry-sample`.
-- [ ] Running it against a fixture with errors prints every problem and exits `1`; warnings alone exit `0`.
-- [ ] CI runs the check.
+- [x] Unit tests cover each check with a passing and failing case.
+- [x] `pnpm registry:check` passes on the (empty) real registry and on `registry-sample`.
+- [x] Running it against a fixture with errors prints every problem and exits `1`; warnings alone exit `0`.
+- [x] CI runs the check.
 
 ## Verify
 ```bash
@@ -48,4 +48,11 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(registry): add registry content checks for ci`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `today` is a `YYYY-MM-DD` string. The runner passes the local calendar date. `verifiedAt` is stale only when that date plus 6 calendar months is strictly before today. A month-end date clamps to the last day of the target month (31 Aug + 6 months is 28 Feb in a non-leap year).
+- Placeholders are checked in the body and in globs with `findPlaceholders` and `isKnownPlaceholder`. `{{foo}}` in a glob is already a schema error, so it shows up as a load error. `{{scripts.foo bar}}` passes the schema and fails this check.
+- `loadRegistry` errors are rewritten to `path: [error] message`. A line that is not `<relative>.md: detail` uses path `.`.
+- A fenced block is skipped for forbidden phrases only when its info string, the preceding non-empty line, or its first content line is an anti-pattern label and the block has no Good example. A line with `NEVER` or `FORBID` is a prohibition, not an instruction.
+- Phrases live in `FORBIDDEN_PHRASES`. `pnpm install` and `bun add` are not listed; the task names `npm install`, `pnpm add`, and `yarn add`.
+- An empty `## Summary` passes the 10-line budget. The body line count uses the parsed body, which is trimmed.
+- `registry-sample` bodies now include the sections, directive, and fence this check requires. Frontmatter is unchanged. `meta/` is still skipped.
+- The script takes an optional registry directory. With no argument it checks the bundled `registry/`.

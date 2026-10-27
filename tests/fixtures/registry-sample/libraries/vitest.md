@@ -17,3 +17,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Unit tests sit beside the code they cover.
+
+ALWAYS colocate a unit test with the code it covers.
+
+```ts
+const example = true;
+```

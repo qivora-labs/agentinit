@@ -17,3 +17,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Form state stays in client components.
+
+ALWAYS validate form input before submit.
+
+```ts
+const example = true;
+```

@@ -13,3 +13,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Application code is typechecked.
+
+ALWAYS typecheck application code.
+
+```ts
+const example = true;
+```
