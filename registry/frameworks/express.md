@@ -32,7 +32,7 @@ These rules apply to Express route modules, controllers, and middleware. An `asy
 - **ALWAYS** write a handler as an `async` function, or return its promise. **NEVER** start a promise you neither return nor pass to `next`.
 - **ALWAYS** register one error middleware with the signature `(err, req, res, next)` after the routes. Keep the fourth parameter even when the function does not call `next`.
 - **ALWAYS** validate `req.body`, `req.params`, and `req.query` before using them. **NEVER** assign to `req.query`. It is a getter, and the default parser is `simple`.
-- **ALWAYS** treat a missing optional param as absent. Express 5 omits it. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
+- **ALWAYS** write an optional segment as `{:name}` or `{.:ext}`. **NEVER** mark it with `?`. Express 5 omits an unmatched optional param. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
 - **ALWAYS** put a group of routes on `express.Router()` and mount that router with `app.use`. Pass `{ mergeParams: true }` when the nested router reads a parent param.
 
 ## Contract

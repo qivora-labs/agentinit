@@ -16,6 +16,7 @@ appliesTo:
 sources:
   - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-server-side-props
   - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-props
+  - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-paths
   - https://nextjs.org/docs/pages/building-your-application/routing/api-routes
   - https://nextjs.org/docs/pages/guides/migrating/app-router-migration
   - https://nextjs.org/docs/app/getting-started/route-handlers
@@ -23,15 +24,16 @@ verifiedAt: 2026-10-28
 ---
 
 ## Boundary
-These rules apply to files under `pages/`. A page module may export `getServerSideProps` or `getStaticProps`. Files in `pages/api` are HTTP endpoints, not pages. The `app` directory can serve other URLs in the same project. Navigation from one router to the other is a full page load.
+These rules apply to files under `pages/`. A page module may export `getServerSideProps` or `getStaticProps` when it reads data on the server, and `getStaticPaths` when `getStaticProps` serves a dynamic route. Files in `pages/api` are HTTP endpoints, not pages. The `app` directory can serve other URLs in the same project. Navigation from one router to the other is a full page load.
 
 ## Directives
-- **ALWAYS** export `getServerSideProps` or `getStaticProps` from the page module only. **PREFER** `getStaticProps` when the data is not specific to the request, and set `revalidate` on that return value for incremental regeneration. Use `getServerSideProps` for request-time data such as cookies or authorization headers.
+- **NEVER** export `getServerSideProps` or `getStaticProps` from anywhere but the page module. **NEVER** add either to a page that does not read data on the server. **PREFER** `getStaticProps` when the data is not specific to the request, and set `revalidate` on that return value for incremental regeneration. Use `getServerSideProps` for request-time data such as cookies or authorization headers.
+- **ALWAYS** export `getStaticPaths` from that same page module when `getStaticProps` serves a dynamic route.
 - **NEVER** put secrets in the `props` returned to the page. Those props are serialized into the HTML.
 - **NEVER** call a `pages/api` route from `getServerSideProps` or `getStaticProps` to load data for that page. Call the database, CMS, or third-party API from the data function.
 - **ALWAYS** validate `req.body` in an API route before using it. The payload is untrusted. Branch on `req.method`, and keep the handler in `pages/api`.
 - **NEVER** import `next/navigation`, export `generateMetadata`, or use `'use cache'` in `pages/`. Routing hooks in `pages/` come from `next/router`.
-- **NEVER** export `getServerSideProps`, `getStaticProps`, or a `pages/api` handler from `app/`.
+- **NEVER** export `getServerSideProps`, `getStaticProps`, `getStaticPaths`, or a `pages/api` handler from `app/`.
 - **NEVER** add a `pages` file whose URL is already served by `app`, or an API route whose path is already a Route Handler. Each URL belongs to one router.
 
 ## Contract

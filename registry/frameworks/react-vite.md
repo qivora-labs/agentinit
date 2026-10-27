@@ -27,7 +27,7 @@ verifiedAt: 2026-10-28
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
 
 ## Directives
-- **ALWAYS** call a React Hook at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
+- **ALWAYS** call a React Hook other than `use` at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
 - **NEVER** pass `use` a Promise created during render. Reuse one cached Promise and read it under `<Suspense>`. **NEVER** call `use` inside `try/catch`.
 - **ALWAYS** run a mutation that is an Action from `<form action>` or from `startTransition`. **PREFER** `useActionState` when the UI needs the Action result and the pending flag.
 - **ALWAYS** read a public build value from `import.meta.env.VITE_*`. The value is a string. **NEVER** put a secret in a `VITE_` variable, and **NEVER** set Vite `envPrefix` to an empty string.

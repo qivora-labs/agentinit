@@ -16,12 +16,12 @@ detect:
 appliesTo:
   fastify: ">=5"
 sources:
-  - https://fastify.dev/docs/latest/Reference/Plugins/
-  - https://fastify.dev/docs/latest/Reference/Encapsulation/
-  - https://fastify.dev/docs/latest/Reference/Validation-and-Serialization/
-  - https://fastify.dev/docs/latest/Reference/Type-Providers/
-  - https://fastify.dev/docs/latest/Reference/Hooks/
-  - https://fastify.dev/docs/latest/Reference/Decorators/
+  - https://fastify.dev/docs/v5.12.x/Reference/Plugins/
+  - https://fastify.dev/docs/v5.12.x/Reference/Encapsulation/
+  - https://fastify.dev/docs/v5.12.x/Reference/Validation-and-Serialization/
+  - https://fastify.dev/docs/v5.12.x/Reference/Type-Providers/
+  - https://fastify.dev/docs/v5.12.x/Reference/Hooks/
+  - https://fastify.dev/docs/v5.12.x/Reference/Decorators/
 verifiedAt: 2026-10-28
 ---
 
@@ -43,7 +43,7 @@ These rules apply to Fastify route and plugin modules. `register` creates an enc
 export async function userRoutes(fastify: FastifyInstance) {
   fastify.decorateRequest('user', null);
   fastify.addHook('preHandler', async function (request) {
-    request.setDecorator('user', await loadUser(this, request));
+    request.user = await loadUser(this, request);
   });
   fastify.get('/users/:id', {
     schema: {
