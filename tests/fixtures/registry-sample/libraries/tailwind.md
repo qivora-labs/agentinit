@@ -22,3 +22,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Utility classes stay in component markup.
+
+PREFER utility classes over custom CSS.
+
+```css
+.example { color: inherit; }
+```

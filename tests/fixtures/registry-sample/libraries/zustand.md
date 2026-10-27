@@ -24,3 +24,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Client stores stay out of Server Components.
+
+NEVER import a client store into a Server Component.
+
+```ts
+const example = true;
+```

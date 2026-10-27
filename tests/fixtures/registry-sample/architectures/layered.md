@@ -13,3 +13,12 @@ verifiedAt: 2026-10-17
 
 ## Summary
 Controllers call services, and services call the data layer.
+
+## Map
+- ui → domain → data
+
+ALWAYS depend inward.
+
+```ts
+const example = true;
+```

@@ -13,3 +13,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Application and test code is typechecked in strict mode.
+
+ALWAYS typecheck in strict mode.
+
+```ts
+const example = true;
+```

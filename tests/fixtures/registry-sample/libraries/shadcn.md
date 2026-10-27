@@ -22,3 +22,9 @@ verifiedAt: 2026-10-17
 
 ## Boundary
 Generated components live under components/ui.
+
+ALWAYS keep generated components under components/ui.
+
+```tsx
+const example = true;
+```

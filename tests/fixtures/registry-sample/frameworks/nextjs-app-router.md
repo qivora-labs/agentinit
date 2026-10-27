@@ -20,3 +20,9 @@ verifiedAt: 2026-10-17
 
 ## Summary
 Server Components by default, with client leaves for interaction.
+
+ALWAYS keep client components at the leaves.
+
+```tsx
+const example = true;
+```
