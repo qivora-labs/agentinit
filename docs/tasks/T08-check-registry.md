@@ -52,7 +52,7 @@ pnpm lint && pnpm typecheck && pnpm test
 - Placeholders are checked in the body and in globs with `findPlaceholders` and `isKnownPlaceholder`. `{{foo}}` in a glob is already a schema error, so it shows up as a load error. `{{scripts.foo bar}}` passes the schema and fails this check.
 - `loadRegistry` errors are rewritten to `path: [error] message`. A line that is not `<relative>.md: detail` uses path `.`.
 - A fenced block is skipped for forbidden phrases only when its info string, the preceding non-empty line, or its first content line is an anti-pattern label and the block has no Good example. A line with `NEVER` or `FORBID` is a prohibition, not an instruction.
-- Phrases live in `FORBIDDEN_PHRASES`. `pnpm install` and `bun add` are not listed; the task names `npm install`, `pnpm add`, and `yarn add`.
+- Phrases live in `FORBIDDEN_PHRASES`. `pnpm install` and `bun add` are not listed; the task names `npm install`, `pnpm add`, and `yarn add`. `.env` matches `read`, `reads`, and `reading`. Move, rename, and `mv` match when `existing`, a `/` path, or a filename with a 2–8 letter extension appears within 80 characters. `e.g.` does not count as a filename.
 - An empty `## Summary` passes the 10-line budget. The body line count uses the parsed body, which is trimmed.
 - `registry-sample` bodies now include the sections, directive, and fence this check requires. Frontmatter is unchanged. `meta/` is still skipped.
 - The script takes an optional registry directory. With no argument it checks the bundled `registry/`.

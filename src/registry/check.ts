@@ -15,8 +15,12 @@ const WORKFLOW_SECTIONS = ['Purpose', 'Input', 'Steps', 'Output', 'Guardrails'] 
 
 /**
  * Phrases that instruct an agent to fetch from the network, install packages,
- * read secrets, or move existing files. Add a row to extend the check.
+ * read secrets, or move or rename files. Add a row to extend the check.
  * Patterns are not global; callers test one line at a time.
+ *
+ * `.env` includes `read`, `reads`, and `reading`. Move, rename, and `mv`
+ * match the word `existing` or a path or filename within 80 characters.
+ * A one-letter suffix (`e.g.`) is not a filename.
  */
 export const FORBIDDEN_PHRASES: readonly { readonly phrase: string; readonly pattern: RegExp }[] = [
   { phrase: 'curl', pattern: /(?<![\w./-])curl(?![\w.-])/iu },
@@ -24,8 +28,12 @@ export const FORBIDDEN_PHRASES: readonly { readonly phrase: string; readonly pat
   { phrase: 'npm install', pattern: /\bnpm\s+install\b/iu },
   { phrase: 'pnpm add', pattern: /\bpnpm\s+add\b/iu },
   { phrase: 'yarn add', pattern: /\byarn\s+add\b/iu },
-  { phrase: 'read .env', pattern: /\bread(?:ing)?\b[^\n]{0,80}\.env\b/iu },
-  { phrase: 'move or rename existing files', pattern: /\b(?:move|rename|mv)\b[^\n]{0,80}\bexisting\b/iu },
+  { phrase: 'read .env', pattern: /\bread(?:s|ing)?\b[^\n]{0,80}\.env\b/iu },
+  {
+    phrase: 'move or rename existing files',
+    pattern:
+      /\b(?:move|rename|mv)\b[^\n]{0,80}?(?:\bexisting\b|\b[\w.-]+(?:\/[\w.-]+)+|\b[\w.-]+\.[A-Za-z]{2,8}\b)/iu,
+  },
 ];
 
 export type RegistryCheckSeverity = 'error' | 'warning';

@@ -158,8 +158,10 @@ describe('checkFragments', () => {
     ['yarn add', 'Run yarn add left-pad'],
     ['read .env', 'Read the `.env` file before starting'],
     ['read .env', 'reading .env files is required'],
+    ['read .env', 'Reads the `.env` file before starting'],
     ['move or rename existing files', 'Rename the existing files before editing'],
     ['move or rename existing files', 'mv the existing config out of the way'],
+    ['move or rename existing files', 'Rename `app/page.tsx` to `app/home/page.tsx`'],
   ] as const)('rejects %s', (phrase, line) => {
     expect(checkFragments([ruleFragment({ body: `${VALID_RULE}\n${line}` })], TODAY)).toEqual([
       error(`forbidden phrase "${phrase}"`),
@@ -202,7 +204,17 @@ describe('checkFragments', () => {
   });
 
   it('does not treat NEVER or FORBID as an instruction to do the forbidden thing', () => {
-    const body = `${VALID_RULE}\nNEVER run curl or wget.\nFORBID npm install, pnpm add, and yarn add.\n`;
+    const body = [
+      VALID_RULE,
+      'NEVER run curl or wget.',
+      'FORBID npm install, pnpm add, and yarn add.',
+      'NEVER rename `app/page.tsx` or read the `.env` file.',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('does not flag move or rename wording that does not name a file', () => {
+    const body = `${VALID_RULE}\nMove logic into a helper and rename the concept, e.g. split it.`;
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
