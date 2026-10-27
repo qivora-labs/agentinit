@@ -282,7 +282,7 @@ describe('runRegistryCheck', () => {
     expect(sample).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
   });
 
-  it('includes the architecture and typescript fragments', async () => {
+  it('includes the architecture, language, and framework fragments', async () => {
     const registry = await loadRegistry(defaultRegistryDir());
     expect(registry.fragments.map((fragment) => fragment.meta.id)).toEqual([
       'atomic-design',
@@ -291,6 +291,80 @@ describe('runRegistryCheck', () => {
       'layered',
       'typescript',
       'typescript-strict',
+      'express',
+      'fastify',
+      'nextjs-app-router',
+      'nextjs-pages-router',
+      'react-vite',
+    ]);
+  });
+
+  it('records framework scope, version range, and sources', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const frameworks = registry.byCategory('framework').map((fragment) => {
+      if (fragment.meta.category === 'workflow') throw new Error('expected a rule fragment');
+      return {
+        id: fragment.meta.id,
+        scope: fragment.meta.scope,
+        globs: fragment.meta.globs,
+        appliesTo: fragment.meta.appliesTo,
+        verifiedAt: fragment.meta.verifiedAt,
+        sourced: fragment.meta.sources.length > 0,
+      };
+    });
+    expect(frameworks).toEqual([
+      {
+        id: 'express',
+        scope: 'auto',
+        globs: [
+          '{{src}}routes/**/*.ts',
+          '{{src}}controllers/**/*.ts',
+          '{{src}}middleware/**/*.ts',
+          '{{src}}**/*.routes.ts',
+          '{{src}}**/*.controller.ts',
+          '{{src}}**/*.middleware.ts',
+        ],
+        appliesTo: { express: '>=5' },
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'fastify',
+        scope: 'auto',
+        globs: [
+          '{{src}}routes/**/*.ts',
+          '{{src}}plugins/**/*.ts',
+          '{{src}}**/*.routes.ts',
+          '{{src}}**/*.plugin.ts',
+        ],
+        appliesTo: { fastify: '>=5' },
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'nextjs-app-router',
+        scope: 'glob',
+        globs: ['{{src}}app/**/*.ts', '{{src}}app/**/*.tsx'],
+        appliesTo: { next: '>=16.3.0' },
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'nextjs-pages-router',
+        scope: 'glob',
+        globs: ['{{src}}pages/**/*.ts', '{{src}}pages/**/*.tsx'],
+        appliesTo: { next: '>=13' },
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'react-vite',
+        scope: 'auto',
+        globs: ['{{src}}**/*.tsx'],
+        appliesTo: { react: '>=19', vite: '>=6' },
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
     ]);
   });
 
