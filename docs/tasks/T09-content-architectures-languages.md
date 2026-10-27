@@ -35,10 +35,10 @@ Each fragment: correct frontmatter, `sources` (e.g., TypeScript handbook pages),
 - Language rules apply to all `.ts`/`.tsx` files; don't repeat framework-specific advice here.
 
 ## Acceptance criteria
-- [ ] Six fragments exist and `pnpm registry:check` passes with no errors.
-- [ ] Each architecture fragment has `## Summary` (≤ 10 lines) and `## Map`.
-- [ ] No fragment instructs moving existing files.
-- [ ] Content checklist in `docs/tasks/README.md` is complete.
+- [x] Six fragments exist and `pnpm registry:check` passes with no errors.
+- [x] Each architecture fragment has `## Summary` (≤ 10 lines) and `## Map`.
+- [x] No fragment instructs moving existing files.
+- [x] Content checklist in `docs/tasks/README.md` is complete.
 - [ ] A human reviewed the content.
 
 ## Verify
@@ -51,4 +51,8 @@ node dist/cli.js list --category architecture   # after pnpm build
 `feat(registry): add architecture and typescript fragments`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `verifiedAt` is 2026-10-28. Language rules were checked against the TypeScript handbook (everyday types, narrowing, functions) and the 3.0 (`unknown`), 3.8 (`import type`), and 4.9 (`satisfies`) release notes, plus the `strict` tsconfig page. No `detect` and no `appliesTo`: language is chosen from `tsconfig.json`, not from a package match. `satisfies` needs TypeScript ≥ 4.9.
+- Feature folders follow this task (`components/`, `hooks/`, `api/`, `model/`, public `index.ts`, `{{src}}shared/`). bulletproof-react's project-structure doc, read the same day, now warns that barrel files hurt Vite tree-shaking and prefers composing features in the app layer instead of cross-feature imports. This fragment still uses `index.ts` as the only cross-feature import, and tells files inside a feature to import siblings by path. An existing framework shared folder counts as `{{src}}shared/` so new shared code is not given a second root.
+- Atomic design follows this task's "lower levels only" rule. Brad Frost's chapter 2 also allows an organism to contain another organism.
+- Flat tells agents to leave files that are already in a type folder in place, and to add `{{src}}features/<feature>/` only for the new domain.
+- The shared content checklist is checked for these six fragments. Human review before merge is still open. Later content tasks (T10–T13) must re-check the same list for the fragments they add.

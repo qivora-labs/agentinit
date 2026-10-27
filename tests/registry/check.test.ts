@@ -274,7 +274,7 @@ describe('formatReport', () => {
 });
 
 describe('runRegistryCheck', () => {
-  it('passes on the empty bundled registry and on registry-sample', async () => {
+  it('passes on the bundled registry and on registry-sample', async () => {
     const bundled = await run(defaultRegistryDir());
     const sample = await run(SAMPLE);
     expect(bundled).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
