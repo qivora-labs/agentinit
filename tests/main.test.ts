@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { loadRegistry } from '../src/registry/load.js';
 import { runCli } from './helpers/run.js';
 
 const directories: string[] = [];
@@ -91,7 +92,7 @@ describe('run', () => {
     expect(result.stderr).toContain(path.resolve('definitely-missing-agentinit-dir'));
   });
 
-  it.each(['init', 'list', 'doctor'])('stubs %s with exit code 1', async (command) => {
+  it.each(['init', 'doctor'])('stubs %s with exit code 1', async (command) => {
     const dir = await tempDir();
     const result = await runCli([command, '--cwd', dir]);
     expect(result.code).toBe(1);
@@ -104,10 +105,18 @@ describe('run', () => {
     expect(result.stderr).toContain('not implemented yet');
   });
 
-  it('prints the list stub when stdin is not a terminal', async () => {
+  it('lists fragments when stdin is not a terminal', async () => {
     const result = await runCli(['list'], { stdinTTY: false, stdoutTTY: false });
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('not implemented yet');
+    expect(result.code).toBe(0);
+    expect(result.stderr).toBe('');
+    const registry = await loadRegistry();
+    if (registry.fragments.length === 0) {
+      expect(result.stdout).toBe('No fragments available.\n');
+      return;
+    }
+    for (const fragment of registry.fragments) {
+      expect(result.stdout).toContain(fragment.meta.id);
+    }
   });
 
   it('reports an unknown command without the bug line', async () => {
