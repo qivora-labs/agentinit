@@ -93,6 +93,12 @@ describe('renderBody', () => {
     );
   });
 
+  it('keeps a wrapped list continuation that does not contain the placeholder', () => {
+    const source = ['- Run `{{scripts.lint}}`', '  before pushing.', '- Stay.'].join('\n');
+
+    expect(renderBody(source, context())).toBe(['  before pushing.', '- Stay.'].join('\n'));
+  });
+
   it('drops every line that uses {{pm}} or {{scripts.*}} when pm is null', () => {
     const source = ['Keep {{src}}app.', 'Manager {{pm}}.', 'Run {{scripts.test}}.', 'Plain line.'].join('\n');
 
@@ -133,10 +139,13 @@ describe('renderBody', () => {
     expect(renderBody(once, context())).toBe(once);
   });
 
-  it('drops an unresolvable line inside a fence and keeps both fences when other lines remain', () => {
-    const source = ['```ts', 'const cmd = "{{scripts.lint}}";', 'const kept = 1;', '```'].join('\n');
-    expect(renderBody(source, context())).toBe(['```ts', 'const kept = 1;', '```'].join('\n'));
-  });
+  it.each(['```', '~~~'])(
+    'drops an unresolvable line inside a %s fence and keeps both fences when other lines remain',
+    (fence) => {
+      const source = [`${fence}ts`, 'const cmd = "{{scripts.lint}}";', 'const kept = 1;', fence].join('\n');
+      expect(renderBody(source, context())).toBe([`${fence}ts`, 'const kept = 1;', fence].join('\n'));
+    },
+  );
 
   it('drops both fences when every interior line is unresolvable', () => {
     const source = ['Before', '```ts', 'const cmd = "{{scripts.lint}}";', '```', 'After'].join('\n');
