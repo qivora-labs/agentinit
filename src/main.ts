@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { doctor } from './commands/doctor.js';
 import { init } from './commands/init.js';
-import { list } from './commands/list.js';
+import { list, type ListOptions } from './commands/list.js';
 import { AGENT_TARGETS, createRunContext, parseAgents, type RunContext } from './context.js';
 import { AgentInitError } from './errors.js';
 import { ERROR, SUCCESS } from './exit-codes.js';
@@ -48,7 +48,11 @@ export async function run(argv: string[], io: CommandIo = defaultIo): Promise<nu
     assertKnownOptions(cli.matchedCommand ?? cli.globalCommand);
     const ctx = await buildContext(parsed.options, io);
     json = ctx.json;
-    return dispatch(cli.matchedCommand?.name ?? 'init', ctx, createLogger(io, ctx.json));
+    const commandName = cli.matchedCommand?.name ?? 'init';
+    return await dispatch(commandName, ctx, createLogger(io, ctx.json), {
+      stdout: io.stdout,
+      category: commandName === 'list' ? readCategoryFlag(parsed.options.category) : undefined,
+    });
   } catch (error) {
     return reportError(error, io, json);
   }
@@ -64,7 +68,9 @@ function createCli(): CAC {
   cli.option('--force', 'Replace unmanaged and edited files after backing them up');
   cli.option('--json', 'Machine-readable output for list, doctor, and dry-run');
   cli.command('init', 'Bootstrap agent rules for this project');
-  cli.command('list', 'Browse available fragments');
+  cli
+    .command('list', 'Browse available fragments')
+    .option('--category <name>', 'Only show fragments in one category');
   cli.command('doctor', 'Check that generated rules match the project');
   cli.help();
   cli.version(pkg.version);
@@ -176,17 +182,36 @@ function readAgents(value: unknown): RunContext['agents'] {
   return parseAgents(value);
 }
 
-function dispatch(name: string, ctx: RunContext, logger: Logger): number {
+async function dispatch(
+  name: string,
+  ctx: RunContext,
+  logger: Logger,
+  io: { stdout: CommandIo['stdout']; category: string | undefined },
+): Promise<number> {
   switch (name) {
     case 'init':
       return init(ctx, logger);
     case 'list':
-      return list(ctx, logger);
+      return await list(ctx, logger, listOptions(io));
     case 'doctor':
       return doctor(ctx, logger);
     default:
       throw new AgentInitError(`Unknown command "${name}".`);
   }
+}
+
+function listOptions(io: { stdout: CommandIo['stdout']; category: string | undefined }): ListOptions {
+  const options: ListOptions = { stdout: io.stdout };
+  if (io.category !== undefined) options.category = io.category;
+  return options;
+}
+
+function readCategoryFlag(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') {
+    throw new AgentInitError('Flag --category requires a category name.');
+  }
+  return value;
 }
 
 function printHelp(cli: CAC, stdout: Writable): void {
