@@ -28,12 +28,12 @@ Render `{{src}}`, `{{pm}}`, and `{{scripts.<name>}}` in fragment bodies and glob
 - Deciding which scripts exist (T14).
 
 ## Acceptance criteria
-- [ ] `{{src}}app/**/*.tsx` → `src/app/**/*.tsx` or `app/**/*.tsx`.
-- [ ] `{{scripts.test}}` renders correctly for all four package managers (Bun uses `bun run test`).
-- [ ] A list item using a missing script is dropped; a heading left empty is dropped; other content is untouched.
-- [ ] With `pm: null`, every line using `{{pm}}` or `{{scripts.*}}` is dropped.
-- [ ] `{{unknown}}` throws with the placeholder name in the message.
-- [ ] Rendering is idempotent: rendering already-rendered text changes nothing.
+- [x] `{{src}}app/**/*.tsx` → `src/app/**/*.tsx` or `app/**/*.tsx`.
+- [x] `{{scripts.test}}` renders correctly for all four package managers (Bun uses `bun run test`).
+- [x] A list item using a missing script is dropped; a heading left empty is dropped; other content is untouched.
+- [x] With `pm: null`, every line using `{{pm}}` or `{{scripts.*}}` is dropped.
+- [x] `{{unknown}}` throws with the placeholder name in the message.
+- [x] Rendering is idempotent: rendering already-rendered text changes nothing.
 
 ## Verify
 ```bash
@@ -44,4 +44,10 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(plan): render fragment placeholders`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `{{scripts.*}}` is unresolvable when `pm` is null, even if that script name is present. The command needs a package manager.
+- A heading is removed only when this pass dropped every content line in its section. A body with no placeholders is unchanged, so a second render is a no-op. ATX headings (`#`–`######`) define sections; setext underlines stay as text.
+- The blank line before a removed heading stays with the previous section. If the removed heading was last, that blank line remains at the end of the text.
+- Fenced blocks use CommonMark backtick and tilde fences. Interior lines with unresolvable placeholders are removed. If that leaves no interior lines, or a delimiter itself cannot render, the whole block is removed so a fence line is never dropped alone.
+- `renderGlobs` also resolves `{{pm}}` and `{{scripts.*}}`. A glob with an unresolvable placeholder is omitted. Duplicate slashes are collapsed after substitution, then duplicate globs are removed in first-seen order.
+- `findPlaceholders` returns each inner name in order, trimmed, including duplicates. `scripts.<name>` is known when `<name>` is non-empty and has no whitespace.
+- A wrapped list continuation that does not itself contain the placeholder is kept.
