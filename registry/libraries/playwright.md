@@ -7,7 +7,6 @@ order: 40
 description: Role locators, web-first assertions, and isolated browser tests.
 scope: glob
 globs:
-  - "e2e/**/*.ts"
   - "**/e2e/**/*.ts"
   - "**/*.e2e.ts"
 detect:
@@ -24,7 +23,7 @@ verifiedAt: 2026-10-28
 ---
 
 ## Boundary
-A locator re-queries the DOM and waits until the target is actionable. `getByRole` matches the element's role and accessible name. A web-first assertion retries until the condition holds or the expect timeout ends. The default expect timeout is 5 seconds. Each test gets its own `page`, storage, and cookies. `page.waitForTimeout` is for debugging. A test that waits a fixed time is flaky.
+A locator is lazy: it re-queries the DOM when an action or assertion uses it. `click` and `fill` wait until the target is actionable. `getByRole` matches the element's role and accessible name. A web-first assertion retries until the condition holds or the expect timeout ends. The default expect timeout is 5 seconds. Each test gets its own `page`, storage, and cookies. `page.waitForTimeout` is for debugging. A test that waits a fixed time is flaky.
 
 ## Directives
 - **ALWAYS** locate an element with `getByRole` and its accessible name, or with `getByLabel` for a form control. **NEVER** locate by a CSS class or an XPath.
@@ -42,7 +41,7 @@ test("shows the saved name", async ({ page }) => {
   await page.goto("/profile");
   await page.getByLabel("Name").fill("Ada");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved Ada");
+  await expect(page.getByRole("status", { name: "Saved Ada" })).toHaveText("Saved Ada");
 });
 
 // ❌ Anti-pattern: a class selector, a fixed wait, and a check that does not retry

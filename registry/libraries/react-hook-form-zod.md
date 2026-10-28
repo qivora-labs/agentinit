@@ -35,7 +35,7 @@ One Zod object is the form's rules. `z.infer` is that schema's output type. `zod
 
 ## Directives
 - **ALWAYS** put each rule on the schema and pass that schema to `zodResolver`. **NEVER** copy a schema rule into `register` options.
-- **ALWAYS** take submitted values from `z.infer`. When the schema uses `.default()` or `.transform()`, input and output differ: omit the `useForm` generic, or pass `z.input`, `unknown`, and `z.output`.
+- **ALWAYS** take submitted values from `z.infer`. When the schema uses `.default()` or `.transform()`, input and output differ: pass `z.input`, `unknown`, and `z.output` to `useForm`.
 - **ALWAYS** `register` a native input. **ALWAYS** use `Controller` for a component that takes `value` and `onChange`, and spread `field` only. **NEVER** spread `register` and `field` onto the same element.
 - **ALWAYS** set `defaultValues`. A controlled `value` that is `undefined` on the first render starts the input uncontrolled.
 - **ALWAYS** convert a numeric HTML input with `{ valueAsNumber: true }` or with `z.coerce.number()` in the schema. **NEVER** pass the raw input string to `z.number()`.

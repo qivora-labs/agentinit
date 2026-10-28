@@ -30,7 +30,7 @@ verifiedAt: 2026-10-28
 
 ## Directives
 - **ALWAYS** group one unit's tests in a `describe` named for that unit. **ALWAYS** name `it` or `test` after a result the caller can observe, such as `returns 0 for an empty cart`. **NEVER** name a test after an internal call.
-- **ALWAYS** assert the returned value or the thrown error. **NEVER** assert the order of calls inside the unit.
+- **ALWAYS** assert an observable result: the returned value, the thrown error, or a callback the caller passed in. **NEVER** assert the order of calls inside the unit.
 - **ALWAYS** call `vi.mock` at the top level of the test file, with `vi` imported from `vitest`, and only for a module the unit does not own. **NEVER** mock the module under test.
 - **ALWAYS** call `vi.useFakeTimers()` before code that schedules a timer, then advance with `vi.advanceTimersByTime` or `vi.runAllTimers`. **ALWAYS** call `vi.useRealTimers()` before the file moves on.
 - **PREFER** `expect(value).toEqual` when the expected value can be written in the test. Use `toMatchSnapshot` only for a large stable structure. **NEVER** accept a snapshot update without reading the diff.
@@ -69,9 +69,9 @@ describe("runLater", () => {
   });
 });
 
-// ❌ Anti-pattern: this replaces the unit, and the name describes an internal call
-vi.mock("./price-after");
-it("calls loadRate", () => {
-  expect(true).toBe(true);
-});
+// ❌ Anti-pattern: a hoisted mock of the unit, and a name that describes an internal call
+// vi.mock("./price-after");
+// it("calls loadRate", () => {
+//   expect(true).toBe(true);
+// });
 ```
