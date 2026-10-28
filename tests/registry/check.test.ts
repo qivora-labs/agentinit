@@ -617,6 +617,8 @@ describe('runRegistryCheck', () => {
 
     const body = (id: string): string => registry.byId.get(id)?.body ?? '';
     expect(body('new-feature')).toMatch(/stop and wait for the user to confirm/i);
+    expect(body('new-feature')).toContain('each path to create or edit');
+    expect(body('new-feature')).toContain("closest `AGENTS.md` in that file's directory tree");
     expect(body('new-feature')).toContain('{{scripts.typecheck}}');
     expect(body('new-feature')).toContain('{{scripts.lint}}');
     expect(body('new-feature')).toContain('{{scripts.test}}');

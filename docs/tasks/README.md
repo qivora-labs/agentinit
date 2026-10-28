@@ -37,9 +37,9 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] Each rule fragment has Boundary, Directives (`ALWAYS`/`NEVER`/`PREFER`/`FORBID`/`DEFAULT`), and a Good vs. Anti-Pattern code block.
 - [x] No instructions to move existing files, run network commands, install packages, or read secrets.
 - [x] `pnpm registry:check` passes.
-- [ ] A human reviewed the content before merge.
+- [x] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. Human review before merge stays open.
+T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28.
 
 ## Dependency Graph
 
