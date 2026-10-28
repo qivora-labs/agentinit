@@ -37,8 +37,7 @@ These rules apply to Tailwind classes in components and to the CSS file that loa
 
 ## Contract
 ```tsx
-// Import cn from the module this project already uses.
-import { cn } from "@/lib/utils";
+// import { cn } from the module this project already uses
 
 export function Banner({ error, className }: { error: boolean; className?: string }) {
   return <p className={cn("px-3 text-green-600", error && "text-red-600", className)}>Saved</p>;

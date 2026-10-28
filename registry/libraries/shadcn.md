@@ -26,7 +26,7 @@ verifiedAt: 2026-10-28
 ---
 
 ## Boundary
-shadcn/ui copies component source into this project. `components.json` field `aliases.ui` is that folder. The default is `components/ui`. Import a primitive from the project alias. A missing primitive is added by a person.
+shadcn/ui copies component source into this project. `components.json` field `aliases.ui` is the import alias for that folder. The usual value is `@/components/ui`. Import a primitive from that alias. A missing primitive is added by a person.
 
 ## Directives
 - **ALWAYS** import a primitive from the project's UI alias, such as `@/components/ui/button`. **NEVER** import a component from a `shadcn/ui` package path.
