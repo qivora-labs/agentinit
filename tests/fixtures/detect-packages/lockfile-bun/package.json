@@ -1,3 +1,6 @@
 {
-  "name": "lockfile-bun"
+  "name": "lockfile-bun",
+  "dependencies": {
+    "next": "^15.1.0"
+  }
 }

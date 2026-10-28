@@ -119,6 +119,16 @@ describe('resolveVersions', () => {
     });
   });
 
+  it.each([
+    { fixture: 'lockfile-yarn', behavior: 'falls back to the range when yarn.lock is present' },
+    { fixture: 'lockfile-bun', behavior: 'falls back to the range when bun.lock is present' },
+    { fixture: 'lockfile-bunb', behavior: 'falls back to the range when bun.lockb is present' },
+  ] as const)('$behavior', async ({ fixture }) => {
+    const root = await copyFixture(fixture);
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
+  });
+
   it('falls back to the range when an installed manifest or lockfile cannot be parsed', async () => {
     const brokenInstall = await copyFixture('installed-unreadable');
     expect(resolveVersions(brokenInstall, loadPackage(brokenInstall))).toEqual({
