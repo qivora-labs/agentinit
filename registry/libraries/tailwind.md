@@ -27,20 +27,21 @@ verifiedAt: 2026-10-28
 ---
 
 ## Boundary
-These rules apply to Tailwind classes in components and to the CSS file that loads Tailwind. v4 reads configuration from that CSS. The scanner treats source as plain text and emits a utility only when the full class name appears. `cn` joins conditional classes and lets a later utility replace an earlier one in the same group.
+These rules apply to Tailwind classes in components and to the CSS file that loads Tailwind. v4 reads configuration from that CSS. The scanner treats source as plain text and emits a utility only when the full class name appears. When the project already has `cn`, that helper joins conditional classes and lets a later utility replace an earlier one in the same group.
 
 ## Directives
 - **ALWAYS** load Tailwind with `@import "tailwindcss"`. **NEVER** use `@tailwind base`, `@tailwind components`, or `@tailwind utilities`.
 - **ALWAYS** define a new design token in `@theme`, such as `--color-mint-500`. **NEVER** add a `tailwind.config.js` for new tokens. `@config` only points at a JS config the project already has.
 - **ALWAYS** write the full class string (`text-red-600`). **NEVER** build a class by joining a prefix to a value (`text-${color}-600`).
-- **ALWAYS** pass conditional or overlapping utilities through `cn`, base classes first and the override last. **NEVER** join those utilities in a template string.
+- When the project already has `cn`, **ALWAYS** pass conditional or overlapping utilities through it, base classes first and the override last. Import `cn` from the module the project already uses. **NEVER** import `cn` from a module the project does not have.
 
 ## Contract
 ```tsx
-import { cn } from "cn";
+// Import cn from the module this project already uses.
+import { cn } from "@/lib/utils";
 
-export function Banner({ error }: { error: boolean }) {
-  return <p className={cn("px-3", error ? "text-red-600" : "text-green-600")}>Saved</p>;
+export function Banner({ error, className }: { error: boolean; className?: string }) {
+  return <p className={cn("px-3 text-green-600", error && "text-red-600", className)}>Saved</p>;
 }
 
 // ❌ Anti-pattern: the full class never appears, so Tailwind emits nothing

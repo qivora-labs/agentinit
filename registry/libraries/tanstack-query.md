@@ -30,7 +30,7 @@ verifiedAt: 2026-10-28
 ---
 
 ## Boundary
-TanStack Query caches server data. A query key is an array. `JSON.stringify` hashes it: key order inside an object does not matter, and array order does. `queryOptions` returns the object you pass it, so the key and `queryFn` stay together. `useSuspenseQuery` `data` is defined. Loading goes to `<Suspense>` and errors go to an error boundary. That hook has no `enabled`, `placeholderData`, or `throwOnError` option.
+TanStack Query caches server data. A query key is an array and must be serializable with `JSON.stringify`. The hash is deterministic: key order inside an object does not matter, and array order does. `queryOptions` returns the object you pass it, so the key and `queryFn` stay together. `useSuspenseQuery` `data` is defined. Loading suspends. An error is thrown only when that query has no data. A refetch error with cached data stays on the result. Do not pass `enabled`, `placeholderData`, or `throwOnError`.
 
 ## Directives
 - **ALWAYS** build keys in one factory per resource, and include every value the `queryFn` reads. **NEVER** close over a value that is missing from the key.
@@ -41,6 +41,7 @@ TanStack Query caches server data. A query key is an array. `JSON.stringify` has
 
 ## Contract
 ```tsx
+import { Suspense } from "react";
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 export const todoKeys = {
@@ -56,6 +57,14 @@ export function todoOptions(id: string) {
 }
 
 export function Todo({ id }: { id: string }) {
+  return (
+    <Suspense fallback={<p>Loading</p>}>
+      <TodoBody id={id} />
+    </Suspense>
+  );
+}
+
+function TodoBody({ id }: { id: string }) {
   const { data } = useSuspenseQuery(todoOptions(id));
   return <p>{data.title}</p>;
 }
