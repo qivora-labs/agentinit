@@ -1,0 +1,6 @@
+{
+  "name": "lockfile-pnpm-and-npm",
+  "dependencies": {
+    "next": "^1.0.0"
+  }
+}

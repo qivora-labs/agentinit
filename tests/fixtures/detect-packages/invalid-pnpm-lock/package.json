@@ -1,0 +1,6 @@
+{
+  "name": "invalid-pnpm-lock",
+  "dependencies": {
+    "next": "^15.1.0"
+  }
+}

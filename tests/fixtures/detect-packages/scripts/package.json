@@ -1,0 +1,10 @@
+{
+  "name": "scripts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "start": "node .",
+    "prepare": "pnpm build"
+  }
+}

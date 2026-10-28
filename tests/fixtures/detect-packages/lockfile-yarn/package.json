@@ -1,0 +1,6 @@
+{
+  "name": "lockfile-yarn",
+  "dependencies": {
+    "next": "^15.1.0"
+  }
+}

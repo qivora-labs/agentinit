@@ -1,0 +1,6 @@
+{
+  "name": "lockfile-bunb",
+  "dependencies": {
+    "next": "^15.1.0"
+  }
+}

@@ -103,7 +103,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T11](T11-content-libraries-ui-state.md) | Content: Tailwind, shadcn, TanStack Query, Zustand | M2 | T08 | L | done |
 | [T12](T12-content-libraries-forms-testing.md) | Content: RHF + Zod, Vitest, Playwright | M2 | T08 | M | done |
 | [T13](T13-content-workflows.md) | Content: workflows | M2 | T08 | M | done |
-| [T14](T14-detect-packages.md) | Detect packages & versions | M3 | T03 | M | todo |
+| [T14](T14-detect-packages.md) | Detect packages & versions | M3 | T03 | M | done |
 | [T15](T15-detect-typescript.md) | TypeScript gate & tsconfig | M3 | T03 | S | todo |
 | [T16](T16-detect-layout.md) | Layout & architecture inference | M3 | T03 | M | todo |
 | [T17](T17-detect-workspace-and-agents.md) | Monorepo, git root, existing agents | M3 | T03 | S | todo |

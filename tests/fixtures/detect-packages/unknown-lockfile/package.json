@@ -1,0 +1,6 @@
+{
+  "name": "unknown-lockfile",
+  "dependencies": {
+    "next": "^15.1.0"
+  }
+}

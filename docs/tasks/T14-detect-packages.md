@@ -33,12 +33,12 @@ Read a project's dependencies with their **real** versions, its package manager,
 
 ## Acceptance criteria
 Fixtures under `tests/fixtures/detect-packages/` cover:
-- [ ] Installed version wins over lockfile and range.
-- [ ] `package-lock.json` and `pnpm-lock.yaml` (with peer suffix) resolve correctly when `node_modules` is absent.
-- [ ] `^15.1.0` → `15.1.0`; `npm:react@^19.0.0` alias resolves; `workspace:*` and `catalog:` → `null` without throwing.
-- [ ] Package manager from `packageManager` field, from each lockfile type, and default `npm`.
-- [ ] Only existing known scripts are returned.
-- [ ] Malformed `package.json` → readable error naming the file.
+- [x] Installed version wins over lockfile and range.
+- [x] `package-lock.json` and `pnpm-lock.yaml` (with peer suffix) resolve correctly when `node_modules` is absent.
+- [x] `^15.1.0` → `15.1.0`; `npm:react@^19.0.0` alias resolves; `workspace:*` and `catalog:` → `null` without throwing.
+- [x] Package manager from `packageManager` field, from each lockfile type, and default `npm`.
+- [x] Only existing known scripts are returned.
+- [x] Malformed `package.json` → readable error naming the file.
 
 ## Verify
 ```bash
@@ -49,4 +49,11 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(detect): resolve package versions, package manager, and scripts`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `semver.minVersion` throws on dist-tags and protocol specifiers (`latest`, `workspace:`, `catalog:`, `file:`, git, URL). Those fail `semver.validRange` and resolve to `null`. `npm:<name>@<range>` uses the inner range, including scoped names (`npm:@scope/pkg@^1.2.3`). `^` and `~` use `minVersion`.
+- `yarn.lock` and `bun.lock` / `bun.lockb` are not parsed in v0.1. Versions fall back to the range. The package manager is still detected from those filenames.
+- Package-manager detection checks `pnpm-lock.yaml`, then `yarn.lock`, then `bun.lock`, then `bun.lockb`, then `package-lock.json`. Version resolution reads `pnpm-lock.yaml` when that file exists, and otherwise `package-lock.json`. npm lockfile v1 (a `dependencies` tree and no `packages` map) falls back to the range. Invalid lockfiles contribute no versions and do not throw.
+- pnpm peer suffixes are stripped at the first `(`, so `1.2.3(react@19.0.0)` is `1.2.3`.
+- The same name in `dependencies` and `devDependencies` keeps the `dependencies` specifier. `optionalDependencies` and `peerDependencies` are not read.
+- An unrecognized `packageManager` name falls through to lockfile detection, then `npm`. Text after `@` is ignored (`pnpm@10.14.0` → `pnpm`).
+- A missing, unreadable, or version-less `node_modules/<pkg>/package.json` falls through to the lockfile. Dependency names that resolve outside `node_modules` are ignored.
+- `existingFiles` returns candidates that are files inside the project root, in candidate order. Directories and paths that leave the root are skipped.

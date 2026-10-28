@@ -1,0 +1,6 @@
+{
+  "lockfileVersion": 1,
+  "packages": {
+    "next": { "version": "9.9.9" }
+  }
+}

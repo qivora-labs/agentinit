@@ -1,0 +1,22 @@
+{
+  "name": "ranges",
+  "dependencies": {
+    "next": "^15.1.0",
+    "eslint": "~9.10.0",
+    "react": "npm:react@^19.0.0",
+    "@types/react": "npm:@types/react@^19.0.1",
+    "ui": "workspace:*",
+    "internal": "workspace:^1.2.0",
+    "config": "catalog:",
+    "local": "file:../local-pkg",
+    "gitpkg": "git+https://github.com/example/pkg.git",
+    "urlpkg": "https://example.com/pkg.tgz",
+    "gh": "github:example/pkg",
+    "floating": "latest",
+    "shared": "^1.2.3"
+  },
+  "devDependencies": {
+    "shared": "^9.9.9",
+    "vitest": "catalog:testing"
+  }
+}
