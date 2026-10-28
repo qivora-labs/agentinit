@@ -478,6 +478,40 @@ describe('runRegistryCheck', () => {
     expect(resolved.conflicts).toEqual([]);
   });
 
+  it('does not add the tailwind fragment when shadcn is selected on tailwind 3', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const resolved = resolveSelection(
+      registry,
+      {
+        language: 'typescript',
+        architecture: 'feature-based',
+        frameworks: ['react-vite'],
+        libraries: ['shadcn'],
+        origin: {
+          typescript: 'manual',
+          'feature-based': 'manual',
+          'react-vite': 'manual',
+          shadcn: 'manual',
+        },
+      },
+      { packages: { tailwindcss: '3.4.17' }, files: ['components.json'] },
+    );
+    expect(resolved.fragments.map((fragment) => fragment.meta.id)).toEqual([
+      'feature-based',
+      'typescript',
+      'react-vite',
+      'shadcn',
+    ]);
+    expect(resolved.notices).toEqual([
+      {
+        kind: 'unsupported-version',
+        package: 'tailwindcss',
+        version: '3.4.17',
+        fragmentId: 'tailwind',
+      },
+    ]);
+  });
+
   it('prints every load error and exits 1', async () => {
     const result = await run(path.join(INVALID, 'multiple'));
     expect(result.code).toBe(1);

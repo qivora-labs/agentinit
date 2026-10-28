@@ -12,6 +12,8 @@ globs:
 detect:
   packages: ["tailwindcss", "class-variance-authority"]
   files: ["components.json", "src/components/ui/button.tsx"]
+requires:
+  - tailwind
 compatibleWith:
   - nextjs-app-router
   - nextjs-pages-router
