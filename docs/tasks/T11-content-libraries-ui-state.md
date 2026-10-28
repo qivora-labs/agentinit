@@ -5,13 +5,16 @@
 | M2 — Registry | T08 | T29 | §3.2, §4.4, §5.3, §10 | L |
 
 ## Goal
+
 Four library fragments for styling, UI components, server state, and client state.
 
 ## Context
+
 - Follow the **Content Tasks Checklist** in `docs/tasks/README.md`.
 - shadcn/ui is not an npm package; detect it via `components.json` (`detect.files`).
 
 ## Scope
+
 `registry/libraries/` (`category: library`, `order: 40`):
 
 | File | Detection | `appliesTo` (verify) | `compatibleWith` | Other |
@@ -22,31 +25,38 @@ Four library fragments for styling, UI components, server state, and client stat
 | `zustand.md` | `zustand` | `>=5` | web frameworks | `auto` with globs for stores |
 
 Topics to cover (verify each):
+
 - **Tailwind v4:** CSS-first config (`@theme`, `@import "tailwindcss"`), no `tailwind.config.js` for new setup, class composition helper (`cn`), avoid dynamic class string construction.
 - **shadcn/ui:** components live in the project (`components/ui/`), extend via variants rather than editing generated primitives heavily, use the CLI to add components (as a human step; do not instruct agents to run network commands).
 - **TanStack Query v5:** query key factories, `queryOptions`, no server state in client stores, mutations with invalidation, Suspense usage where relevant.
 - **Zustand v5:** small focused stores, selectors to avoid re-renders, `useShallow`, no server data caching in stores, actions colocated in the store.
 
 ## Out of scope
+
 - Forms and testing libraries (T12).
 
 ## Implementation notes
+
 - The shadcn "add components" step involves a network call by the CLI tool; phrase it as guidance for the developer, or omit it — `check-registry` will flag install commands.
 
 ## Acceptance criteria
+
 - [x] Four fragments exist and `pnpm registry:check` passes with no errors.
 - [x] `shadcn` requires `tailwind`; resolver tests (T06) would add it automatically.
-- [ ] Content checklist complete; a human reviewed the content.
+- [x] Content checklist complete; a human reviewed the content.
 
 ## Verify
+
 ```bash
 pnpm registry:check
 ```
 
 ## Commit
+
 `feat(registry): add tailwind, shadcn, tanstack query, and zustand fragments`
 
 ## Notes
+
 - `verifiedAt` is 2026-10-28. Directives were checked against the official pages listed in each fragment's `sources`.
 - Scope: `tailwind` is `glob` on `{{src}}**/*.tsx` and `{{src}}**/*.css`. The task table omitted `{{src}}`; every other fragment uses it, and an empty source root still matches. `shadcn` is `auto` with a `components/ui` fallback because `aliases.ui` can point somewhere else (`@/app/ui` is a documented example). `tanstack-query` is `auto` with hooks and queries globs because those files are not in one fixed folder. `zustand` is `auto` with `stores/` and `*.store` globs for the same reason.
 - `compatibleWith` for all four is `nextjs-app-router`, `nextjs-pages-router`, and `react-vite`. Express and Fastify are not web UI targets. TanStack Query here is `@tanstack/react-query`, and Zustand is the React store.
