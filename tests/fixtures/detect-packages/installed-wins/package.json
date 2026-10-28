@@ -1,0 +1,12 @@
+{
+  "name": "installed-wins",
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "@scope/ui": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
