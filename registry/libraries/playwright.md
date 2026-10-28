@@ -9,6 +9,7 @@ scope: glob
 globs:
   - "**/e2e/**/*.ts"
   - "**/*.e2e.ts"
+  - "tests/**/*.spec.ts"
 detect:
   packages: ["@playwright/test"]
 appliesTo:
@@ -26,7 +27,7 @@ verifiedAt: 2026-10-28
 A locator is lazy: it re-queries the DOM when an action or assertion uses it. `click` and `fill` wait until the target is actionable. `getByRole` matches the element's role and accessible name. A web-first assertion retries until the condition holds or the expect timeout ends. The default expect timeout is 5 seconds. Each test gets its own `page`, storage, and cookies. `page.waitForTimeout` is for debugging. A test that waits a fixed time is flaky.
 
 ## Directives
-- **ALWAYS** locate an element with `getByRole` and its accessible name, or with `getByLabel` for a form control. **NEVER** locate by a CSS class or an XPath.
+- **PREFER** `getByRole` with its accessible name, or `getByLabel` for a form control. Use `getByText` or `getByTestId` when role and label do not identify the element. **NEVER** locate by a CSS class or an XPath.
 - **ALWAYS** `await` a web-first matcher such as `expect(locator).toBeVisible()` or `expect(locator).toHaveText()`. **NEVER** write `expect(await locator.isVisible()).toBe(true)`.
 - **NEVER** call `page.waitForTimeout` or `frame.waitForTimeout` in a test.
 - **ALWAYS** create the records a test needs in that test or in `beforeEach`. **NEVER** let one test read or write records that belong to another test.

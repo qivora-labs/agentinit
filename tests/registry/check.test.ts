@@ -397,7 +397,7 @@ describe('runRegistryCheck', () => {
       {
         id: 'playwright',
         scope: 'glob',
-        globs: ['**/e2e/**/*.ts', '**/*.e2e.ts'],
+        globs: ['**/e2e/**/*.ts', '**/*.e2e.ts', 'tests/**/*.spec.ts'],
         detect: { packages: ['@playwright/test'] },
         appliesTo: { '@playwright/test': '>=1.40' },
         requires: undefined,

@@ -38,18 +38,20 @@ One Zod object is the form's rules. `z.infer` is that schema's output type. `zod
 - **ALWAYS** take submitted values from `z.infer`. When the schema uses `.default()` or `.transform()`, input and output differ: pass `z.input`, `unknown`, and `z.output` to `useForm`.
 - **ALWAYS** `register` a native input. **ALWAYS** use `Controller` for a component that takes `value` and `onChange`, and spread `field` only. **NEVER** spread `register` and `field` onto the same element.
 - **ALWAYS** set `defaultValues`. A controlled `value` that is `undefined` on the first render starts the input uncontrolled.
-- **ALWAYS** convert a numeric HTML input with `{ valueAsNumber: true }` or with `z.coerce.number()` in the schema. **NEVER** pass the raw input string to `z.number()`.
+- **ALWAYS** pass `{ valueAsNumber: true }` to `register` for a native number input. A `Controller` number field uses `z.coerce.number()` in the schema, or converts in `onChange`. **NEVER** pass the raw input string to `z.number()`. **NEVER** put `valueAsNumber` on `Controller` `rules`.
 - **ALWAYS** point the label at the input with `htmlFor`, set `aria-invalid` from that field's error, and render `error.message` in an element with `role="alert"` whose `id` is the input's `aria-describedby`.
 - **ALWAYS** run this schema's `safeParse` or `parse` on untrusted server input. **NEVER** accept a client payload because the form already validated it.
 
 ## Contract
 ```tsx
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 
 export const profileSchema = z.object({
   name: z.string().min(1, { error: "Enter your name" }),
+  age: z.number(),
+  nickname: z.string().default(""),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -61,11 +63,12 @@ export function parseProfile(input: unknown) {
 export function ProfileForm() {
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
-  } = useForm<ProfileValues>({
+  } = useForm<z.input<typeof profileSchema>, unknown, z.output<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", age: 0, nickname: "" },
   });
   const onSubmit: SubmitHandler<ProfileValues> = (values) => {
     console.log(values);
@@ -85,10 +88,20 @@ export function ProfileForm() {
           {errors.name.message}
         </p>
       )}
+      <input type="number" {...register("age", { valueAsNumber: true })} />
+      <Controller
+        name="nickname"
+        control={control}
+        render={({ field }) => <input {...field} />}
+      />
     </form>
   );
 }
 
-// ❌ Anti-pattern: the schema rule is copied into register, and the error is silent
+// ❌ Anti-pattern: the schema rule is copied into register, and register is spread with field
 <input {...register("name", { required: "Enter your name" })} />
+<Controller
+  name="nickname"
+  render={({ field }) => <input {...field} {...register("nickname")} />}
+/>
 ```
