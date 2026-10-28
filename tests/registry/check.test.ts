@@ -297,9 +297,12 @@ describe('runRegistryCheck', () => {
       'nextjs-app-router',
       'nextjs-pages-router',
       'react-vite',
+      'playwright',
+      'react-hook-form-zod',
       'shadcn',
       'tailwind',
       'tanstack-query',
+      'vitest',
       'zustand',
     ]);
   });
@@ -392,6 +395,33 @@ describe('runRegistryCheck', () => {
     const web = ['nextjs-app-router', 'nextjs-pages-router', 'react-vite'];
     expect(libraries).toEqual([
       {
+        id: 'playwright',
+        scope: 'glob',
+        globs: ['e2e/**/*.ts', '**/e2e/**/*.ts', '**/*.e2e.ts'],
+        detect: { packages: ['@playwright/test'] },
+        appliesTo: { '@playwright/test': '>=1.40' },
+        requires: undefined,
+        compatibleWith: undefined,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'react-hook-form-zod',
+        scope: 'auto',
+        globs: [
+          '{{src}}**/forms/**/*.ts',
+          '{{src}}**/forms/**/*.tsx',
+          '{{src}}**/*.form.ts',
+          '{{src}}**/*.form.tsx',
+        ],
+        detect: { packages: ['react-hook-form', 'zod', '@hookform/resolvers'] },
+        appliesTo: { 'react-hook-form': '>=7', zod: '>=4' },
+        requires: undefined,
+        compatibleWith: web,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
         id: 'shadcn',
         scope: 'auto',
         globs: ['{{src}}components/ui/**/*.ts', '{{src}}components/ui/**/*.tsx'],
@@ -430,6 +460,17 @@ describe('runRegistryCheck', () => {
         sourced: true,
       },
       {
+        id: 'vitest',
+        scope: 'glob',
+        globs: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+        detect: { packages: ['vitest'] },
+        appliesTo: { vitest: '>=3' },
+        requires: undefined,
+        compatibleWith: undefined,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
         id: 'zustand',
         scope: 'auto',
         globs: [
@@ -446,6 +487,15 @@ describe('runRegistryCheck', () => {
         sourced: true,
       },
     ]);
+  });
+
+  it('runs vitest and playwright through the project test script', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    for (const id of ['playwright', 'vitest']) {
+      const body = registry.byId.get(id)?.body ?? '';
+      expect(body).toContain('{{scripts.test}}');
+      expect(body).not.toMatch(/\bnpm(?:\s+run)?\s+test\b/);
+    }
   });
 
   it('suggests shadcn from components.json and resolveSelection adds tailwind', async () => {
