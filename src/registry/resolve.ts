@@ -76,6 +76,8 @@ interface Expanded {
   fragments: Fragment[];
   /** Fragments pulled in by `requires`, in the order they were added. */
   added: readonly { fragmentId: string; requiredBy: string }[];
+  /** `unsupported-version` notices for required fragments that were left out. */
+  skipped: readonly RegistryNotice[];
   requiredBy: ReadonlyMap<string, string>;
 }
 
@@ -111,10 +113,17 @@ export function suggestFragments(registry: Registry, facts: ProjectFacts): Sugge
 /**
  * Turn a selection into the fragments to compile.
  * Conflicts are reported, not removed: prompting happens in the wizard.
+ * A required fragment is omitted when `facts` names a version outside its
+ * `appliesTo` range. Ids in the selection itself are kept.
  */
-export function resolveSelection(registry: Registry, selection: Selection): ResolvedSelection {
+export function resolveSelection(
+  registry: Registry,
+  selection: Selection,
+  facts?: ProjectFacts,
+): ResolvedSelection {
+  const packages = facts?.packages;
   const roots = selectionRoots(registry, selection);
-  const expanded = expandRequires(registry, roots, new Set());
+  const expanded = expandRequires(registry, roots, new Set(), packages);
   const frameworkIds = expanded.fragments
     .filter((fragment) => fragment.meta.category === 'framework')
     .map((fragment) => fragment.meta.id);
@@ -131,6 +140,7 @@ export function resolveSelection(registry: Registry, selection: Selection): Reso
     registry,
     roots.filter((fragment) => !dropped.has(fragment.meta.id)),
     dropped,
+    packages,
   );
 
   const notices: RegistryNotice[] = resolved.added.map((entry) => ({
@@ -138,6 +148,7 @@ export function resolveSelection(registry: Registry, selection: Selection): Reso
     fragmentId: entry.fragmentId,
     requiredBy: entry.requiredBy,
   }));
+  notices.push(...resolved.skipped);
 
   if (!resolved.fragments.some((fragment) => fragment.meta.category === 'framework')) {
     notices.push({ kind: 'no-framework' });
@@ -236,12 +247,20 @@ function requireFragment(registry: Registry, id: string, category: FragmentCateg
 /**
  * `blocked` fragments are skipped and do not contribute their own `requires`.
  * A dependency that is already included is not added again.
+ * A known version outside `appliesTo` omits the dependency and its own
+ * `requires`. A missing fact set, a missing package, or a null version does not.
  */
-function expandRequires(registry: Registry, roots: readonly Fragment[], blocked: ReadonlySet<string>): Expanded {
+function expandRequires(
+  registry: Registry,
+  roots: readonly Fragment[],
+  blocked: ReadonlySet<string>,
+  packages?: ProjectFacts['packages'],
+): Expanded {
   const included = new Map<string, Fragment>();
   const requiredBy = new Map<string, string>();
   const queued = new Set<string>();
   const added: { fragmentId: string; requiredBy: string }[] = [];
+  const skipped: RegistryNotice[] = [];
 
   let wave: Fragment[] = [];
   for (const root of roots) {
@@ -272,6 +291,16 @@ function expandRequires(registry: Registry, roots: readonly Fragment[], blocked:
       for (const dependency of dependencies) {
         queued.add(dependency.meta.id);
         if (dependency.meta.category === 'workflow') continue;
+        const meta = ruleMeta(dependency);
+        if (meta !== undefined && packages !== undefined) {
+          const unsupported = versionNoticesFor(meta, packages).filter(
+            (notice) => notice.kind === 'unsupported-version',
+          );
+          if (unsupported.length > 0) {
+            skipped.push(...unsupported);
+            continue;
+          }
+        }
         included.set(dependency.meta.id, dependency);
         requiredBy.set(dependency.meta.id, current.meta.id);
         added.push({ fragmentId: dependency.meta.id, requiredBy: current.meta.id });
@@ -285,6 +314,7 @@ function expandRequires(registry: Registry, roots: readonly Fragment[], blocked:
   return {
     fragments: [...included.values()].sort(compareFragments),
     added,
+    skipped,
     requiredBy,
   };
 }

@@ -15,6 +15,7 @@ import {
 import { loadRegistry } from '../../src/registry/load.js';
 import { defaultRegistryDir } from '../../src/registry/locate.js';
 import { parseFragment, type Fragment } from '../../src/registry/parse.js';
+import { resolveSelection, suggestFragments } from '../../src/registry/resolve.js';
 
 const TODAY = '2026-10-28';
 const SAMPLE = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
@@ -282,7 +283,7 @@ describe('runRegistryCheck', () => {
     expect(sample).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
   });
 
-  it('includes the architecture, language, and framework fragments', async () => {
+  it('includes the architecture, language, framework, and library fragments', async () => {
     const registry = await loadRegistry(defaultRegistryDir());
     expect(registry.fragments.map((fragment) => fragment.meta.id)).toEqual([
       'atomic-design',
@@ -296,6 +297,10 @@ describe('runRegistryCheck', () => {
       'nextjs-app-router',
       'nextjs-pages-router',
       'react-vite',
+      'shadcn',
+      'tailwind',
+      'tanstack-query',
+      'zustand',
     ]);
   });
 
@@ -364,6 +369,145 @@ describe('runRegistryCheck', () => {
         appliesTo: { react: '>=19', vite: '>=6' },
         verifiedAt: '2026-10-28',
         sourced: true,
+      },
+    ]);
+  });
+
+  it('records library detection, scope, and compatibility', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const libraries = registry.byCategory('library').map((fragment) => {
+      if (fragment.meta.category === 'workflow') throw new Error('expected a rule fragment');
+      return {
+        id: fragment.meta.id,
+        scope: fragment.meta.scope,
+        globs: fragment.meta.globs,
+        detect: fragment.meta.detect,
+        appliesTo: fragment.meta.appliesTo,
+        requires: fragment.meta.requires,
+        compatibleWith: fragment.meta.compatibleWith,
+        verifiedAt: fragment.meta.verifiedAt,
+        sourced: fragment.meta.sources.length > 0,
+      };
+    });
+    const web = ['nextjs-app-router', 'nextjs-pages-router', 'react-vite'];
+    expect(libraries).toEqual([
+      {
+        id: 'shadcn',
+        scope: 'auto',
+        globs: ['{{src}}components/ui/**/*.ts', '{{src}}components/ui/**/*.tsx'],
+        detect: { files: ['components.json'] },
+        appliesTo: undefined,
+        requires: ['tailwind'],
+        compatibleWith: web,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'tailwind',
+        scope: 'glob',
+        globs: ['{{src}}**/*.tsx', '{{src}}**/*.css'],
+        detect: { packages: ['tailwindcss'] },
+        appliesTo: { tailwindcss: '>=4' },
+        requires: undefined,
+        compatibleWith: web,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'tanstack-query',
+        scope: 'auto',
+        globs: [
+          '{{src}}**/hooks/**/*.ts',
+          '{{src}}**/hooks/**/*.tsx',
+          '{{src}}**/queries/**/*.ts',
+          '{{src}}**/queries/**/*.tsx',
+        ],
+        detect: { packages: ['@tanstack/react-query'] },
+        appliesTo: { '@tanstack/react-query': '>=5' },
+        requires: undefined,
+        compatibleWith: web,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'zustand',
+        scope: 'auto',
+        globs: [
+          '{{src}}**/stores/**/*.ts',
+          '{{src}}**/stores/**/*.tsx',
+          '{{src}}**/*.store.ts',
+          '{{src}}**/*.store.tsx',
+        ],
+        detect: { packages: ['zustand'] },
+        appliesTo: { zustand: '>=5' },
+        requires: undefined,
+        compatibleWith: web,
+        verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+    ]);
+  });
+
+  it('suggests shadcn from components.json and resolveSelection adds tailwind', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    expect(suggestFragments(registry, { packages: {}, files: ['components.json'] })).toEqual({
+      frameworks: [],
+      libraries: ['shadcn'],
+      notices: [],
+    });
+    const resolved = resolveSelection(registry, {
+      language: 'typescript',
+      architecture: 'feature-based',
+      frameworks: ['react-vite'],
+      libraries: ['shadcn'],
+      origin: {
+        typescript: 'manual',
+        'feature-based': 'manual',
+        'react-vite': 'manual',
+        shadcn: 'manual',
+      },
+    });
+    expect(resolved.fragments.map((fragment) => fragment.meta.id)).toEqual([
+      'feature-based',
+      'typescript',
+      'react-vite',
+      'shadcn',
+      'tailwind',
+    ]);
+    expect(resolved.notices).toEqual([{ kind: 'required-by', fragmentId: 'tailwind', requiredBy: 'shadcn' }]);
+    expect(resolved.conflicts).toEqual([]);
+  });
+
+  it('does not add the tailwind fragment when shadcn is selected on tailwind 3', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const resolved = resolveSelection(
+      registry,
+      {
+        language: 'typescript',
+        architecture: 'feature-based',
+        frameworks: ['react-vite'],
+        libraries: ['shadcn'],
+        origin: {
+          typescript: 'manual',
+          'feature-based': 'manual',
+          'react-vite': 'manual',
+          shadcn: 'manual',
+        },
+      },
+      { packages: { tailwindcss: '3.4.17' }, files: ['components.json'] },
+    );
+    expect(resolved.fragments.map((fragment) => fragment.meta.id)).toEqual([
+      'feature-based',
+      'typescript',
+      'react-vite',
+      'shadcn',
+    ]);
+    expect(resolved.notices).toEqual([
+      {
+        kind: 'unsupported-version',
+        package: 'tailwindcss',
+        version: '3.4.17',
+        fragmentId: 'tailwind',
       },
     ]);
   });

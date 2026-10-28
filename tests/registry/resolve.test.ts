@@ -33,6 +33,7 @@ interface SuggestCase {
 interface ResolveCase {
   name: string;
   selection: Selection;
+  facts?: ProjectFacts;
   fragmentIds: readonly string[];
   notices: readonly RegistryNotice[];
   conflicts: readonly FragmentConflict[];
@@ -363,6 +364,57 @@ const resolveCases: readonly ResolveCase[] = [
     notices: [],
     conflicts: [],
   },
+  {
+    name: 'adds a required fragment when its version satisfies appliesTo',
+    selection: selection({
+      libraries: ['shadcn'],
+      origin: detected('typescript-strict', 'layered', 'nextjs-app-router', 'shadcn'),
+    }),
+    facts: { packages: { tailwindcss: '4.1.0' }, files: [] },
+    fragmentIds: ['layered', 'typescript-strict', 'nextjs-app-router', 'shadcn', 'tailwind'],
+    notices: [{ kind: 'required-by', fragmentId: 'tailwind', requiredBy: 'shadcn' }],
+    conflicts: [],
+  },
+  {
+    name: 'omits a required fragment whose version is outside appliesTo',
+    selection: selection({
+      libraries: ['shadcn'],
+      origin: detected('typescript-strict', 'layered', 'nextjs-app-router', 'shadcn'),
+    }),
+    facts: { packages: { tailwindcss: '3.4.17' }, files: [] },
+    fragmentIds: ['layered', 'typescript-strict', 'nextjs-app-router', 'shadcn'],
+    notices: [
+      {
+        kind: 'unsupported-version',
+        package: 'tailwindcss',
+        version: '3.4.17',
+        fragmentId: 'tailwind',
+      },
+    ],
+    conflicts: [],
+  },
+  {
+    name: 'adds a required fragment when its version is unknown',
+    selection: selection({
+      libraries: ['shadcn'],
+      origin: detected('typescript-strict', 'layered', 'nextjs-app-router', 'shadcn'),
+    }),
+    facts: { packages: { tailwindcss: null }, files: [] },
+    fragmentIds: ['layered', 'typescript-strict', 'nextjs-app-router', 'shadcn', 'tailwind'],
+    notices: [{ kind: 'required-by', fragmentId: 'tailwind', requiredBy: 'shadcn' }],
+    conflicts: [],
+  },
+  {
+    name: 'keeps an explicitly selected fragment whose version is outside appliesTo',
+    selection: selection({
+      libraries: ['tailwind'],
+      origin: detected('typescript-strict', 'layered', 'nextjs-app-router', 'tailwind'),
+    }),
+    facts: { packages: { tailwindcss: '3.4.17' }, files: [] },
+    fragmentIds: ['layered', 'typescript-strict', 'nextjs-app-router', 'tailwind'],
+    notices: [],
+    conflicts: [],
+  },
 ];
 
 function selection(overrides: Partial<Selection> = {}): Selection {
@@ -391,8 +443,8 @@ function idsOf(fragments: readonly Fragment[]): string[] {
 }
 
 function expectResolved(registry: Registry, testCase: ResolveCase): void {
-  const first = resolveSelection(registry, testCase.selection);
-  const second = resolveSelection(registry, testCase.selection);
+  const first = resolveSelection(registry, testCase.selection, testCase.facts);
+  const second = resolveSelection(registry, testCase.selection, testCase.facts);
   expect(snapshot(first)).toEqual(snapshot(second));
   expect(snapshot(first)).toEqual({
     fragmentIds: [...testCase.fragmentIds],
@@ -516,4 +568,92 @@ text
       }),
     ).toThrow('Unknown fragment "missing-lib" required by "needs-missing".');
   });
+
+  it('does not add requires of a fragment omitted for an unsupported version', () => {
+    const resolved = resolveSelection(versionedRegistry(), shadcnSelection(), {
+      packages: { tailwindcss: '3.4.17' },
+      files: [],
+    });
+    expect(snapshot(resolved)).toEqual({
+      fragmentIds: ['layered', 'typescript-strict', 'react-vite', 'shadcn'],
+      workflowIds: [],
+      notices: [
+        {
+          kind: 'unsupported-version',
+          package: 'tailwindcss',
+          version: '3.4.17',
+          fragmentId: 'tailwind',
+        },
+      ],
+      conflicts: [],
+    });
+  });
+
+  it('adds requires of a required fragment when the version is in range', () => {
+    const resolved = resolveSelection(versionedRegistry(), shadcnSelection(), {
+      packages: { tailwindcss: '4.1.0' },
+      files: [],
+    });
+    expect(snapshot(resolved)).toEqual({
+      fragmentIds: ['layered', 'typescript-strict', 'react-vite', 'shadcn', 'tailwind', 'tokens'],
+      workflowIds: [],
+      notices: [
+        { kind: 'required-by', fragmentId: 'tailwind', requiredBy: 'shadcn' },
+        { kind: 'required-by', fragmentId: 'tokens', requiredBy: 'tailwind' },
+      ],
+      conflicts: [],
+    });
+  });
 });
+
+function shadcnSelection(): Selection {
+  return {
+    language: 'typescript-strict',
+    architecture: 'layered',
+    frameworks: ['react-vite'],
+    libraries: ['shadcn'],
+    origin: detected('typescript-strict', 'layered', 'react-vite', 'shadcn'),
+  };
+}
+
+function versionedRegistry(): Registry {
+  return registryFrom([
+    alwaysFragment('layered', 'architecture', 10),
+    alwaysFragment('typescript-strict', 'language', 20),
+    alwaysFragment('react-vite', 'framework', 30),
+    alwaysFragment('shadcn', 'library', 40, 'requires:\n  - tailwind\n'),
+    alwaysFragment(
+      'tailwind',
+      'library',
+      40,
+      'detect:\n  packages: ["tailwindcss"]\nappliesTo:\n  tailwindcss: ">=4"\nrequires:\n  - tokens\n',
+    ),
+    alwaysFragment('tokens', 'library', 40),
+  ]);
+}
+
+function alwaysFragment(
+  id: string,
+  category: 'architecture' | 'language' | 'framework' | 'library',
+  order: number,
+  extra = '',
+): Fragment {
+  return parseFragment(
+    `---
+id: ${id}
+name: ${id}
+category: ${category}
+version: 1.0.0
+order: ${String(order)}
+description: ${id} rules.
+scope: always
+${extra}sources:
+  - https://example.com/docs/${id}
+verifiedAt: 2026-10-17
+---
+## Boundary
+text
+`,
+    `${category === 'library' ? 'libraries' : `${category}s`}/${id}.md`,
+  );
+}

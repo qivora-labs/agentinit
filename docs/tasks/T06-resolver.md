@@ -21,7 +21,7 @@ Pure functions that (1) suggest fragments from detected project facts and (2) tu
    - Unknown version (`null`) → suggested, with notice `{ kind: 'unknown-version' }`.
    - Both Next.js fragments may be suggested together; this function doesn't decide the App vs. Pages question (layout does, in T16/T18).
 
-2. `resolveSelection(registry, selection) → { fragments, workflows, notices, conflicts }`
+2. `resolveSelection(registry, selection, facts?) → { fragments, workflows, notices, conflicts }`
    - `selection = { language, architecture, frameworks, libraries, origin: Record<id, 'detected' | 'manual'> }`.
    - Adds `requires` transitively (notice `required-by`).
    - Reports `conflicts` only between pairs where at least one side is `manual`; detected pairs are always honored.
@@ -66,5 +66,6 @@ pnpm lint && pnpm typecheck && pnpm test
 - Unknown ids and ids from the wrong category throw `AgentInitError`. A `requires` id missing from the registry throws as well; `loadRegistry` already rejects that for real registries.
 - Conflicts are `{ a, b }` with `a < b`, sorted, and only include fragments that remain after incompatible libraries are dropped. Both sides stay in `fragments` (prompting is T19). An origin entry that is omitted counts as `manual`. A required fragment inherits the origin of the fragment that pulled it in.
 - Incompatible libraries are removed before their `requires` are kept, so a dropped library does not pull dependencies. `no-framework` is a single notice when the final list contains no framework. Compatibility is decided against frameworks present after the first `requires` expansion.
+- Optional `facts` gates `requires` with the same version rule as suggestion. A known version outside `appliesTo` omits that fragment, emits `unsupported-version`, and does not add its own `requires`. Notices for those omissions follow the `required-by` notices. A missing `facts` argument, a package absent from `facts`, or a `null` version still adds the fragment. An id listed in the selection is kept even when its version is outside the range.
 - `fragments` excludes workflows. `workflows` is always every workflow fragment, sorted by `order` then `id`.
 - The sample registry gained the extra fragments these cases need (`typescript`, `nextjs-pages-router`, `tailwind`, `shadcn`, `vitest`, `forms`, `review-arch`). Loader and `list` expectations were updated to match.
