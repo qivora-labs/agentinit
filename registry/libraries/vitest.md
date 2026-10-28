@@ -7,10 +7,29 @@ order: 40
 description: Behavior assertions, top-level vi.mock, and fake timers.
 scope: glob
 globs:
-  - "**/*.test.ts"
   - "**/*.test.tsx"
-  - "**/*.spec.ts"
   - "**/*.spec.tsx"
+  - "*.test.ts"
+  - "*.spec.ts"
+  - "src/**/*.test.ts"
+  - "src/**/*.spec.ts"
+  - "app/**/*.test.ts"
+  - "app/**/*.spec.ts"
+  - "lib/**/*.test.ts"
+  - "lib/**/*.spec.ts"
+  - "server/**/*.test.ts"
+  - "server/**/*.spec.ts"
+  - "pages/**/*.test.ts"
+  - "pages/**/*.spec.ts"
+  - "components/**/*.test.ts"
+  - "components/**/*.spec.ts"
+  - "test/**/*.test.ts"
+  - "test/**/*.spec.ts"
+  - "tests/*.test.ts"
+  - "tests/unit/**/*.test.ts"
+  - "tests/integration/**/*.test.ts"
+  - "__tests__/**/*.test.ts"
+  - "__tests__/**/*.spec.ts"
 detect:
   packages: ["vitest"]
 appliesTo:

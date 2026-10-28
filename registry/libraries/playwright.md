@@ -7,7 +7,8 @@ order: 40
 description: Role locators, web-first assertions, and isolated browser tests.
 scope: glob
 globs:
-  - "**/e2e/**/*.ts"
+  - "e2e/**/*.ts"
+  - "tests/e2e/**/*.ts"
   - "**/*.e2e.ts"
   - "tests/**/*.spec.ts"
 detect:

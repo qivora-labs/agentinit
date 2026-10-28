@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { glob } from 'tinyglobby';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AgentInitError } from '../../src/errors.js';
 import { runRegistryCheck } from '../../scripts/check-registry.js';
@@ -397,7 +398,7 @@ describe('runRegistryCheck', () => {
       {
         id: 'playwright',
         scope: 'glob',
-        globs: ['**/e2e/**/*.ts', '**/*.e2e.ts', 'tests/**/*.spec.ts'],
+        globs: ['e2e/**/*.ts', 'tests/e2e/**/*.ts', '**/*.e2e.ts', 'tests/**/*.spec.ts'],
         detect: { packages: ['@playwright/test'] },
         appliesTo: { '@playwright/test': '>=1.40' },
         requires: undefined,
@@ -462,7 +463,31 @@ describe('runRegistryCheck', () => {
       {
         id: 'vitest',
         scope: 'glob',
-        globs: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+        globs: [
+          '**/*.test.tsx',
+          '**/*.spec.tsx',
+          '*.test.ts',
+          '*.spec.ts',
+          'src/**/*.test.ts',
+          'src/**/*.spec.ts',
+          'app/**/*.test.ts',
+          'app/**/*.spec.ts',
+          'lib/**/*.test.ts',
+          'lib/**/*.spec.ts',
+          'server/**/*.test.ts',
+          'server/**/*.spec.ts',
+          'pages/**/*.test.ts',
+          'pages/**/*.spec.ts',
+          'components/**/*.test.ts',
+          'components/**/*.spec.ts',
+          'test/**/*.test.ts',
+          'test/**/*.spec.ts',
+          'tests/*.test.ts',
+          'tests/unit/**/*.test.ts',
+          'tests/integration/**/*.test.ts',
+          '__tests__/**/*.test.ts',
+          '__tests__/**/*.spec.ts',
+        ],
         detect: { packages: ['vitest'] },
         appliesTo: { vitest: '>=3' },
         requires: undefined,
@@ -486,6 +511,64 @@ describe('runRegistryCheck', () => {
         verifiedAt: '2026-10-28',
         sourced: true,
       },
+    ]);
+  });
+
+  it('attaches vitest and playwright to different files', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const vitest = ruleGlobs(registry, 'vitest');
+    const playwright = ruleGlobs(registry, 'playwright');
+    const dir = await tempDir();
+    const files = [
+      'tests/example.spec.ts',
+      'tests/unit/cart.spec.ts',
+      'e2e/example.spec.ts',
+      'e2e/example.test.ts',
+      'e2e/pages/login.ts',
+      'tests/e2e/example.spec.ts',
+      'tests/e2e/example.test.ts',
+      'profile.e2e.ts',
+      'src/cart.test.ts',
+      'src/cart.spec.ts',
+      'src/Button.test.tsx',
+      'src/Button.spec.tsx',
+      'tests/cart.test.ts',
+      'tests/unit/cart.test.ts',
+      'tests/integration/cart.test.ts',
+      'app/cart.test.ts',
+      'cart.test.ts',
+      'cart.spec.ts',
+      '__tests__/cart.spec.ts',
+      'test/cart.spec.ts',
+    ];
+    await Promise.all(files.map(async (file) => writeMarkdown(dir, file, '')));
+    const vitestHits = await matchGlobs(dir, vitest);
+    const playwrightHits = await matchGlobs(dir, playwright);
+
+    expect(files.filter((file) => vitestHits.has(file) && playwrightHits.has(file))).toEqual([]);
+    expect([...playwrightHits].sort()).toEqual([
+      'e2e/example.spec.ts',
+      'e2e/example.test.ts',
+      'e2e/pages/login.ts',
+      'profile.e2e.ts',
+      'tests/e2e/example.spec.ts',
+      'tests/e2e/example.test.ts',
+      'tests/example.spec.ts',
+      'tests/unit/cart.spec.ts',
+    ]);
+    expect([...vitestHits].sort()).toEqual([
+      '__tests__/cart.spec.ts',
+      'app/cart.test.ts',
+      'cart.spec.ts',
+      'cart.test.ts',
+      'src/Button.spec.tsx',
+      'src/Button.test.tsx',
+      'src/cart.spec.ts',
+      'src/cart.test.ts',
+      'test/cart.spec.ts',
+      'tests/cart.test.ts',
+      'tests/integration/cart.test.ts',
+      'tests/unit/cart.test.ts',
     ]);
   });
 
@@ -773,6 +856,24 @@ async function tempDir(): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), 'agentinit-'));
   directories.push(dir);
   return dir;
+}
+
+function ruleGlobs(registry: Awaited<ReturnType<typeof loadRegistry>>, id: string): string[] {
+  const fragment = registry.byId.get(id);
+  if (fragment === undefined || fragment.meta.category === 'workflow' || fragment.meta.globs === undefined) {
+    throw new Error(`expected globs on ${id}`);
+  }
+  return [...fragment.meta.globs];
+}
+
+async function matchGlobs(dir: string, patterns: readonly string[]): Promise<Set<string>> {
+  const matches = await glob([...patterns], {
+    cwd: dir,
+    absolute: false,
+    dot: false,
+    onlyFiles: true,
+  });
+  return new Set(matches);
 }
 
 async function writeMarkdown(root: string, relativePath: string, text: string): Promise<void> {
