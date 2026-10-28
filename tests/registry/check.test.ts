@@ -15,7 +15,7 @@ import {
 } from '../../src/registry/check.js';
 import { loadRegistry } from '../../src/registry/load.js';
 import { defaultRegistryDir } from '../../src/registry/locate.js';
-import { parseFragment, type Fragment } from '../../src/registry/parse.js';
+import { getSections, parseFragment, type Fragment } from '../../src/registry/parse.js';
 import { resolveSelection, suggestFragments } from '../../src/registry/resolve.js';
 
 const TODAY = '2026-10-28';
@@ -284,7 +284,7 @@ describe('runRegistryCheck', () => {
     expect(sample).toEqual({ code: 0, text: '0 errors, 0 warnings\n' });
   });
 
-  it('includes the architecture, language, framework, and library fragments', async () => {
+  it('includes the architecture, language, framework, library, and workflow fragments', async () => {
     const registry = await loadRegistry(defaultRegistryDir());
     expect(registry.fragments.map((fragment) => fragment.meta.id)).toEqual([
       'atomic-design',
@@ -305,6 +305,10 @@ describe('runRegistryCheck', () => {
       'tanstack-query',
       'vitest',
       'zustand',
+      'new-feature',
+      'refactor',
+      'review-arch',
+      'write-tests',
     ]);
   });
 
@@ -570,6 +574,69 @@ describe('runRegistryCheck', () => {
       'tests/integration/cart.test.ts',
       'tests/unit/cart.test.ts',
     ]);
+  });
+
+  it('ships the four workflows with arguments, stops, and project scripts', async () => {
+    const registry = await loadRegistry(defaultRegistryDir());
+    const workflows = registry.byCategory('workflow').map((fragment) => {
+      if (fragment.meta.category !== 'workflow') throw new Error('expected a workflow');
+      return {
+        id: fragment.meta.id,
+        order: fragment.meta.order,
+        argumentHint: fragment.meta.argumentHint,
+        sections: [...getSections(fragment.body).keys()],
+      };
+    });
+    const sections = ['Purpose', 'Input', 'Steps', 'Output', 'Guardrails'];
+    expect(workflows).toEqual([
+      {
+        id: 'new-feature',
+        order: 50,
+        argumentHint: '<feature-name> <short description>',
+        sections,
+      },
+      {
+        id: 'refactor',
+        order: 50,
+        argumentHint: '<target> <goal>',
+        sections,
+      },
+      {
+        id: 'review-arch',
+        order: 50,
+        argumentHint: '[path]',
+        sections,
+      },
+      {
+        id: 'write-tests',
+        order: 50,
+        argumentHint: '<target>',
+        sections,
+      },
+    ]);
+
+    const body = (id: string): string => registry.byId.get(id)?.body ?? '';
+    expect(body('new-feature')).toMatch(/stop and wait for the user to confirm/i);
+    expect(body('new-feature')).toContain('each path to create or edit');
+    expect(body('new-feature')).toContain("closest `AGENTS.md` in that file's directory tree");
+    expect(body('new-feature')).toContain('{{scripts.typecheck}}');
+    expect(body('new-feature')).toContain('{{scripts.lint}}');
+    expect(body('new-feature')).toContain('{{scripts.test}}');
+    expect(body('review-arch')).toMatch(/read-only/i);
+    expect(body('review-arch')).toMatch(/\*\*NEVER\*\* edit/);
+    expect(body('review-arch')).toContain('file:line');
+    expect(body('refactor')).toMatch(/characterization tests/i);
+    expect(body('refactor')).toContain('public API');
+    expect(body('refactor')).toContain('{{scripts.test}}');
+    expect(body('write-tests')).toMatch(/\*\*NEVER\*\* mock the unit under test/);
+    expect(body('write-tests')).toContain('{{scripts.test}}');
+    for (const id of ['new-feature', 'refactor', 'review-arch', 'write-tests']) {
+      const text = body(id);
+      expect(text).not.toContain('$ARGUMENTS');
+      expect(text).not.toContain('@AGENTS.md');
+      expect(text).not.toContain('argument-hint');
+      expect(text.split(/\r?\n/u).length).toBeLessThanOrEqual(60);
+    }
   });
 
   it('runs vitest and playwright through the project test script', async () => {
