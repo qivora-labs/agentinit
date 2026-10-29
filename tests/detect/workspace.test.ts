@@ -111,6 +111,16 @@ describe('isMonorepoRoot', () => {
       tool: 'npm',
     });
   });
+
+  it('ignores marker names that are directories', async () => {
+    const root = await tempDir();
+    await mkdir(path.join(root, 'pnpm-workspace.yaml'));
+    await mkdir(path.join(root, 'turbo.json'));
+    await mkdir(path.join(root, 'nx.json'));
+    await mkdir(path.join(root, 'lerna.json'));
+
+    expect(isMonorepoRoot(root, {})).toEqual({ isRoot: false });
+  });
 });
 
 describe('findGitRoot', () => {
