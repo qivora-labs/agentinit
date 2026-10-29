@@ -13,7 +13,8 @@ export interface TsConfigSettings {
   readonly paths: Record<string, string[]>;
   /**
    * Empty when every `extends` target resolved.
-   * One message per target `get-tsconfig` could not find.
+   * At most one warning: `get-tsconfig` throws on the first target it cannot
+   * find, so later entries in an `extends` array are not reported separately.
    */
   readonly warnings: readonly string[];
 }
