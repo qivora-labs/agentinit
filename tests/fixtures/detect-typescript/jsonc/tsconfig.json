@@ -1,0 +1,10 @@
+{
+  // App aliases. Comments and a trailing comma must survive parsing.
+  "compilerOptions": {
+    "strict": false,
+    "paths": {
+      "@app/*": ["./src/*"],
+      "@lib": ["./lib/index.ts"],
+    },
+  },
+}
