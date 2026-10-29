@@ -31,11 +31,11 @@ Detect `src/` vs. root layout, Next.js router folders, existing folders, and the
 
 ## Acceptance criteria
 Fixtures under `tests/fixtures/detect-layout/`:
-- [ ] `src/` with TS files → `'src'`; empty `src/` → `''`.
-- [ ] App only, Pages only, both, and root-level `app/` with `src/` are detected correctly.
-- [ ] Clear feature-based, layered, and atomic trees score ≥ 0.7 for the right architecture.
-- [ ] A mixed tree (e.g., `features/` + `domain/` + `atoms/`) scores < 0.7.
-- [ ] `folders` excludes ignored directories and is sorted.
+- [x] `src/` with TS files → `'src'`; empty `src/` → `''`.
+- [x] App only, Pages only, both, and root-level `app/` with `src/` are detected correctly.
+- [x] Clear feature-based, layered, and atomic trees score ≥ 0.7 for the right architecture.
+- [x] A mixed tree (e.g., `features/` + `domain/` + `atoms/`) scores < 0.7.
+- [x] `folders` excludes ignored directories and is sorted.
 
 ## Verify
 ```bash
@@ -46,4 +46,13 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(detect): infer layout and architecture with confidence`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Implemented in `src/detect/layout.ts`, which matches the PRD §4.2 sketch. T18 should import this module. It is not wired into an orchestrator here.
+- Folder paths are POSIX and relative to `srcDir`, with no `src/` prefix. `inferArchitecture` sees `features` and `components/atoms`. `srcDir` stays a separate profile field.
+- `detectSrcDir` walks real directories under `src/`, skipping `node_modules`, `dist`, `build`, `.next`, `coverage`, and dot-folders at every level. A nested `.ts` or `.tsx` file counts. A `.d.ts` file does not. A missing `src/`, a file named `src`, or a directory with no `.ts`/`.tsx` file returns `''`. Symlinks are ignored (`Dirent.isDirectory()` and `isFile()` are false for links).
+- `detectNextRouters` requires directories. When `srcDir` is `src`, either `src/<router>` or a root-level `<router>` sets the flag. When `srcDir` is `''`, only the project root is checked. `app/pages` is not the Pages router.
+- `listFolders` returns depth 1 and 2. Ignored names are skipped at every level, including nested `node_modules` and `build`, and so is any dot-folder. Depth 3+ is omitted. An unreadable directory throws `AgentInitError`. Paths sort by UTF-16 code unit. `dist/` and `coverage/` match the repo `.gitignore`, so the test creates those directories in the temp copy. `node_modules/` is stored in the fixture through the existing fixture exception.
+- Architecture ids are the registry ids. A name matches the last path segment, so `components/atoms` (the atomic-design fragment) and a top-level `atoms/` both count. `features/` and `modules/` score only as top-level directories, because their children must fall inside depth 2. The two roots are one signal, not a mixed pair.
+- A pattern qualifies at the task thresholds (≥ 2 feature children, ≥ 3 layer names, ≥ 2 atomic names). The winner's weight is reduced by every other positive weight, so one competing signal lands below 0.7 (strongest clear weight 0.875 minus weakest partial 0.25 is 0.625). Flat confidence is 0.875 for a small tree (≤ 4 top-level and ≤ 6 nested), 0.75 through 8 top-level and 12 nested, and 0.5 after that. Partial signals are subtracted from that base. The score is clamped to [0.125, 1]. Tests assert those ranges, not the exact weights.
+- A directory whose own name is a layer or atomic name (for example `features/domain`) counts as a second signal and lowers confidence.
+- The mixed fixture keeps id `feature-based` because that pattern still qualifies; the score is what drops below 0.7. `features/` + `domain/` + `atoms/` with no feature children does not qualify and returns `flat`, also below 0.7.
+- Low-confidence handling (`--yes` → `flat`) stays in T19. Choosing the Next.js fragment stays in T18.
