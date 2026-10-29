@@ -4,6 +4,7 @@ import { minVersion, valid, validRange } from 'semver';
 import { parse as parseYaml } from 'yaml';
 import { AgentInitError } from '../errors.js';
 import type { PackageManager } from '../types.js';
+import type { PackageWorkspaces } from './workspace.js';
 
 const KNOWN_SCRIPTS = ['build', 'dev', 'lint', 'test', 'typecheck'] as const;
 
@@ -20,6 +21,7 @@ export interface PackageJson {
   readonly devDependencies?: Readonly<Record<string, string>>;
   readonly packageManager?: string;
   readonly scripts?: Readonly<Record<string, string>>;
+  readonly workspaces?: PackageWorkspaces;
 }
 
 /** `null` when `package.json` is absent. Invalid JSON or a non-object manifest throws. */
@@ -42,12 +44,14 @@ export function readPackageJson(root: string): PackageJson | null {
   const devDependencies = readStringRecord(record.devDependencies, manifestPath);
   const packageManager = readOptionalString(record.packageManager, manifestPath);
   const scripts = readStringRecord(record.scripts, manifestPath);
+  const workspaces = readWorkspaces(record.workspaces, manifestPath);
 
   return {
     ...(dependencies !== undefined ? { dependencies } : {}),
     ...(devDependencies !== undefined ? { devDependencies } : {}),
     ...(packageManager !== undefined ? { packageManager } : {}),
     ...(scripts !== undefined ? { scripts } : {}),
+    ...(workspaces !== undefined ? { workspaces } : {}),
   };
 }
 
@@ -286,6 +290,29 @@ function readStringRecord(value: unknown, manifestPath: string): Record<string, 
     entries[key] = entry;
   }
   return entries;
+}
+
+/**
+ * npm stores a string array. Yarn may use `{ packages, nohoist }`; only
+ * `packages` is kept, because monorepo detection compares glob lists.
+ */
+function readWorkspaces(value: unknown, manifestPath: string): PackageWorkspaces | undefined {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return readWorkspaceGlobs(value, manifestPath);
+  const record = asRecord(value);
+  if (record === null) throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+  if (record.packages === undefined) return {};
+  return { packages: readWorkspaceGlobs(record.packages, manifestPath) };
+}
+
+function readWorkspaceGlobs(value: unknown, manifestPath: string): string[] {
+  if (!Array.isArray(value)) throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+  const globs: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string') throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+    globs.push(entry);
+  }
+  return globs;
 }
 
 function readOptionalString(value: unknown, manifestPath: string): string | undefined {

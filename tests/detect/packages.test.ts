@@ -48,6 +48,32 @@ describe('readPackageJson', () => {
     expect(readPackageJson(root)).toBeNull();
   });
 
+  it('copies workspaces and rejects a malformed workspaces field', async () => {
+    const root = await tempDir();
+    const manifestPath = path.join(root, 'package.json');
+
+    await writeFile(manifestPath, JSON.stringify({ workspaces: ['packages/*', 'apps/*'] }));
+    expect(readPackageJson(root)?.workspaces).toEqual(['packages/*', 'apps/*']);
+
+    await writeFile(
+      manifestPath,
+      JSON.stringify({ workspaces: { packages: ['packages/*'], nohoist: ['**/react'] } }),
+    );
+    expect(readPackageJson(root)?.workspaces).toEqual({ packages: ['packages/*'] });
+
+    await writeFile(manifestPath, JSON.stringify({ name: 'app' }));
+    expect(readPackageJson(root)?.workspaces).toBeUndefined();
+
+    await writeFile(manifestPath, JSON.stringify({ workspaces: {} }));
+    expect(readPackageJson(root)?.workspaces).toEqual({});
+
+    for (const workspaces of [null, 'packages/*', ['packages/*', 1], { packages: 'packages/*' }]) {
+      await writeFile(manifestPath, JSON.stringify({ workspaces }));
+      expect(() => readPackageJson(root)).toThrow(AgentInitError);
+      expect(() => readPackageJson(root)).toThrow(manifestPath);
+    }
+  });
+
   it('throws a readable error naming a malformed package.json', async () => {
     const root = await copyFixture('malformed');
     const manifestPath = path.join(root, 'package.json');

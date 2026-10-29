@@ -7,8 +7,12 @@ import * as path from 'node:path';
  */
 export type PackageWorkspaces = readonly string[] | { readonly packages?: readonly string[] };
 
+/**
+ * `workspaces` stays `unknown` because this value comes from parsed JSON.
+ * Only a non-empty glob list, or a non-empty `packages` list, is a root.
+ */
 export interface WorkspacePackageJson {
-  readonly workspaces?: PackageWorkspaces;
+  readonly workspaces?: unknown;
 }
 
 export type MonorepoTool = 'pnpm' | 'npm' | 'turbo' | 'nx' | 'lerna';
@@ -23,7 +27,7 @@ export type MonorepoDetection =
  *
  * First match wins. `pnpm-workspace.yaml` is ahead of `turbo.json` because a
  * pnpm workspace often carries both, and the workspace file is the root signal.
- * An empty `workspaces` field is not a root.
+ * An empty list, `null`, and any value that is not a glob list are not a root.
  */
 export function isMonorepoRoot(root: string, pkgJson: WorkspacePackageJson): MonorepoDetection {
   if (isFile(path.join(root, 'pnpm-workspace.yaml'))) return detected('pnpm');
@@ -59,13 +63,14 @@ function detected(tool: MonorepoTool): MonorepoDetection {
 
 function hasPackageWorkspaces(pkgJson: WorkspacePackageJson): boolean {
   const workspaces = pkgJson.workspaces;
-  if (workspaces === undefined) return false;
-  if (isGlobList(workspaces)) return workspaces.length > 0;
-  return (workspaces.packages?.length ?? 0) > 0;
+  if (Array.isArray(workspaces)) return workspaces.length > 0;
+  if (!isRecord(workspaces)) return false;
+  const packages = workspaces.packages;
+  return Array.isArray(packages) && packages.length > 0;
 }
 
-function isGlobList(value: PackageWorkspaces): value is readonly string[] {
-  return Array.isArray(value);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isGitEntry(gitPath: string): boolean {

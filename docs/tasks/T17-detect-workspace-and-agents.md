@@ -39,7 +39,7 @@ pnpm lint && pnpm typecheck && pnpm test
 - `package.json` `workspaces` (a non-empty string array, or a non-empty `packages` array) is reported as `npm` (PRD §3.3). Yarn uses the same field, so it has no separate id. An empty array is not a root. Marker files must be files.
 - Markers are checked only in the given directory. A package folder with none of them is not a root, even when its parent is.
 - `lerna.json` is a monorepo marker in PRD §3.3. Tool id is `lerna`.
-- `readPackageJson` (T14) does not copy `workspaces`. T18 must pass a `pkgJson` that includes the field, or extend the reader. Otherwise npm and yarn workspace roots are missed.
+- `readPackageJson` copies `workspaces`: a string array, or `packages` from the object form. Yarn `nohoist` is dropped. A missing field is omitted. `null`, a non-array, or a non-string glob throws `AgentInitError`. `isMonorepoRoot` still treats `null` and other non-shapes as not a root.
 - `findGitRoot` returns `path.resolve`'d directory that contains `.git`. A `.git` file (worktree or submodule) returns that working tree, not the main repository named inside the file.
 - `findExistingAgentFiles` returns the candidate POSIX literals in scan order. Directory candidates must be directories, so a file named `.cursor` is ignored.
 - `preselectAgents` returns `[]` when nothing agent-specific matches, including `AGENTS.md` alone. The caller applies all four (PRD §3.5). Agents are returned once, in `cursor`, `claude`, `windsurf`, `copilot` order.

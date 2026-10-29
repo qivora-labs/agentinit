@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { readPackageJson } from '../../src/detect/packages.js';
 import {
   findGitRoot,
   isMonorepoRoot,
@@ -73,6 +74,9 @@ describe('isMonorepoRoot', () => {
     { behavior: 'ignores an empty workspaces array', pkg: { workspaces: [] } },
     { behavior: 'ignores an empty workspaces.packages array', pkg: { workspaces: { packages: [] } } },
     { behavior: 'ignores a package.json without workspaces', pkg: {} },
+    { behavior: 'ignores null workspaces', pkg: { workspaces: null } },
+    { behavior: 'ignores a string workspaces field', pkg: { workspaces: 'packages/*' } },
+    { behavior: 'ignores workspaces.packages that is not an array', pkg: { workspaces: { packages: 'packages/*' } } },
   ] as const)('$behavior', async ({ pkg }) => {
     const root = await tempDir();
     await writeFile(path.join(root, 'package.json'), '{}\n');
@@ -110,6 +114,18 @@ describe('isMonorepoRoot', () => {
       isRoot: true,
       tool: 'npm',
     });
+  });
+
+  it('detects npm workspaces from the package.json reader', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({ workspaces: { packages: ['packages/*'], nohoist: ['**/react'] } }),
+    );
+    const pkg = readPackageJson(root);
+    if (pkg === null) throw new Error('missing package.json');
+
+    expect(isMonorepoRoot(root, pkg)).toEqual({ isRoot: true, tool: 'npm' });
   });
 
   it('ignores marker names that are directories', async () => {
