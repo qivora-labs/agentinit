@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
@@ -179,15 +180,23 @@ describe('findGitRoot', () => {
     expect(findGitRoot(nested)).toBe(nested);
   });
 
+  // path.relative across drives is absolute. Windows CI checks out on D: and
+  // puts temp files on C:, so step into the temp parent and keep `..` literal.
   it('resolves a relative start path that contains ..', async () => {
     const repo = await tempDir();
     await mkdir(path.join(repo, '.git'));
-    const nested = path.join(repo, 'src');
-    await mkdir(nested);
-    const start = `${path.relative(process.cwd(), nested)}${path.sep}..`;
+    await mkdir(path.join(repo, 'src'));
+    const previous = process.cwd();
 
-    expect(start.includes('..')).toBe(true);
-    expect(path.isAbsolute(start)).toBe(false);
-    expect(findGitRoot(start)).toBe(path.resolve(repo));
+    try {
+      process.chdir(path.dirname(repo));
+      const start = `${path.basename(repo)}${path.sep}src${path.sep}..`;
+
+      expect(start.includes('..')).toBe(true);
+      expect(path.isAbsolute(start)).toBe(false);
+      expect(findGitRoot(start)).toBe(realpathSync(repo));
+    } finally {
+      process.chdir(previous);
+    }
   });
 });
