@@ -1,0 +1,10 @@
+{
+  // @tsconfig/strictest is not installed. Local options must still be read.
+  "extends": "@tsconfig/strictest",
+  "compilerOptions": {
+    "strict": false,
+    "paths": {
+      "@app/*": ["./src/*"],
+    },
+  },
+}
