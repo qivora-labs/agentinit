@@ -137,6 +137,11 @@ describe('detectNextRouters', () => {
 describe('listFolders', () => {
   it('returns sorted project folders and drops ignored, dot, and depth-3 directories', async () => {
     const root = await copyFixture('folder-list');
+    // `dist/` and `coverage/` match the repo gitignore, so the fixture cannot store them.
+    await mkdir(path.join(root, 'src', 'dist'), { recursive: true });
+    await mkdir(path.join(root, 'src', 'coverage'), { recursive: true });
+    await writeFile(path.join(root, 'src', 'dist', 'index.js'), '');
+    await writeFile(path.join(root, 'src', 'coverage', 'lcov.info'), '');
 
     expect(detectSrcDir(root)).toBe('src');
     expect(listFolders(root, 'src')).toEqual(['alpha', 'alpha/beta', 'mid', 'zebra']);
@@ -144,6 +149,8 @@ describe('listFolders', () => {
 
   it('lists root directories when the source root is the project root', async () => {
     const root = await copyFixture('root-folders');
+    await mkdir(path.join(root, 'dist'), { recursive: true });
+    await writeFile(path.join(root, 'dist', 'cli.js'), '');
 
     expect(detectSrcDir(root)).toBe('');
     expect(listFolders(root, '')).toEqual(['components', 'components/ui', 'lib']);
