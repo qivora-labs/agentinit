@@ -178,4 +178,16 @@ describe('findGitRoot', () => {
 
     expect(findGitRoot(nested)).toBe(nested);
   });
+
+  it('resolves a relative start path that contains ..', async () => {
+    const repo = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    const nested = path.join(repo, 'src');
+    await mkdir(nested);
+    const start = `${path.relative(process.cwd(), nested)}${path.sep}..`;
+
+    expect(start.includes('..')).toBe(true);
+    expect(path.isAbsolute(start)).toBe(false);
+    expect(findGitRoot(start)).toBe(path.resolve(repo));
+  });
 });

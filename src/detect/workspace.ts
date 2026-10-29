@@ -49,7 +49,7 @@ export function findGitRoot(start: string): string | null {
   const filesystemRoot = path.parse(current).root;
 
   for (;;) {
-    if (isGitEntry(path.join(current, '.git'))) return current;
+    if (isGitEntry(path.join(current, '.git'))) return path.resolve(current);
     if (current === filesystemRoot) return null;
     const parent = path.dirname(current);
     if (parent === current) return null;

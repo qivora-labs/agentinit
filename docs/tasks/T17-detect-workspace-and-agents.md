@@ -40,7 +40,7 @@ pnpm lint && pnpm typecheck && pnpm test
 - Markers are checked only in the given directory. A package folder with none of them is not a root, even when its parent is.
 - `lerna.json` is a monorepo marker in PRD §3.3. Tool id is `lerna`.
 - `readPackageJson` copies `workspaces`: a string array, or `packages` from the object form. Yarn `nohoist` is dropped. A missing field is omitted. `null`, a non-array, or a non-string glob throws `AgentInitError`. `isMonorepoRoot` still treats `null` and other non-shapes as not a root.
-- `findGitRoot` returns `path.resolve`'d directory that contains `.git`. A `.git` file (worktree or submodule) returns that working tree, not the main repository named inside the file.
+- `findGitRoot` returns `path.resolve` of the directory that contains `.git`, including when `start` is relative or contains `..`. A `.git` file (worktree or submodule) returns that working tree, not the main repository named inside the file.
 - `findExistingAgentFiles` returns the candidate POSIX literals in scan order. Directory candidates must be directories, so a file named `.cursor` is ignored.
 - `preselectAgents` returns `[]` when nothing agent-specific matches, including `AGENTS.md` alone. The caller applies all four (PRD §3.5). Agents are returned once, in `cursor`, `claude`, `windsurf`, `copilot` order.
 - `.devin/` preselects `windsurf` (PRD §3.3). Windsurf also ships as Devin Desktop (see T23). `.windsurf/` is the same. v0.1 still writes `.windsurf/`.
