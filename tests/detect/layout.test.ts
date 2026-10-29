@@ -276,6 +276,25 @@ describe('inferArchitecture', () => {
       confidence: 'low',
     },
     {
+      behavior: 'keeps feature-based when its weight ties with layered',
+      folders: [
+        'features',
+        'features/auth',
+        'features/billing',
+        'domain',
+        'application',
+        'infrastructure',
+      ],
+      id: 'feature-based',
+      confidence: 'low',
+    },
+    {
+      behavior: 'keeps layered when its weight ties with atomic-design',
+      folders: ['domain', 'application', 'infrastructure', 'atoms', 'molecules'],
+      id: 'layered',
+      confidence: 'low',
+    },
+    {
       behavior: 'scores a small unstructured tree as flat at or above 0.7',
       folders: ['components', 'lib', 'hooks'],
       id: 'flat',
