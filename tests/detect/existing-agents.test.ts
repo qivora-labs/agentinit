@@ -102,6 +102,14 @@ describe('preselectAgents', () => {
       agents: ['copilot'],
     },
     { behavior: 'returns an empty list when no agent file exists', files: [], agents: [] },
+    { behavior: 'preselects cursor from a ./ prefix', files: ['./.cursor'], agents: ['cursor'] },
+    { behavior: 'preselects claude from a ./ prefix and a trailing slash', files: ['./.claude/'], agents: ['claude'] },
+    {
+      behavior: 'preselects copilot from a nested path with a trailing slash',
+      files: ['.github/instructions/'],
+      agents: ['copilot'],
+    },
+    { behavior: 'preselects cursor from backslashes', files: ['.\\.cursor'], agents: ['cursor'] },
     { behavior: 'does not preselect an agent from AGENTS.md alone', files: ['AGENTS.md'], agents: [] },
   ] as const)('$behavior', ({ files, agents }: { files: readonly string[]; agents: readonly AgentTarget[] }) => {
     expect(preselectAgents(files)).toEqual([...agents]);

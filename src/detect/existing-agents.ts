@@ -48,6 +48,7 @@ export function findExistingAgentFiles(root: string): string[] {
 /**
  * Agents whose config is already present. An empty list means "all four";
  * the caller applies that default (PRD §3.5). `AGENTS.md` matches nothing.
+ * Paths are matched after normalizing `./`, backslashes, and a trailing slash.
  */
 export function preselectAgents(files: readonly string[]): AgentTarget[] {
   const present = new Set(files.map(normalizeRelativePath));
@@ -69,8 +70,14 @@ function exists(root: string, candidate: AgentCandidate): boolean {
 }
 
 function normalizeRelativePath(file: string): string {
-  const posix = file.replaceAll('\\', '/');
-  return posix.endsWith('/') ? posix.slice(0, -1) : posix;
+  const slashes = stripTrailingSlashes(file.replaceAll('\\', '/'));
+  return path.posix.normalize(slashes);
+}
+
+function stripTrailingSlashes(file: string): string {
+  let end = file.length;
+  while (end > 0 && file[end - 1] === '/') end -= 1;
+  return file.slice(0, end);
 }
 
 function isFile(filePath: string): boolean {
