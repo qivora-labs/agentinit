@@ -55,6 +55,6 @@ pnpm lint && pnpm typecheck && pnpm test
 - pnpm peer suffixes are stripped at the first `(`, so `1.2.3(react@19.0.0)` is `1.2.3`.
 - The same name in `dependencies` and `devDependencies` keeps the `dependencies` specifier. `optionalDependencies` and `peerDependencies` are not read.
 - An unrecognized `packageManager` name falls through to lockfile detection, then `npm`. Text after `@` is ignored (`pnpm@10.14.0` → `pnpm`).
-- A missing, unreadable, or version-less `node_modules/<pkg>/package.json` falls through to the lockfile. Dependency names that resolve outside `node_modules` are ignored.
-- `existingFiles` returns candidates that are files inside the project root, in candidate order. Directories and paths that leave the root are skipped.
+- A missing, unreadable, or version-less `node_modules/<pkg>/package.json` falls through to the lockfile. Dependency names that resolve outside `node_modules` are ignored. A symlink is read only when its canonical target stays inside the project.
+- `existingFiles` returns candidates that are files inside the project root, in candidate order. Directories, paths that leave the root, and symlinks whose canonical target leaves the root are skipped.
 - `workspaces` is copied for monorepo detection (T17): a string array, or `packages` from the object form. Yarn `nohoist` is dropped. Invalid `workspaces` throws `AgentInitError`.

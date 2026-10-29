@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -184,6 +184,28 @@ describe('resolveVersions', () => {
 
     expect(resolveVersions(root, loadPackage(root))).toEqual({ '../sneaky': '1.2.3' });
   });
+
+  it('ignores an installed manifest whose canonical path leaves the project', async () => {
+    const root = await tempDir();
+    const outside = await tempDir();
+    await writeFile(path.join(outside, 'package.json'), JSON.stringify({ version: '9.9.9' }));
+    await mkdir(path.join(root, 'node_modules', 'next'), { recursive: true });
+    await symlink(path.join(outside, 'package.json'), path.join(root, 'node_modules', 'next', 'package.json'));
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ dependencies: { next: '^15.1.0' } }));
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
+  });
+
+  it('reads an installed manifest when its symlink stays inside the project', async () => {
+    const root = await tempDir();
+    const store = path.join(root, 'node_modules', '.pnpm', 'next@15.3.2', 'node_modules', 'next');
+    await mkdir(store, { recursive: true });
+    await writeFile(path.join(store, 'package.json'), JSON.stringify({ version: '15.3.2' }));
+    await symlink(store, path.join(root, 'node_modules', 'next'), 'dir');
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ dependencies: { next: '^15.1.0' } }));
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.3.2' });
+  });
 });
 
 describe('detectPackageManager', () => {
@@ -268,5 +290,19 @@ describe('existingFiles', () => {
         '../escaped.json',
       ]),
     ).toEqual(['nested/config.json', 'components.json']);
+  });
+
+  it('skips a symlink whose canonical target leaves the project', async () => {
+    const parent = await tempDir();
+    const root = path.join(parent, 'project');
+    await mkdir(root);
+    const inside = path.join(root, 'components.json');
+    const outside = path.join(parent, 'escaped.json');
+    await writeFile(inside, '{}');
+    await writeFile(outside, '{}');
+    await symlink(inside, path.join(root, 'alias.json'));
+    await symlink(outside, path.join(root, 'linked.json'));
+
+    expect(existingFiles(root, ['linked.json', 'alias.json', 'missing.json'])).toEqual(['alias.json']);
   });
 });

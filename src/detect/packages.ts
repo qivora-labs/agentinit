@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 import { minVersion, valid, validRange } from 'semver';
 import { parse as parseYaml } from 'yaml';
@@ -98,7 +98,7 @@ export function existingFiles(root: string, candidates: readonly string[]): stri
   const found: string[] = [];
   for (const candidate of candidates) {
     const resolved = resolveInside(resolvedRoot, candidate);
-    if (resolved !== null && isFile(resolved)) found.push(candidate);
+    if (resolved !== null && isFileInside(resolvedRoot, resolved)) found.push(candidate);
   }
   return found;
 }
@@ -117,16 +117,22 @@ function dependencySpecifiers(pkgJson: PackageJson): Map<string, string> {
 /**
  * A dependency name is a path under `node_modules`. Names that resolve outside
  * that directory are ignored so detection cannot read arbitrary files.
- * Missing or unreadable install manifests fall through to the lockfile.
+ * `readFileSync` follows symlinks, so the canonical target must also stay
+ * inside the project. Missing or unreadable install manifests fall through
+ * to the lockfile.
  */
 function installedVersion(root: string, name: string): string | null {
-  const modulesRoot = path.resolve(root, 'node_modules');
+  const projectRoot = path.resolve(root);
+  const modulesRoot = path.resolve(projectRoot, 'node_modules');
   const manifestPath = path.resolve(modulesRoot, name, 'package.json');
   if (!isInside(modulesRoot, manifestPath)) return null;
 
+  const realManifest = realpathInside(projectRoot, manifestPath);
+  if (realManifest === null) return null;
+
   let raw: string;
   try {
-    raw = readFileSync(manifestPath, 'utf8');
+    raw = readFileSync(realManifest, 'utf8');
   } catch {
     return null;
   }
@@ -339,6 +345,31 @@ function isFile(filePath: string): boolean {
     return statSync(filePath).isFile();
   } catch {
     return false;
+  }
+}
+
+/**
+ * `statSync` follows symlinks. The canonical path has to stay inside `root`,
+ * or a link can name a file outside the project.
+ */
+function isFileInside(root: string, filePath: string): boolean {
+  const real = realpathInside(root, filePath);
+  if (real === null) return false;
+  try {
+    return statSync(real).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function realpathInside(root: string, candidate: string): string | null {
+  try {
+    const realRoot = realpathSync.native(root);
+    const realCandidate = realpathSync.native(candidate);
+    if (!isInside(realRoot, realCandidate)) return null;
+    return realCandidate;
+  } catch {
+    return null;
   }
 }
 
