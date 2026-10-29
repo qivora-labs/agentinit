@@ -21,10 +21,10 @@ Detect monorepo roots, whether the CLI runs below the git root, and which agent 
 - Handling a monorepo beyond detection (v0.3).
 
 ## Acceptance criteria
-- [ ] Each monorepo marker is detected; a workspace **package** (no markers in its own folder) is not a root.
-- [ ] `findGitRoot` works with a `.git` directory and a `.git` file; returns `null` outside a repo.
-- [ ] Agent files and preselection mapping are covered for every agent, plus the empty case.
-- [ ] `AGENTS.md` alone preselects nothing (it's shared, not agent-specific).
+- [x] Each monorepo marker is detected; a workspace **package** (no markers in its own folder) is not a root.
+- [x] `findGitRoot` works with a `.git` directory and a `.git` file; returns `null` outside a repo.
+- [x] Agent files and preselection mapping are covered for every agent, plus the empty case.
+- [x] `AGENTS.md` alone preselects nothing (it's shared, not agent-specific).
 
 ## Verify
 ```bash
@@ -35,4 +35,12 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(detect): detect monorepos, git root, and existing agent files`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Tool ids are `pnpm`, `npm`, `turbo`, `nx`, and `lerna`. First match wins, in that order, so a pnpm workspace that also has `turbo.json` is reported as `pnpm`.
+- `package.json` `workspaces` (a non-empty string array, or a non-empty `packages` array) is reported as `npm` (PRD §3.3). Yarn uses the same field, so it has no separate id. An empty array is not a root. Marker files must be files.
+- Markers are checked only in the given directory. A package folder with none of them is not a root, even when its parent is.
+- `lerna.json` is a monorepo marker in PRD §3.3. Tool id is `lerna`.
+- `readPackageJson` copies `workspaces`: a string array, or `packages` from the object form. Yarn `nohoist` is dropped. A missing field is omitted. `null`, a non-array, or a non-string glob throws `AgentInitError`. `isMonorepoRoot` still treats `null` and other non-shapes as not a root.
+- `findGitRoot` returns `path.resolve` of the directory that contains `.git`, including when `start` is relative or contains `..`. A `.git` file (worktree or submodule) returns that working tree, not the main repository named inside the file.
+- `findExistingAgentFiles` returns the candidate POSIX literals in scan order. Directory candidates must be directories, so a file named `.cursor` is ignored.
+- `preselectAgents` returns `[]` when nothing agent-specific matches, including `AGENTS.md` alone. The caller applies all four (PRD §3.5). Agents are returned once, in `cursor`, `claude`, `windsurf`, `copilot` order. `./`, backslashes, and a trailing slash are normalized before matching.
+- `.devin/` preselects `windsurf` (PRD §3.3). Windsurf also ships as Devin Desktop (see T23). `.windsurf/` is the same. v0.1 still writes `.windsurf/`.

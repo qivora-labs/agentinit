@@ -147,8 +147,8 @@ Triggered when `package.json` exists in the target directory.
    - **Scripts:** only scripts that actually exist (`build`, `dev`, `lint`, `test`, `typecheck`) are documented, using the detected package manager.
    - **TypeScript:** parses `tsconfig.json` as JSONC, resolves `extends`, reads `strict` (suggests `typescript-strict` when `true`) and `paths` aliases.
    - **Layout:** `src/` vs. root; Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.
-   - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.cursorrules`, `.claude/`, `.windsurfrules`, `.windsurf/`, `.github/copilot-instructions.md`, `.github/instructions/`.
-   - **Monorepo:** detects workspaces (pnpm, npm, yarn, Turborepo, Nx). v0.1 asks the user to run the CLI inside a single package and exits.
+   - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.cursorrules`, `.claude/`, `.windsurfrules`, `.windsurf/`, `.devin/`, `.github/copilot-instructions.md`, `.github/instructions/`. `.devin/` is Windsurf's directory in Devin Desktop and preselects `windsurf`, the same as `.windsurf/` and `.windsurfrules`. v0.1 still writes `.windsurf/` (§5.2).
+   - **Monorepo:** detects a root from `pnpm-workspace.yaml` (pnpm), a non-empty `package.json` `workspaces` field (npm; Yarn uses the same field and has no separate id), `turbo.json` (Turborepo), `nx.json` (Nx), or `lerna.json` (Lerna). v0.1 asks the user to run the CLI inside a single package and exits.
    - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
 3. **Version Check:** a detected package whose version is outside every fragment's `appliesTo` range (e.g., Tailwind v3 when only a v4 fragment exists) is skipped with a notice: *"tailwindcss@3 detected — no matching rules yet."*
    - No supported framework detected (e.g., a CLI, library, or an unsupported framework) → continue with base rules (§3.6).

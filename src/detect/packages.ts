@@ -1,9 +1,10 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 import { minVersion, valid, validRange } from 'semver';
 import { parse as parseYaml } from 'yaml';
 import { AgentInitError } from '../errors.js';
 import type { PackageManager } from '../types.js';
+import type { PackageWorkspaces } from './workspace.js';
 
 const KNOWN_SCRIPTS = ['build', 'dev', 'lint', 'test', 'typecheck'] as const;
 
@@ -20,6 +21,7 @@ export interface PackageJson {
   readonly devDependencies?: Readonly<Record<string, string>>;
   readonly packageManager?: string;
   readonly scripts?: Readonly<Record<string, string>>;
+  readonly workspaces?: PackageWorkspaces;
 }
 
 /** `null` when `package.json` is absent. Invalid JSON or a non-object manifest throws. */
@@ -42,12 +44,14 @@ export function readPackageJson(root: string): PackageJson | null {
   const devDependencies = readStringRecord(record.devDependencies, manifestPath);
   const packageManager = readOptionalString(record.packageManager, manifestPath);
   const scripts = readStringRecord(record.scripts, manifestPath);
+  const workspaces = readWorkspaces(record.workspaces, manifestPath);
 
   return {
     ...(dependencies !== undefined ? { dependencies } : {}),
     ...(devDependencies !== undefined ? { devDependencies } : {}),
     ...(packageManager !== undefined ? { packageManager } : {}),
     ...(scripts !== undefined ? { scripts } : {}),
+    ...(workspaces !== undefined ? { workspaces } : {}),
   };
 }
 
@@ -94,7 +98,7 @@ export function existingFiles(root: string, candidates: readonly string[]): stri
   const found: string[] = [];
   for (const candidate of candidates) {
     const resolved = resolveInside(resolvedRoot, candidate);
-    if (resolved !== null && isFile(resolved)) found.push(candidate);
+    if (resolved !== null && isFileInside(resolvedRoot, resolved)) found.push(candidate);
   }
   return found;
 }
@@ -113,16 +117,22 @@ function dependencySpecifiers(pkgJson: PackageJson): Map<string, string> {
 /**
  * A dependency name is a path under `node_modules`. Names that resolve outside
  * that directory are ignored so detection cannot read arbitrary files.
- * Missing or unreadable install manifests fall through to the lockfile.
+ * `readFileSync` follows symlinks, so the canonical target must also stay
+ * inside the project. Missing or unreadable install manifests fall through
+ * to the lockfile.
  */
 function installedVersion(root: string, name: string): string | null {
-  const modulesRoot = path.resolve(root, 'node_modules');
+  const projectRoot = path.resolve(root);
+  const modulesRoot = path.resolve(projectRoot, 'node_modules');
   const manifestPath = path.resolve(modulesRoot, name, 'package.json');
   if (!isInside(modulesRoot, manifestPath)) return null;
 
+  const realManifest = realpathInside(projectRoot, manifestPath);
+  if (realManifest === null) return null;
+
   let raw: string;
   try {
-    raw = readFileSync(manifestPath, 'utf8');
+    raw = readFileSync(realManifest, 'utf8');
   } catch {
     return null;
   }
@@ -288,6 +298,29 @@ function readStringRecord(value: unknown, manifestPath: string): Record<string, 
   return entries;
 }
 
+/**
+ * npm stores a string array. Yarn may use `{ packages, nohoist }`; only
+ * `packages` is kept, because monorepo detection compares glob lists.
+ */
+function readWorkspaces(value: unknown, manifestPath: string): PackageWorkspaces | undefined {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return readWorkspaceGlobs(value, manifestPath);
+  const record = asRecord(value);
+  if (record === null) throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+  if (record.packages === undefined) return {};
+  return { packages: readWorkspaceGlobs(record.packages, manifestPath) };
+}
+
+function readWorkspaceGlobs(value: unknown, manifestPath: string): string[] {
+  if (!Array.isArray(value)) throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+  const globs: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string') throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
+    globs.push(entry);
+  }
+  return globs;
+}
+
 function readOptionalString(value: unknown, manifestPath: string): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== 'string') throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
@@ -312,6 +345,31 @@ function isFile(filePath: string): boolean {
     return statSync(filePath).isFile();
   } catch {
     return false;
+  }
+}
+
+/**
+ * `statSync` follows symlinks. The canonical path has to stay inside `root`,
+ * or a link can name a file outside the project.
+ */
+function isFileInside(root: string, filePath: string): boolean {
+  const real = realpathInside(root, filePath);
+  if (real === null) return false;
+  try {
+    return statSync(real).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function realpathInside(root: string, candidate: string): string | null {
+  try {
+    const realRoot = realpathSync.native(root);
+    const realCandidate = realpathSync.native(candidate);
+    if (!isInside(realRoot, realCandidate)) return null;
+    return realCandidate;
+  } catch {
+    return null;
   }
 }
 
