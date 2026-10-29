@@ -70,6 +70,53 @@ describe('detectSrcDir', () => {
     await writeFile(path.join(root, 'src'), 'export {};\n');
     expect(detectSrcDir(root)).toBe('');
   });
+
+  it('returns empty when src contains only declaration files', async () => {
+    const root = await tempDir();
+    await mkdir(path.join(root, 'src', 'types'), { recursive: true });
+    await writeFile(path.join(root, 'src', 'vite-env.d.ts'), 'export {};\n');
+    await writeFile(path.join(root, 'src', 'types', 'index.d.ts'), 'export {};\n');
+
+    expect(detectSrcDir(root)).toBe('');
+  });
+
+  it('returns src when a source file sits beside declaration files', async () => {
+    const root = await tempDir();
+    await mkdir(path.join(root, 'src'), { recursive: true });
+    await writeFile(path.join(root, 'src', 'index.d.ts'), 'export {};\n');
+    await writeFile(path.join(root, 'src', 'index.ts'), 'export {};\n');
+
+    expect(detectSrcDir(root)).toBe('src');
+  });
+
+  it.each([
+    { dir: 'node_modules/pkg', behavior: 'returns empty when the only TypeScript file is under node_modules' },
+    {
+      dir: 'alpha/node_modules/pkg',
+      behavior: 'returns empty when the only TypeScript file is under a nested node_modules',
+    },
+    { dir: 'dist', behavior: 'returns empty when the only TypeScript file is under dist' },
+    { dir: 'build', behavior: 'returns empty when the only TypeScript file is under build' },
+    { dir: '.next/types', behavior: 'returns empty when the only TypeScript file is under .next' },
+    { dir: 'coverage', behavior: 'returns empty when the only TypeScript file is under coverage' },
+    { dir: '.hidden', behavior: 'returns empty when the only TypeScript file is under a dot-folder' },
+  ] as const)('$behavior', async ({ dir }) => {
+    const root = await tempDir();
+    await mkdir(path.join(root, 'src', dir), { recursive: true });
+    await writeFile(path.join(root, 'src', dir, 'index.ts'), 'export {};\n');
+
+    expect(detectSrcDir(root)).toBe('');
+  });
+
+  it('returns src when application code exists outside ignored directories', async () => {
+    const root = await tempDir();
+    await mkdir(path.join(root, 'src', 'lib'), { recursive: true });
+    await mkdir(path.join(root, 'src', 'node_modules', 'pkg'), { recursive: true });
+    await writeFile(path.join(root, 'src', 'node_modules', 'pkg', 'index.ts'), 'export {};\n');
+    await writeFile(path.join(root, 'src', 'lib', 'client.ts'), 'export {};\n');
+
+    expect(detectSrcDir(root)).toBe('src');
+  });
 });
 
 describe('detectNextRouters', () => {

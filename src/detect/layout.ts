@@ -80,7 +80,11 @@ interface Signal {
   readonly qualifies: boolean;
 }
 
-/** `src` when `<root>/src` is a directory that contains a `.ts` or `.tsx` file. */
+/**
+ * `src` when `<root>/src` is a directory that contains a `.ts` or `.tsx` file.
+ * Declaration files (`.d.ts`) do not count. The walk skips the same directories
+ * as `listFolders`.
+ */
 export function detectSrcDir(root: string): '' | 'src' {
   const src = path.join(root, 'src');
   if (!isDirectory(src)) return '';
@@ -252,9 +256,10 @@ function collectFolders(directory: string, relative: string, depth: number, fold
 
 function containsSourceFile(directory: string): boolean {
   for (const entry of readDirectory(directory)) {
-    const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (containsSourceFile(fullPath)) return true;
+      // Same skip list as listFolders, so a file under node_modules cannot mark src/.
+      if (isSkippedDirectory(entry.name)) continue;
+      if (containsSourceFile(path.join(directory, entry.name))) return true;
       continue;
     }
     if (entry.isFile() && isTypeScriptFile(entry.name)) return true;
@@ -263,7 +268,8 @@ function containsSourceFile(directory: string): boolean {
 }
 
 function isTypeScriptFile(name: string): boolean {
-  return name.endsWith('.ts') || name.endsWith('.tsx');
+  // `.d.ts` ends with `.ts` but is not application source.
+  return name.endsWith('.tsx') || (name.endsWith('.ts') && !name.endsWith('.d.ts'));
 }
 
 function isSkippedDirectory(name: string): boolean {
