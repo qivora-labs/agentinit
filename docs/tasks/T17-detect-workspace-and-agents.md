@@ -36,11 +36,11 @@ pnpm lint && pnpm typecheck && pnpm test
 
 ## Notes
 - Tool ids are `pnpm`, `npm`, `turbo`, `nx`, and `lerna`. First match wins, in that order, so a pnpm workspace that also has `turbo.json` is reported as `pnpm`.
-- `package.json` `workspaces` (a non-empty string array, or a non-empty `packages` array) is reported as `npm`. Yarn uses the same field, so it has no separate id. An empty array is not a root. Marker files must be files.
+- `package.json` `workspaces` (a non-empty string array, or a non-empty `packages` array) is reported as `npm` (PRD §3.3). Yarn uses the same field, so it has no separate id. An empty array is not a root. Marker files must be files.
 - Markers are checked only in the given directory. A package folder with none of them is not a root, even when its parent is.
-- `lerna.json` comes from this task. PRD §3.3 names pnpm, npm, yarn, Turborepo, and Nx.
+- `lerna.json` is a monorepo marker in PRD §3.3. Tool id is `lerna`.
 - `readPackageJson` (T14) does not copy `workspaces`. T18 must pass a `pkgJson` that includes the field, or extend the reader. Otherwise npm and yarn workspace roots are missed.
 - `findGitRoot` returns `path.resolve`'d directory that contains `.git`. A `.git` file (worktree or submodule) returns that working tree, not the main repository named inside the file.
 - `findExistingAgentFiles` returns the candidate POSIX literals in scan order. Directory candidates must be directories, so a file named `.cursor` is ignored.
 - `preselectAgents` returns `[]` when nothing agent-specific matches, including `AGENTS.md` alone. The caller applies all four (PRD §3.5). Agents are returned once, in `cursor`, `claude`, `windsurf`, `copilot` order.
-- `.devin/` preselects `windsurf`. It is not in the PRD §3.3 file list; this task adds it because Windsurf also ships as Devin Desktop (see T23). `.windsurf/` is the same.
+- `.devin/` preselects `windsurf` (PRD §3.3). Windsurf also ships as Devin Desktop (see T23). `.windsurf/` is the same. v0.1 still writes `.windsurf/`.
