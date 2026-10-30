@@ -38,12 +38,12 @@ The pure planning layer: turn a profile + resolved fragments into `FileOp[]`, in
 - Determinism: no dates or versions in generated content except fragment-provided text.
 
 ## Acceptance criteria
-- [ ] `AGENTS.md` block contains always-on content once, in `order`, and no glob/auto/manual fragment text.
-- [ ] Commands section lists only existing scripts with the right package manager; omitted in greenfield.
-- [ ] `ARCHITECTURE.md` differs between existing (detected folders) and greenfield (planned layout) for the same architecture.
-- [ ] Token estimate and > 1,500 warning are tested.
-- [ ] Duplicate op paths throw.
-- [ ] Output is identical across two runs (determinism test).
+- [x] `AGENTS.md` block contains always-on content once, in `order`, and no glob/auto/manual fragment text.
+- [x] Commands section lists only existing scripts with the right package manager; omitted in greenfield.
+- [x] `ARCHITECTURE.md` differs between existing (detected folders) and greenfield (planned layout) for the same architecture.
+- [x] Token estimate and > 1,500 warning are tested.
+- [x] Duplicate op paths throw.
+- [x] Output is identical across two runs (determinism test).
 
 ## Verify
 ```bash
@@ -54,4 +54,11 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(plan): build file plan with agents.md and architecture.md outputs`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Project commands are every `package.json` script, sorted by name, expanded the same way as `{{scripts.*}}` (`npm run`, `pnpm`, `yarn`, `bun run`). The section is omitted in greenfield, when the package manager is null, or when nothing renders. A line in a fragment that names a missing script is still dropped by T07.
+- Always-on fragments other than the architecture follow commands and the architecture summary, in `order` then `id`. Their ATX headings are nested one level under the fragment name so the table of contents points at that fragment. Headings inside fences are left alone.
+- `## Map` rows map a detected folder when every segment matches. `<name>` matches one segment, and the longest match wins. Other detected folders are listed under "Other existing folders" with no instruction to move them. A map that is not a table is copied as the planned layout, and every detected folder is unmatched. Greenfield ignores `profile.folders`.
+- Always-on tokens are `ceil(characters / 4)` of the `AGENTS.md` `core` block. The warning is only when that count is greater than 1,500.
+- Two ops with the same path throw, and so do two managed blocks that share a `blockId`.
+- `agentAdapters` is the map T21–T24 fill in. A selected agent with no entry adds no files. `buildPlan` is not called from the CLI yet (T27).
+- `tests/fixtures/registry-sample/architectures/layered.md` now has a path table in `## Map` so planning tests can map folders. Frontmatter is unchanged.
+- PRD §4.2's tree and the repo `ARCHITECTURE.md` folder map do not list `plan/types.ts`, `render.ts`, `tokens.ts`, or `markdown.ts`. Those files follow this task; the PRD was not edited.

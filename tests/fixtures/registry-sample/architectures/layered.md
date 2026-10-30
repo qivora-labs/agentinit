@@ -15,10 +15,18 @@ verifiedAt: 2026-10-17
 Controllers call services, and services call the data layer.
 
 ## Map
-- ui → domain → data
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}domain/` | Business rules. |
+| `{{src}}application/` | Use cases. |
+| `{{src}}infrastructure/` | I/O adapters. |
+| `{{src}}presentation/` | UI and delivery. |
 
-ALWAYS depend inward.
+## Directives
+- **ALWAYS** depend inward.
+- **NEVER** import infrastructure from domain.
 
+## Contract
 ```ts
 const example = true;
 ```
