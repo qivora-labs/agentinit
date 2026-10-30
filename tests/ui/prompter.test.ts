@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CANCELLED } from '../../src/exit-codes.js';
 import { AgentInitError } from '../../src/errors.js';
-import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
+import { createFakePrompter, toClackOptions, type FakeAnswer } from '../../src/ui/prompter.js';
 
 const selectPrompt = {
   message: 'Pick one',
@@ -17,6 +17,26 @@ const multiPrompt = {
 };
 
 const confirmPrompt = { message: 'Continue?' };
+
+describe('toClackOptions', () => {
+  it('prefixes a group onto the label and leaves an ungrouped label unchanged', () => {
+    expect(
+      toClackOptions([
+        { value: 'react-vite', label: 'React + Vite', hint: 'Vite', group: 'Web frontend' },
+        { value: 'typescript', label: 'TypeScript' },
+      ]),
+    ).toEqual([
+      { value: 'react-vite', label: 'Web frontend · React + Vite', hint: 'Vite' },
+      { value: 'typescript', label: 'TypeScript' },
+    ]);
+  });
+
+  it('strips terminal controls from the label, hint, and group, and leaves the value unchanged', () => {
+    expect(
+      toClackOptions([{ value: 'a\u001b[31m', label: 'A\u001b[31m', hint: 'h\n', group: 'G\u001b[0m' }]),
+    ).toEqual([{ value: 'a\u001b[31m', label: 'G · A', hint: 'h' }]);
+  });
+});
 
 describe('createFakePrompter', () => {
   it('returns scripted answers in order', async () => {
