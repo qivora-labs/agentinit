@@ -35,6 +35,11 @@ export async function promptConflicts(
   return decisions;
 }
 
+/**
+ * Keep-one drops the other id. Keep-both leaves the selection unchanged, so
+ * both ids stay `manual` and a later `resolveSelection` reports that pair
+ * again. `init` must remember answered pairs instead of looping on resolve.
+ */
 export function applyConflictDecisions(
   selection: Selection,
   decisions: readonly ConflictDecision[],

@@ -64,6 +64,9 @@ describe('confirmDetected', () => {
     ]);
 
     const result = await confirmDetected(prompter, draft, await bundledRegistry());
+    const frameworks = calls.find(
+      (call) => call.method === 'multiselect' && choicePrompt(call).message.includes('frameworks'),
+    );
     const libraries = calls.find(
       (call) => call.method === 'multiselect' && choicePrompt(call).message.includes('libraries'),
     );
@@ -81,6 +84,8 @@ describe('confirmDetected', () => {
       },
     });
     expect(result.agents).toEqual(['claude']);
+    expect(choicePrompt(frameworks).required).toBe(false);
+    expect(choicePrompt(libraries).required).toBe(false);
     expect(choicePrompt(libraries).options.map((option) => option.value)).toEqual([
       'vitest',
       'playwright',

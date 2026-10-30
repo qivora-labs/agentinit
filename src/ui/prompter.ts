@@ -149,7 +149,8 @@ export function createFakePrompter(answers: readonly FakeAnswer[]): Prompter {
   };
 }
 
-function toClackOptions<Value>(options: readonly PromptOption<Value>[]): Option<Value>[] {
+/** Clack has no option groups, so a group is prefixed onto the label the user sees. */
+export function toClackOptions<Value>(options: readonly PromptOption<Value>[]): Option<Value>[] {
   // Option<Value> is a conditional on primitive values, so a generic Value
   // cannot be checked against it under exactOptionalPropertyTypes.
   return options.map((option) => {

@@ -12,6 +12,7 @@ export interface ChoicePrompt {
   readonly options: readonly ChoiceOption[];
   readonly initialValue?: string;
   readonly initialValues?: readonly string[];
+  readonly required?: boolean;
 }
 
 export interface RecordedConfirm {

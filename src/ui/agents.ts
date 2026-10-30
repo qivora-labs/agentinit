@@ -35,5 +35,7 @@ export async function selectAgents(prompter: Prompter, input: AgentPromptInput):
     message: 'Which agents should we generate rules for?',
     options: AGENT_TARGETS.map((agent) => ({ value: agent, label: AGENT_LABELS[agent] })),
     initialValues: resolvedAgents(input.preselected),
+    // Clack defaults `required` to true. Clearing every agent matches an empty `--agents`.
+    required: false,
   });
 }

@@ -65,6 +65,7 @@ describe('runGreenfieldWizard', () => {
     const multis = calls.filter((call) => call.method === 'multiselect');
     expect(choicePrompt(selects[1]).initialValue).toBe('typescript-strict');
     expect(choicePrompt(selects[2]).initialValue).toBe('feature-based');
+    expect(choicePrompt(multis[0]).required).toBe(false);
     expect(choicePrompt(multis[0]).options.map((option) => option.value)).toEqual([
       'zustand',
       'tanstack-query',

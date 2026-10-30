@@ -190,5 +190,6 @@ async function multiselectOrEmpty(
   prompt: MultiSelectPrompt<string>,
 ): Promise<string[]> {
   if (prompt.options.length === 0) return [];
-  return prompter.multiselect(prompt);
+  // Clack defaults `required` to true and rejects the empty selection this step allows.
+  return prompter.multiselect({ ...prompt, required: false });
 }

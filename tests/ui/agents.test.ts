@@ -28,6 +28,7 @@ describe('selectAgents', () => {
     const selected = await selectAgents(prompter, { preselected: [] });
     const prompt = choicePrompt(calls[0]);
     expect(selected).toEqual([...AGENT_TARGETS]);
+    expect(prompt.required).toBe(false);
     expect(prompt.initialValues).toEqual([...AGENT_TARGETS]);
     expect(prompt.options.map((option) => option.label)).toEqual([
       'Cursor',
