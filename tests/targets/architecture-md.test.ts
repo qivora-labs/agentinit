@@ -20,7 +20,7 @@ function architecture(folders: readonly string[], srcDir: '' | 'src', mode: 'exi
 }
 
 describe('architectureMdAdapter', () => {
-  it('maps detected folders onto the longest matching map row and lists the rest', () => {
+  it('maps each folder to the first same-length map row and lists the rest', () => {
     const content = architecture(['components/atoms', 'lib', 'components', 'domain'], 'src');
     expect(content).toContain('| `src/components/atoms` | One component group. |');
     expect(content).toContain('| `src/components` | UI modules. |');
