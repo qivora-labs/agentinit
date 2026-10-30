@@ -16,6 +16,17 @@ describe('confirmGitRoot', () => {
     });
   });
 
+  it('strips terminal controls from the directory paths', async () => {
+    const { prompter, calls } = recordingPrompter([{ type: 'confirm', value: false }]);
+    await confirmGitRoot(prompter, {
+      cwd: '/repo\u001b[31m/app\n',
+      gitRoot: '/repo\r',
+    });
+    expect(confirmPrompt(calls[0]).message).toBe(
+      'This directory is inside /repo. Use the git root instead of /repo/app?',
+    );
+  });
+
   it('uses the git root when confirmed', async () => {
     const { prompter } = recordingPrompter([{ type: 'confirm', value: true }]);
     await expect(confirmGitRoot(prompter, directories)).resolves.toBe('use-git-root');

@@ -5,6 +5,7 @@ import { loadRegistry, type Registry } from '../../src/registry/load.js';
 import type { Selection } from '../../src/registry/resolve.js';
 import { applyConflictDecisions, promptConflicts } from '../../src/ui/conflicts.js';
 import { choicePrompt, recordingPrompter } from './recording-prompter.js';
+import { registryOf, ruleFragment } from './stub-registry.js';
 
 let registry: Registry | undefined;
 
@@ -48,6 +49,22 @@ describe('promptConflicts', () => {
     );
     expect(decisions).toEqual([{ a: 'vitest', b: 'zustand', choice: 'keep-both' }]);
     expect(applyConflictDecisions(current, decisions)).toBe(current);
+  });
+
+  it('strips terminal controls from fragment names', async () => {
+    const vitest = ruleFragment('vitest', 'library');
+    const zustand = ruleFragment('zustand', 'library');
+    const registry = registryOf([
+      { ...vitest, meta: { ...vitest.meta, name: 'Vitest\u001b[31m' } },
+      { ...zustand, meta: { ...zustand.meta, name: 'Zustand\nspoofed' } },
+    ]);
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'keep-one' },
+      { type: 'select', value: 'vitest' },
+    ]);
+    await promptConflicts(prompter, [{ a: 'vitest', b: 'zustand' }], registry);
+    expect(choicePrompt(calls[0]).message).toBe('"Vitest" and "Zustandspoofed" conflict. Keep one, or keep both?');
+    expect(choicePrompt(calls[1]).options.map((option) => option.label)).toEqual(['Vitest', 'Zustandspoofed']);
   });
 
   it('drops the fragment the user does not keep', async () => {

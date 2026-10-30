@@ -10,6 +10,7 @@ import {
 } from '@clack/prompts';
 import { CANCELLED } from '../exit-codes.js';
 import { AgentInitError } from '../errors.js';
+import { sanitizeDisplayText, sanitizeMultilineDisplayText } from './display-text.js';
 
 export interface PromptOption<Value> {
   value: Value;
@@ -68,7 +69,7 @@ export function createClackPrompter(): Prompter {
   return {
     async select(prompt) {
       const result = await clackSelect({
-        message: prompt.message,
+        message: sanitizeDisplayText(prompt.message),
         options: toClackOptions(prompt.options),
         ...(prompt.initialValue === undefined ? {} : { initialValue: prompt.initialValue }),
       });
@@ -76,7 +77,7 @@ export function createClackPrompter(): Prompter {
     },
     async multiselect(prompt) {
       const result = await clackMultiselect({
-        message: prompt.message,
+        message: sanitizeDisplayText(prompt.message),
         options: toClackOptions(prompt.options),
         ...(prompt.initialValues === undefined ? {} : { initialValues: [...prompt.initialValues] }),
         ...(prompt.required === undefined ? {} : { required: prompt.required }),
@@ -85,16 +86,36 @@ export function createClackPrompter(): Prompter {
     },
     async confirm(prompt) {
       const result = await clackConfirm({
-        message: prompt.message,
+        message: sanitizeDisplayText(prompt.message),
         ...(prompt.initialValue === undefined ? {} : { initialValue: prompt.initialValue }),
       });
       return unwrap(result);
     },
     note(message, title) {
-      clackNote(message, title);
+      clackNote(
+        message === undefined ? undefined : sanitizeMultilineDisplayText(message),
+        title === undefined ? undefined : sanitizeDisplayText(title),
+      );
     },
     spinner() {
-      return clackSpinner();
+      const spin = clackSpinner();
+      return {
+        start(message) {
+          spin.start(shown(message));
+        },
+        stop(message) {
+          spin.stop(shown(message));
+        },
+        message(message) {
+          spin.message(shown(message));
+        },
+        error(message) {
+          spin.error(shown(message));
+        },
+        cancel(message) {
+          spin.cancel(shown(message));
+        },
+      };
     },
   };
 }
@@ -154,12 +175,19 @@ export function toClackOptions<Value>(options: readonly PromptOption<Value>[]): 
   // Option<Value> is a conditional on primitive values, so a generic Value
   // cannot be checked against it under exactOptionalPropertyTypes.
   return options.map((option) => {
-    const label = option.group === undefined ? option.label : `${option.group} · ${option.label}`;
-    if (option.hint === undefined) {
-      return { value: option.value, label };
+    const label = sanitizeDisplayText(option.label);
+    const group = option.group === undefined ? undefined : sanitizeDisplayText(option.group);
+    const visible = group === undefined || group.length === 0 ? label : `${group} · ${label}`;
+    const hint = option.hint === undefined ? undefined : sanitizeDisplayText(option.hint);
+    if (hint === undefined || hint.length === 0) {
+      return { value: option.value, label: visible };
     }
-    return { value: option.value, label, hint: option.hint };
+    return { value: option.value, label: visible, hint };
   }) as Option<Value>[];
+}
+
+function shown(message: string | undefined): string | undefined {
+  return message === undefined ? undefined : sanitizeDisplayText(message);
 }
 
 // Scripted cancel throws immediately. The prompt methods still return a promise, like clack.

@@ -3,6 +3,7 @@ import type { Registry } from '../registry/load.js';
 import type { RegistryNotice } from '../registry/resolve.js';
 import { fragmentName } from './catalog.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
+import { sanitizeDisplayText } from './display-text.js';
 
 export const NO_FRAMEWORK_SUMMARY = 'Framework: none detected';
 
@@ -28,7 +29,7 @@ export function formatSummary(input: SummaryText): string {
       : `Framework: ${nameList(registry, draft.frameworks)}`,
     `Libraries: ${nameList(registry, draft.libraries)}`,
     `Language: ${fragmentName(registry, draft.language)}`,
-    `Package manager: ${draft.packageManager ?? 'unknown'}`,
+    `Package manager: ${sanitizeDisplayText(draft.packageManager ?? 'unknown')}`,
     `Layout: ${draft.srcDir === 'src' ? 'src/' : 'project root'}`,
     `Architecture: ${fragmentName(registry, draft.architecture.id)} (confidence ${formatConfidence(draft.architecture.confidence)})`,
     formatVersions(draft.packages),
@@ -44,9 +45,9 @@ export function formatSummary(input: SummaryText): string {
 export function formatRegistryNotice(notice: RegistryNotice, registry: Registry): string {
   switch (notice.kind) {
     case 'unsupported-version':
-      return `${notice.package}@${notice.version} detected — no matching rules yet.`;
+      return `${sanitizeDisplayText(notice.package)}@${sanitizeDisplayText(notice.version)} detected — no matching rules yet.`;
     case 'unknown-version':
-      return `${notice.package} version is unknown — included ${fragmentName(registry, notice.fragmentId)}.`;
+      return `${sanitizeDisplayText(notice.package)} version is unknown — included ${fragmentName(registry, notice.fragmentId)}.`;
     case 'required-by':
       return `${fragmentName(registry, notice.fragmentId)} was added because ${fragmentName(registry, notice.requiredBy)} requires it.`;
     case 'incompatible':
@@ -59,9 +60,9 @@ export function formatRegistryNotice(notice: RegistryNotice, registry: Registry)
 export function formatWarning(warning: DetectionWarning): string {
   switch (warning.kind) {
     case 'unresolved-tsconfig-extends':
-      return warning.message;
+      return sanitizeDisplayText(warning.message);
     case 'legacy-agent-file':
-      return `${warning.path} still loads alongside the new rules and will not be modified.`;
+      return `${sanitizeDisplayText(warning.path)} still loads alongside the new rules and will not be modified.`;
   }
 }
 
@@ -84,7 +85,9 @@ function nameList(registry: Registry, ids: readonly string[]): string {
 function formatVersions(packages: Readonly<Record<string, string>>): string {
   const entries = Object.entries(packages).sort((left, right) => compareText(left[0], right[0]));
   if (entries.length === 0) return 'Versions: none';
-  const lines = entries.map(([name, version]) => `  ${name}@${version}`);
+  const lines = entries.map(
+    ([name, version]) => `  ${sanitizeDisplayText(name)}@${sanitizeDisplayText(version)}`,
+  );
   return ['Versions:', ...lines].join('\n');
 }
 

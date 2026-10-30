@@ -167,6 +167,39 @@ describe('formatSummary', () => {
     );
   });
 
+  it('strips terminal controls from packages, versions, and warnings', async () => {
+    const bundled = await bundledRegistry();
+    const draft = sampleDraft({
+      packageManager: 'pnpm',
+      packages: { 'react\n': '19\u001b[0m.0.0' },
+    });
+    const text = formatSummary({
+      draft,
+      registry: bundled,
+      notices: [
+        {
+          kind: 'unsupported-version',
+          package: 'evil\u001b[1m',
+          version: '1\r.0.0',
+          fragmentId: 'tailwind',
+        },
+      ],
+      warnings: [
+        {
+          kind: 'unresolved-tsconfig-extends',
+          message: 'Could not resolve tsconfig extends "\u001b[31mbase\n".',
+        },
+        { kind: 'legacy-agent-file', path: '.cursorrules\u001b[0m' },
+      ],
+    });
+    expect(text).toContain('  react@19.0.0');
+    expect(text).toContain('  evil@1.0.0 detected — no matching rules yet.');
+    expect(text).toContain('  Could not resolve tsconfig extends "base".');
+    expect(text).toContain('  .cursorrules still loads alongside the new rules and will not be modified.');
+    expect(text.includes('\u001b')).toBe(false);
+    expect(text.includes('\r')).toBe(false);
+  });
+
   it('does not repeat the base-rules notice', async () => {
     const bundled = await bundledRegistry();
     const draft = sampleDraft({ frameworks: [], libraries: [], packages: {} });

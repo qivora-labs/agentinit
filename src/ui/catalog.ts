@@ -1,5 +1,6 @@
 import type { Registry } from '../registry/load.js';
 import type { Fragment } from '../registry/parse.js';
+import { sanitizeDisplayText } from './display-text.js';
 import type { PromptOption, SelectPrompt } from './prompter.js';
 
 /**
@@ -32,7 +33,7 @@ const RECOMMENDED_LANGUAGE = 'typescript-strict';
 const RECOMMENDED_ARCHITECTURE = 'feature-based';
 
 export function fragmentName(registry: Registry, id: string): string {
-  return registry.byId.get(id)?.meta.name ?? id;
+  return sanitizeDisplayText(registry.byId.get(id)?.meta.name ?? id);
 }
 
 export function frameworkOptions(registry: Registry, includeOther: boolean): PromptOption<string>[] {
@@ -152,16 +153,12 @@ function orderedOptions(
     const fragment = byId.get(id);
     if (fragment === undefined) continue;
     used.add(id);
-    options.push({ value: id, label: fragment.meta.name, hint: hintFor(id, fragment) });
+    options.push(promptOption(id, fragment.meta.name, hintFor(id, fragment)));
   }
 
   for (const fragment of fragments) {
     if (used.has(fragment.meta.id)) continue;
-    options.push({
-      value: fragment.meta.id,
-      label: fragment.meta.name,
-      hint: hintFor(fragment.meta.id, fragment),
-    });
+    options.push(promptOption(fragment.meta.id, fragment.meta.name, hintFor(fragment.meta.id, fragment)));
   }
 
   return options;
@@ -169,9 +166,15 @@ function orderedOptions(
 
 function optionFor(fragment: Fragment, group: string): PromptOption<string> {
   return {
-    value: fragment.meta.id,
-    label: fragment.meta.name,
-    hint: fragment.meta.description,
+    ...promptOption(fragment.meta.id, fragment.meta.name, fragment.meta.description),
     group,
+  };
+}
+
+function promptOption(id: string, label: string, hint: string): PromptOption<string> {
+  return {
+    value: id,
+    label: sanitizeDisplayText(label),
+    hint: sanitizeDisplayText(hint),
   };
 }

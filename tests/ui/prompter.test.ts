@@ -30,6 +30,12 @@ describe('toClackOptions', () => {
       { value: 'typescript', label: 'TypeScript' },
     ]);
   });
+
+  it('strips terminal controls from the label, hint, and group, and leaves the value unchanged', () => {
+    expect(
+      toClackOptions([{ value: 'a\u001b[31m', label: 'A\u001b[31m', hint: 'h\n', group: 'G\u001b[0m' }]),
+    ).toEqual([{ value: 'a\u001b[31m', label: 'G · A', hint: 'h' }]);
+  });
 });
 
 describe('createFakePrompter', () => {

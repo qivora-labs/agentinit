@@ -2,6 +2,7 @@ import { AgentInitError } from '../errors.js';
 import type { Registry } from '../registry/load.js';
 import type { FragmentConflict, Selection, SelectionOrigin } from '../registry/resolve.js';
 import { fragmentName } from './catalog.js';
+import { sanitizeDisplayText } from './display-text.js';
 import type { Prompter } from './prompter.js';
 
 export type ConflictDecision =
@@ -84,8 +85,8 @@ async function promptConflict(
   conflict: FragmentConflict,
   registry: Registry,
 ): Promise<ConflictDecision> {
-  const left = fragmentName(registry, conflict.a);
-  const right = fragmentName(registry, conflict.b);
+  const left = sanitizeDisplayText(fragmentName(registry, conflict.a));
+  const right = sanitizeDisplayText(fragmentName(registry, conflict.b));
   const choice = await prompter.select({
     message: `"${left}" and "${right}" conflict. Keep one, or keep both?`,
     options: [

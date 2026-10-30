@@ -30,6 +30,19 @@ describe('frameworkOptions', () => {
     ]);
   });
 
+  it('strips terminal controls from names and descriptions', () => {
+    const fragment = ruleFragment('hono', 'framework');
+    const registry = registryOf([
+      {
+        ...fragment,
+        meta: { ...fragment.meta, name: 'Hono\u001b[31m', description: 'fast\u001b[0m' },
+      },
+    ]);
+    expect(frameworkOptions(registry, false)).toEqual([
+      { value: 'hono', label: 'Hono', hint: 'fast', group: 'Other' },
+    ]);
+  });
+
   it('puts a framework id that has no group under Other, before the sentinel', () => {
     const options = frameworkOptions(
       registryOf([ruleFragment('react-vite', 'framework'), ruleFragment('hono', 'framework')]),

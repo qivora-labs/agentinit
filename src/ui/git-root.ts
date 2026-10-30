@@ -1,3 +1,4 @@
+import { sanitizeDisplayText } from './display-text.js';
 import type { Prompter } from './prompter.js';
 
 export type GitRootChoice = 'stay' | 'use-git-root';
@@ -15,8 +16,10 @@ export async function confirmGitRoot(
   prompter: Prompter,
   directories: GitRootDirectories,
 ): Promise<GitRootChoice> {
+  const gitRoot = sanitizeDisplayText(directories.gitRoot);
+  const cwd = sanitizeDisplayText(directories.cwd);
   const useRoot = await prompter.confirm({
-    message: `This directory is inside ${directories.gitRoot}. Use the git root instead of ${directories.cwd}?`,
+    message: `This directory is inside ${gitRoot}. Use the git root instead of ${cwd}?`,
     initialValue: false,
   });
   return useRoot ? 'use-git-root' : 'stay';
