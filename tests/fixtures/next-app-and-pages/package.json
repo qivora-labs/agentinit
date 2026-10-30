@@ -1,0 +1,9 @@
+{
+  "name": "next-app-and-pages",
+  "dependencies": {
+    "next": "16.3.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}

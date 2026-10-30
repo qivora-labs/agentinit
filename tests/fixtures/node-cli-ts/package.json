@@ -1,0 +1,10 @@
+{
+  "name": "node-cli-ts",
+  "packageManager": "npm@10.9.0",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}
