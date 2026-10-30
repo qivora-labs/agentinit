@@ -36,8 +36,18 @@ describe('architectureMdAdapter', () => {
   it('says when an existing project has no detected folders', () => {
     const content = architecture([], 'src');
     expect(content).toContain('No folders were detected under the source root.');
+    expect(content).not.toContain('None of the detected folders match a row in the architecture map.');
     expect(content).not.toContain('## Other existing folders');
     expect(content).toContain('## Conventions for new code');
+  });
+
+  it('says when every detected folder misses the map', () => {
+    const content = architecture(['lib'], 'src');
+    expect(content).toContain('None of the detected folders match a row in the architecture map.');
+    expect(content).not.toContain('No folders were detected under the source root.');
+    expect(content).toContain('## Other existing folders');
+    expect(content).toContain('- `src/lib`');
+    expect(content).not.toMatch(/\bmove\b/iu);
   });
 
   it('uses paths relative to the project root when there is no src directory', () => {
@@ -78,5 +88,31 @@ describe('architectureMdAdapter', () => {
     expect(content).toContain('- ui → domain → data');
     expect(content).toContain('## Conventions for new code');
     expect(content).not.toContain('src/lib');
+  });
+
+  it('lists every detected folder as unmatched when the map is not a table', () => {
+    const body = ['## Summary', 'Short.', '', '## Map', '- ui → domain → data', '', '## Directives', '- **ALWAYS** depend inward.'].join(
+      '\n',
+    );
+    const plan = buildPlan(
+      profile({ folders: ['lib', 'domain'] }),
+      resolved([
+        ruleFragment({
+          id: 'layered',
+          name: 'Layered',
+          category: 'architecture',
+          scope: 'always',
+          order: 10,
+          body,
+        }),
+      ]),
+    );
+    const content = plan.ops.find((op) => op.path === 'ARCHITECTURE.md')?.content ?? '';
+    expect(content).toContain('None of the detected folders match a row in the architecture map.');
+    expect(content).not.toContain('No folders were detected under the source root.');
+    expect(content).not.toContain('- ui → domain → data');
+    expect(content).toContain('- `src/domain`');
+    expect(content).toContain('- `src/lib`');
+    expect(content.indexOf('- `src/domain`')).toBeLessThan(content.indexOf('- `src/lib`'));
   });
 });

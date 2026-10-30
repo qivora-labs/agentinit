@@ -16,9 +16,10 @@ interface MatchedFolder {
 }
 
 /**
- * `<name>` matches one path segment. A longer pattern wins, so
- * `components/atoms` keeps the atoms row when `components/` also matches.
- * Folders that do not match are listed with no recommendation: this file
+ * A row matches only when it has the same number of segments as the folder.
+ * `<name>` matches one segment. A parent row such as `components/` does not
+ * match `components/atoms`. When two equal-length rows match, the earlier
+ * row wins. Unmatched folders are listed with no recommendation: this file
  * must not tell agents to move existing files (PRD §5.4).
  */
 export const architectureMdAdapter: TargetAdapter = (ctx) => {
@@ -59,12 +60,14 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
   unmatched.sort(compareText);
 
   const layout =
-    matched.length === 0
-      ? 'No folders were detected under the source root.'
-      : markdownTable(
+    matched.length > 0
+      ? markdownTable(
           ['Folder', 'Responsibility'],
           matched.map((entry) => [`\`${entry.folder}\``, entry.responsibility]),
-        );
+        )
+      : folders.length === 0
+        ? 'No folders were detected under the source root.'
+        : 'None of the detected folders match a row in the architecture map.';
 
   const blocks = [
     '# ARCHITECTURE.md',
@@ -102,14 +105,10 @@ function greenfieldDocument(map: string, rows: readonly MapRow[], directives: st
 
 function matchResponsibility(folder: string, rows: readonly MapRow[], srcDir: '' | 'src'): string | undefined {
   const segments = pathSegments(folder);
-  let best: { readonly responsibility: string; readonly length: number } | undefined;
   for (const row of rows) {
-    const pattern = mapSegments(row.path, srcDir);
-    if (!sameShape(segments, pattern)) continue;
-    if (best !== undefined && pattern.length <= best.length) continue;
-    best = { responsibility: row.responsibility, length: pattern.length };
+    if (sameShape(segments, mapSegments(row.path, srcDir))) return row.responsibility;
   }
-  return best?.responsibility;
+  return undefined;
 }
 
 function mapSegments(mapPath: string, srcDir: '' | 'src'): readonly string[] {
