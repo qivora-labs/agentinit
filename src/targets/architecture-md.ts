@@ -1,5 +1,6 @@
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
-import { compareText, markdownDocument } from '../plan/markdown.js';
+import { markdownDocument } from '../plan/markdown.js';
 import { architectureFragment } from '../plan/render.js';
 import type { TargetAdapter } from '../plan/types.js';
 import { getSections } from '../registry/parse.js';

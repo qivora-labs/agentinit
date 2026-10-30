@@ -1,9 +1,9 @@
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import type { ResolvedSelection } from '../registry/resolve.js';
 import { agentsMdAdapter } from '../targets/agents-md.js';
 import { architectureMdAdapter } from '../targets/architecture-md.js';
 import type { AgentTarget, FileOp, ProjectProfile } from '../types.js';
-import { compareText } from './markdown.js';
 import { renderTargetContext } from './render.js';
 import { alwaysOnTokenWarning, estimateTokens } from './tokens.js';
 import type { Plan, PlanWarning, TargetAdapter } from './types.js';

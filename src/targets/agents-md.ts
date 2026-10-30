@@ -1,5 +1,6 @@
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
-import { compareText, headingSlug, markdownDocument, nestHeadings } from '../plan/markdown.js';
+import { headingSlug, markdownDocument, nestHeadings } from '../plan/markdown.js';
 import { renderBody, scriptCommand, type PlaceholderContext } from '../plan/placeholders.js';
 import { architectureFragment, nonArchitectureAlways } from '../plan/render.js';
 import type { RenderedFragment, TargetAdapter } from '../plan/types.js';

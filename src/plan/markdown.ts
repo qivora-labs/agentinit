@@ -1,10 +1,3 @@
-/** Code-unit order, so plans do not depend on locale. */
-export function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
 /**
  * GitHub heading anchor. Punctuation and emoji are deleted, and each space
  * becomes a hyphen, so a leading emoji leaves a leading hyphen. Lowercase

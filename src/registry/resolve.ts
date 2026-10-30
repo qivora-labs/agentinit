@@ -1,4 +1,5 @@
 import { satisfies } from 'semver';
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import type { FragmentCategory } from '../types.js';
 import type { Registry } from './load.js';
@@ -397,10 +398,4 @@ function dedupeFragments(fragments: readonly Fragment[]): Fragment[] {
 function compareFragments(left: Fragment, right: Fragment): number {
   if (left.meta.order !== right.meta.order) return left.meta.order - right.meta.order;
   return compareText(left.meta.id, right.meta.id);
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
 }

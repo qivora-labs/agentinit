@@ -1,3 +1,4 @@
+import { compareText } from '../compare-text.js';
 import type { ProjectDraft, DetectionWarning } from '../detect/index.js';
 import type { Registry } from '../registry/load.js';
 import type { RegistryNotice } from '../registry/resolve.js';
@@ -104,10 +105,4 @@ function noticeLines(input: SummaryText): string[] {
     lines.push(formatWarning(warning));
   }
   return lines;
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
 }

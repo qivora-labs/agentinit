@@ -1,8 +1,8 @@
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import type { ResolvedSelection } from '../registry/resolve.js';
 import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../registry/schema.js';
 import type { FragmentScope, ProjectProfile } from '../types.js';
-import { compareText } from './markdown.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
 import type { RenderedFragment, RenderedWorkflow, ScopedFragments, TargetContext } from './types.js';
 
