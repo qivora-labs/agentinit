@@ -9,7 +9,8 @@ export function compareText(left: string, right: string): number {
 export function headingSlug(title: string): string {
   return title
     .trim()
-    .toLowerCase()
+    // `en-US` keeps `I` as `i`. The process locale would turn it into `ı`.
+    .toLocaleLowerCase('en-US')
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/gu, '');
 }
