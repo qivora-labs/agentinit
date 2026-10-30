@@ -5,19 +5,20 @@ export function compareText(left: string, right: string): number {
   return 0;
 }
 
-/** GitHub-style anchor for the headings this planner emits. */
+/**
+ * GitHub heading anchor. Punctuation and emoji are deleted, and each space
+ * becomes a hyphen, so a leading emoji leaves a leading hyphen. Lowercase
+ * uses the Unicode default mapping, so `I` is `i` on every OS.
+ */
 export function headingSlug(title: string): string {
-  return title
-    .trim()
-    // `en-US` keeps `I` as `i`. The process locale would turn it into `ı`.
-    .toLocaleLowerCase('en-US')
-    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-    .replace(/^-+|-+$/gu, '');
+  return title.toLowerCase().replace(/[^\p{Letter}\p{Number} _-]+/gu, '').replace(/ /gu, '-');
 }
 
 /**
  * Shift ATX headings down one level so fragment text sits under the planner's
- * heading. Lines inside a fence stay as written; a `#` there is code.
+ * heading. Level 6 stays level 6: a seventh hash is not a heading, so nesting
+ * it would turn the line into ordinary text. Lines inside a fence stay as
+ * written; a `#` there is code.
  */
 export function nestHeadings(body: string): string {
   const lines = body.split('\n');
@@ -30,7 +31,9 @@ export function nestHeadings(body: string): string {
           fence = open;
           return line;
         }
-        return line.replace(/^( {0,3}#{1,5})(?= |$)/u, '$1#');
+        return line.replace(/^( {0,3})(#{1,6})(?= |$)/u, (matched, indent: string, marks: string) =>
+          marks.length < 6 ? `${indent}${marks}#` : matched,
+        );
       }
       if (isClosingFence(line, fence)) fence = null;
       return line;
