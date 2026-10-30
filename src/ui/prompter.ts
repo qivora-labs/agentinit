@@ -15,6 +15,11 @@ export interface PromptOption<Value> {
   value: Value;
   label: string;
   hint?: string;
+  /**
+   * Visual group from PRD §3.2. Clack has no option groups, so the adapter
+   * prefixes this onto the label the user sees.
+   */
+  group?: string;
 }
 
 export interface PromptSpinner {
@@ -148,10 +153,11 @@ function toClackOptions<Value>(options: readonly PromptOption<Value>[]): Option<
   // Option<Value> is a conditional on primitive values, so a generic Value
   // cannot be checked against it under exactOptionalPropertyTypes.
   return options.map((option) => {
+    const label = option.group === undefined ? option.label : `${option.group} · ${option.label}`;
     if (option.hint === undefined) {
-      return { value: option.value, label: option.label };
+      return { value: option.value, label };
     }
-    return { value: option.value, label: option.label, hint: option.hint };
+    return { value: option.value, label, hint: option.hint };
   }) as Option<Value>[];
 }
 

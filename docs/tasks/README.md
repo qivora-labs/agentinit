@@ -108,7 +108,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T16](T16-detect-layout.md) | Layout & architecture inference | M3 | T03 | M | done |
 | [T17](T17-detect-workspace-and-agents.md) | Monorepo, git root, existing agents | M3 | T03 | S | done |
 | [T18](T18-detect-orchestrator.md) | Detection orchestrator | M3 | T06, T14–T17 | M | done |
-| [T19](T19-interactive-ui.md) | Wizard, summary & `--yes` defaults | M3 | T05, T06, T18 | L | todo |
+| [T19](T19-interactive-ui.md) | Wizard, summary & `--yes` defaults | M3 | T05, T06, T18 | L | done |
 | [T20](T20-plan-core-and-shared-targets.md) | Plan core, `AGENTS.md`, `ARCHITECTURE.md` | M4 | T06, T07 | L | todo |
 | [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | todo |
 | [T22](T22-target-claude.md) | Claude Code target | M4 | T20 | M | todo |
