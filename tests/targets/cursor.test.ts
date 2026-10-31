@@ -268,7 +268,7 @@ describe('cursorAdapter', () => {
       'AGENTS.md',
       'ARCHITECTURE.md',
     ]);
-    expect(buildPlan(profile({ agents: ['windsurf'] }), selection).ops.map((op) => op.path)).toEqual([
+    expect(buildPlan(profile({ agents: ['copilot'] }), selection).ops.map((op) => op.path)).toEqual([
       'AGENTS.md',
       'ARCHITECTURE.md',
     ]);
