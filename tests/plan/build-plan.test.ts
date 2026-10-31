@@ -96,6 +96,26 @@ describe('buildPlan', () => {
     await expect(architecture).toMatchFileSnapshot('../__snapshots__/plan/architecture-greenfield.md');
   });
 
+  it('writes LF when an always-on fragment body uses CRLF', () => {
+    const plan = buildPlan(
+      profile({ scripts: {} }),
+      resolved([
+        layeredFragment(),
+        ruleFragment({
+          id: 'typescript-strict',
+          name: 'TypeScript strict',
+          category: 'language',
+          scope: 'always',
+          order: 20,
+          body: '## Boundary\r\n\r\nALWAYS typecheck in strict mode.\r\n',
+        }),
+      ]),
+    );
+    const agents = content(plan, 'AGENTS.md');
+    expect(agents).not.toContain('\r');
+    expect(agents).toContain('### Boundary\n\nALWAYS typecheck in strict mode.\n');
+  });
+
   it('keeps always-on fragment text once, in order, and leaves scoped text out', () => {
     const plan = buildPlan(
       profile({ scripts: {} }),
