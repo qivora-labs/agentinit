@@ -41,5 +41,5 @@ pnpm lint && pnpm typecheck && pnpm test
 - Manual skill `name` is the fragment id, so the command is `/<id>` (PRD §5.3). The directory is `agentinit-<id>`. Workflow `name` is also the id, at `.claude/skills/<id>/SKILL.md`. Registry ids are unique, so the two commands cannot collide.
 - A `glob` or `auto` fragment whose rendered glob list is empty is omitted. Writing the file without `paths` would load that scoped body every session.
 - Every `paths` entry is double-quoted. A leading `*` is a YAML alias, which is how `**/*.ts` renders when `srcDir` is empty. `auto` uses that same list and has no `description` field.
-- `argument-hint` is omitted when `argumentHint` is absent. A value that is not a plain YAML scalar is one double-quoted string (`[path]`, a colon, or a boolean-like name such as `on`).
+- `argument-hint` is omitted when `argumentHint` is absent. A value that is not a plain YAML scalar is one double-quoted string (`[path]`, a colon, a boolean-like name such as `on`, or a number such as `15` or `1e2`).
 - Plan tests that selected `claude` to mean "an agent with no adapter" now select `windsurf`.

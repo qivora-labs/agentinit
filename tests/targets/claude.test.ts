@@ -341,6 +341,51 @@ describe('claudeAdapter', () => {
     expect(parseYaml(frontmatter(text))).toMatchObject({ name: 'on', 'disable-model-invocation': true });
   });
 
+  it.each([
+    {
+      behavior: 'quotes a skill name that YAML would read as a number',
+      id: '1e2',
+      description: 'Toggle.',
+      skillPath: '.claude/skills/agentinit-1e2/SKILL.md',
+      line: 'name: "1e2"',
+      parsed: { name: '1e2' },
+    },
+    {
+      behavior: 'quotes a numeric skill description',
+      id: 'review',
+      description: '15',
+      skillPath: '.claude/skills/agentinit-review/SKILL.md',
+      line: 'description: "15"',
+      parsed: { description: '15' },
+    },
+  ])('$behavior and round-trips through yaml.parse', ({ id, description, skillPath, line, parsed }) => {
+    const text = content(
+      claudeAdapter(
+        renderTargetContext(
+          profile(),
+          resolved([
+            layeredFragment(),
+            ruleFragment({
+              id,
+              name: 'Review',
+              category: 'library',
+              scope: 'manual',
+              order: 50,
+              description,
+              body: 'RULE',
+            }),
+          ]),
+        ),
+      ),
+      skillPath,
+    );
+    expect(text).toContain(`${line}\n`);
+    expect(parseYaml(frontmatter(text))).toMatchObject({
+      ...parsed,
+      'disable-model-invocation': true,
+    });
+  });
+
   it('writes no Claude file that copies always-on fragment text', () => {
     const onlyAlways = claudeAdapter(
       renderTargetContext(

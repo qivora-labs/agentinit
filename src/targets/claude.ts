@@ -91,8 +91,9 @@ function quoted(value: string): string {
 /**
  * Plain when YAML would keep the text. `:` and `#` are always quoted: a colon
  * opens a mapping and a hash starts a comment. A leading `*` is an alias and
- * a leading `[` is a flow sequence. Quotes, backslashes, and keywords are
- * quoted so a later `yaml.parse` returns the same string.
+ * a leading `[` is a flow sequence. Quotes, backslashes, keywords, and
+ * numbers are quoted so a later `yaml.parse` returns the same string
+ * (`1e2` would become 100).
  */
 function yamlScalar(value: string): string {
   if (isPlainScalar(value)) return value;
@@ -104,6 +105,7 @@ function isPlainScalar(value: string): boolean {
   if (/[:#\n\r\t"\\]/u.test(value)) return false;
   if (/^[&*!%@`|>{}[\],?'"-]/u.test(value)) return false;
   if (/^(?:true|false|null|yes|no|on|off|~|n|y)$/iu.test(value)) return false;
+  if (/^[-+]?(?:\d+|\d*\.\d+)(?:[eE][-+]?\d+)?$/u.test(value)) return false;
   return true;
 }
 
