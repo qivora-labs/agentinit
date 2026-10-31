@@ -127,6 +127,12 @@ describe('renderBody', () => {
     expect(() => renderBody('{{scripts.lint}} {{nope}}', context())).toThrow(/nope/u);
   });
 
+  it('normalizes CRLF and CR bodies to LF', () => {
+    const lf = '## Boundary\n\nALWAYS typecheck.\n';
+    expect(renderBody(lf.replaceAll('\n', '\r\n'), context())).toBe(lf);
+    expect(renderBody(lf.replaceAll('\n', '\r'), context())).toBe(lf);
+  });
+
   it('leaves placeholder-free text unchanged, including an already empty heading', () => {
     const source = '## Empty\n\n## Kept\n\n- stay\n';
     expect(renderBody(source, context())).toBe(source);

@@ -151,8 +151,11 @@ function collapseSlashes(glob: string): string {
 }
 
 function splitLines(text: string): { lines: string[]; endedWithNewline: boolean } {
-  const endedWithNewline = text.endsWith('\n');
-  const stripped = endedWithNewline ? text.slice(0, -1) : text;
+  // A Windows checkout rewrites fragment files to CRLF. Generated text stays
+  // LF, so a carriage return cannot stick to a line and change the plan.
+  const normalized = text.replace(/\r\n/gu, '\n').replace(/\r/gu, '\n');
+  const endedWithNewline = normalized.endsWith('\n');
+  const stripped = endedWithNewline ? normalized.slice(0, -1) : normalized;
   if (stripped === '') return { lines: endedWithNewline ? [''] : [], endedWithNewline };
   return { lines: stripped.split('\n'), endedWithNewline };
 }
