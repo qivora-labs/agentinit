@@ -339,7 +339,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 | `order` | ✓ | Sort order in shared files (10 arch, 20 lang, 30 framework, 40 library) |
 | `description` | ✓ | One line; shown in pickers and used for description-based activation |
 | `scope` | ✓ (rules) | `always` · `glob` · `auto` · `manual` (§5.3) |
-| `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}` |
+| `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}`; **no commas** |
 | `detect.packages` | | Package names that trigger auto-selection; **all** listed packages must be present |
 | `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`); **all** listed files must exist |
 | `appliesTo` | | Package → semver range, e.g. `{ next: ">=15" }` |
@@ -441,8 +441,8 @@ Most agents read `AGENTS.md` **and** their own files. To avoid loading the same 
 | Scope | Cursor | Claude Code | Windsurf | Copilot |
 | :--- | :--- | :--- | :--- | :--- |
 | `always` | `AGENTS.md` | `AGENTS.md` (via `@AGENTS.md`) | `AGENTS.md` | `AGENTS.md` (via pointer) |
-| `glob` | `.mdc` with `globs` | rule with `paths` | `trigger: glob` | `applyTo` |
-| `auto` | `.mdc` with `description`, no `globs` (agent decides) | rule with `paths` (glob fallback) | `trigger: model_decision` | `applyTo` (glob fallback) |
+| `glob` | `.mdc` with `globs` | rule with `paths` | `trigger: glob` | `applyTo` and `description` |
+| `auto` | `.mdc` with `description`, no `globs` (agent decides) | rule with `paths` (glob fallback) | `trigger: model_decision` | `applyTo` and `description` |
 | `manual` | `.mdc` with no `globs` or `description` (`@`-mention) | skill with `disable-model-invocation: true` (`/id`) | `trigger: manual` (`@`-mention) | prompt file `agentinit-<id>.prompt.md` |
 
 `auto` exists because glob-scoped rules load only when the agent reads a matching file, so they can miss the moment a new file of that kind is created. Description-based activation covers that case where an agent supports it.
@@ -476,9 +476,10 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
 ```
 
-**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules:
+**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules carry `description` and one quoted `applyTo` string. VS Code loads a file when `description` matches the task, and when `applyTo` matches a file being created or edited. GitHub.com path-specific instructions read `applyTo`. An `auto` rule whose globs do not render still writes `description` and omits `applyTo`. A `glob` rule with no rendered patterns is omitted. A workflow id `agentinit-<id>` together with a manual fragment `<id>` is a plan error: both would write `.github/prompts/agentinit-<id>.prompt.md`.
 ```markdown
 ---
+description: React Server Components by default, strict client boundaries, and App Router data conventions.
 applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ---
 ```
@@ -686,7 +687,7 @@ Rule fixes ship as patch releases via changesets. Team fragments (v0.2) and opt-
 2. **Token budget:** each fragment stays under **120 lines** (~800 tokens).
 3. **Actionable directives only:** imperative verbs (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`); no textbook explanations.
 4. **Version-aware and sourced:** set `appliesTo` when guidance depends on a major version; cite official docs in `sources` and set `verifiedAt`.
-5. **Portable globs:** no brace patterns; use one glob per extension.
+5. **Portable globs:** no brace patterns and no commas; use one glob per extension.
 6. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
 7. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
 8. **Freshness:** fragments with `verifiedAt` older than 6 months are flagged in CI and re-verified or deprecated.
@@ -724,7 +725,8 @@ There is no telemetry, so every metric uses public signals. Targets are for the 
 ## 13. Known Limitations (v0.1)
 
 - **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. An opt-in inline mode is planned for v0.2.
-- **Glob-scoped rules in Claude Code and Copilot** may not load when a new file is being created, because those tools have no description-based rule activation; `auto` falls back to globs there.
+- **Glob-scoped rules in Claude Code** may not load when a new file is being created. Claude has no description-based rule activation, so `auto` falls back to globs there.
+- **Copilot on GitHub.com** reads `applyTo` on path-specific instructions, so those rules may not load when a new file is being created. VS Code loads the same file when `description` matches the task.
 - **Monorepos** are detected but not compiled; users run the CLI inside one package.
 - **Legacy files** (`.cursorrules`, `.windsurfrules`) are left untouched and keep loading alongside the new rules.
 - **Greenfield mode** can't run with `--yes`.

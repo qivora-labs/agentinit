@@ -48,8 +48,8 @@ describe('buildPlan', () => {
     agents: ['cursor', 'claude'],
   });
 
-  it('writes shared managed blocks once, sorted by path, when the selected agent has no adapter', async () => {
-    const plan = buildPlan({ ...existing, agents: ['copilot'] }, sample);
+  it('writes shared managed blocks once, sorted by path, when no agent is selected', async () => {
+    const plan = buildPlan({ ...existing, agents: [] }, sample);
     expect(plan.ops.map((op) => op.path)).toEqual(['AGENTS.md', 'ARCHITECTURE.md']);
     expect(plan.ops.map((op) => ({ kind: op.kind, blockId: op.blockId, target: op.target }))).toEqual([
       { kind: 'managed-block', blockId: 'core', target: 'shared' },

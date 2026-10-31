@@ -13,7 +13,7 @@ Fragments are instructions that users' AI agents follow literally. Accuracy matt
 - ALWAYS use the 3-part formula for rules: Boundary → Directives (`ALWAYS` / `NEVER` / `PREFER` / `FORBID` / `DEFAULT`) → Good vs. Anti-Pattern code block.
 - Architecture fragments: `## Summary` (≤ 10 lines, copied into users' `AGENTS.md`) and `## Map`. Workflows: `## Purpose`, `## Input`, `## Steps`, `## Output`, `## Guardrails`.
 - Keep bodies ≤ 120 lines (workflows ≤ 60). One concern per fragment; no generic advice ("write clean code").
-- Globs: one pattern per extension, no braces (`{ts,tsx}`), use `{{src}}` for the source root.
+- Globs: one pattern per extension, no braces (`{ts,tsx}`), no commas, use `{{src}}` for the source root.
 - Use placeholders for commands (`{{scripts.test}}`, `{{pm}}`); NEVER hard-code `npm`.
 - NEVER instruct agents to move or restructure existing files, run network commands, install packages, read secrets, or disable safeguards.
 - Workflows are agent-neutral: no tool-specific syntax such as `$ARGUMENTS`.
