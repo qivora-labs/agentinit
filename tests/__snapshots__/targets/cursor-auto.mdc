@@ -1,0 +1,10 @@
+---
+description: Client state that the server does not own.
+alwaysApply: false
+---
+
+## Boundary
+
+Stores hold client-only state.
+
+ALWAYS keep server data out of the store.

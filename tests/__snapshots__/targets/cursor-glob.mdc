@@ -1,0 +1,11 @@
+---
+description: React Server Components by default, strict client boundaries, and App Router data conventions.
+globs: src/app/**/*.ts,src/app/**/*.tsx
+alwaysApply: false
+---
+
+## Boundary
+
+Server Components by default.
+
+ALWAYS keep client components at the leaves.

@@ -29,6 +29,7 @@ export function ruleFragment(input: {
   scope: FragmentScope;
   order: number;
   body: string;
+  description?: string;
   globs?: string[];
 }): Fragment {
   const meta: RuleFragmentMeta = {
@@ -37,7 +38,7 @@ export function ruleFragment(input: {
     category: input.category,
     version: '1.0.0',
     order: input.order,
-    description: 'A fragment.',
+    description: input.description ?? 'A fragment.',
     scope: input.scope,
     sources: ['https://example.com/docs'],
     verifiedAt: '2026-10-17',

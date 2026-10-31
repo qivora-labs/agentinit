@@ -110,7 +110,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T18](T18-detect-orchestrator.md) | Detection orchestrator | M3 | T06, T14–T17 | M | done |
 | [T19](T19-interactive-ui.md) | Wizard, summary & `--yes` defaults | M3 | T05, T06, T18 | L | done |
 | [T20](T20-plan-core-and-shared-targets.md) | Plan core, `AGENTS.md`, `ARCHITECTURE.md` | M4 | T06, T07 | L | done |
-| [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | todo |
+| [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | done |
 | [T22](T22-target-claude.md) | Claude Code target | M4 | T20 | M | todo |
 | [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | todo |
 | [T24](T24-target-copilot.md) | GitHub Copilot target | M4 | T20 | M | todo |
