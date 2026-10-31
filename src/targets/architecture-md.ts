@@ -1,6 +1,6 @@
 import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
-import { markdownDocument } from '../plan/markdown.js';
+import { escapeMarkdownText, markdownDocument, markdownInlineCode } from '../plan/markdown.js';
 import { architectureFragment } from '../plan/render.js';
 import type { TargetAdapter } from '../plan/types.js';
 import { getSections } from '../registry/parse.js';
@@ -64,7 +64,7 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
     matched.length > 0
       ? markdownTable(
           ['Folder', 'Responsibility'],
-          matched.map((entry) => [`\`${entry.folder}\``, entry.responsibility]),
+          matched.map((entry) => [markdownInlineCode(entry.folder), escapeMarkdownText(entry.responsibility)]),
         )
       : folders.length === 0
         ? 'No folders were detected under the source root.'
@@ -76,7 +76,7 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
     `## Layout\n\n${layout}`,
   ];
   if (unmatched.length > 0) {
-    const listed = unmatched.map((folder) => `- \`${folder}\``).join('\n');
+    const listed = unmatched.map((folder) => `- ${markdownInlineCode(folder)}`).join('\n');
     blocks.push(`## Other existing folders\n\nThese folders are already in the project:\n\n${listed}`);
   }
   if (directives.length > 0) {
@@ -90,7 +90,7 @@ function greenfieldDocument(map: string, rows: readonly MapRow[], directives: st
     rows.length > 0
       ? markdownTable(
           ['Path', 'Responsibility'],
-          rows.map((row) => [`\`${row.path}\``, row.responsibility]),
+          rows.map((row) => [markdownInlineCode(row.path), escapeMarkdownText(row.responsibility)]),
         )
       : map;
   const blocks = [

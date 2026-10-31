@@ -1,6 +1,6 @@
 import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
-import { headingSlug, markdownDocument, nestHeadings } from '../plan/markdown.js';
+import { escapeMarkdownText, headingSlug, markdownDocument, nestHeadings } from '../plan/markdown.js';
 import { renderBody, scriptCommand, type PlaceholderContext } from '../plan/placeholders.js';
 import { architectureFragment, nonArchitectureAlways } from '../plan/render.js';
 import type { RenderedFragment, TargetAdapter } from '../plan/types.js';
@@ -81,11 +81,15 @@ function renderScript(name: string, placeholders: PlaceholderContext): string | 
 }
 
 function agentsDocument(sections: readonly Section[]): string {
-  const contents = sections.map((section) => `- [${section.title}](#${headingSlug(section.title)})`).join('\n');
+  const visible = sections.map((section) => ({
+    title: escapeMarkdownText(section.title),
+    body: section.body,
+  }));
+  const contents = visible.map((section) => `- [${section.title}](#${headingSlug(section.title)})`).join('\n');
   return markdownDocument([
     '# AGENTS.md',
     INTRO,
     `## Contents\n\n${contents}`,
-    ...sections.map((section) => `## ${section.title}\n\n${section.body.trim()}`),
+    ...visible.map((section) => `## ${section.title}\n\n${section.body.trim()}`),
   ]);
 }

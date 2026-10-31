@@ -90,6 +90,46 @@ describe('architectureMdAdapter', () => {
     expect(content).not.toContain('src/lib');
   });
 
+  it('escapes folder names and responsibilities that would break the table or the list', () => {
+    const body = [
+      '## Summary',
+      'Short.',
+      '',
+      '## Map',
+      '| Path | Responsibility |',
+      '| :--- | :--- |',
+      '| `<name>` | See [docs](http://evil.test) and `code`. |',
+      '',
+      '## Directives',
+      '- Stay.',
+    ].join('\n');
+    const content = buildPlan(
+      profile({ srcDir: '', folders: ['a|b', 'c`d', 'e\nf', 'p|q/r', 'x`y/z'] }),
+      resolved([
+        ruleFragment({
+          id: 'layered',
+          name: 'Layered',
+          category: 'architecture',
+          scope: 'always',
+          order: 10,
+          body,
+        }),
+      ]),
+    ).ops.find((op) => op.path === 'ARCHITECTURE.md')?.content ?? '';
+
+    expect(content).toContain('| a\\|b | See \\[docs\\](http://evil.test) and \\`code\\`. |');
+    expect(content).toContain('| ``c`d`` | See \\[docs\\](http://evil.test) and \\`code\\`. |');
+    expect(content).toContain('| `e f` | See \\[docs\\](http://evil.test) and \\`code\\`. |');
+    expect(content).toContain('- p\\|q/r');
+    expect(content).toContain('- ``x`y/z``');
+    expect(content).not.toContain('| a|b |');
+    expect(content).not.toContain('[docs](http://evil.test)');
+    expect(content).not.toContain('- `p|q/r`');
+    expect(content.indexOf('| a\\|b |')).toBeLessThan(content.indexOf('| ``c`d`` |'));
+    expect(content.indexOf('| ``c`d`` |')).toBeLessThan(content.indexOf('| `e f` |'));
+    expect(content.indexOf('- p\\|q/r')).toBeLessThan(content.indexOf('- ``x`y/z``'));
+  });
+
   it('lists every detected folder as unmatched when the map is not a table', () => {
     const body = ['## Summary', 'Short.', '', '## Map', '- ui → domain → data', '', '## Directives', '- **ALWAYS** depend inward.'].join(
       '\n',
