@@ -307,6 +307,12 @@ describe('parseFragment', () => {
       parts: ['registry/workflows/new-feature.md', 'scope:', 'unknown key'],
     },
     {
+      behavior: 'rejects a comma in a glob',
+      sourcePath: 'registry/libraries/zustand.md',
+      text: document({ ...baseRule, globs: ['{{src}}stores/a,b.ts'] }),
+      parts: ['globs[0]', 'commas are not allowed'],
+    },
+    {
       behavior: 'rejects a backslash in a glob',
       sourcePath: 'registry/libraries/zustand.md',
       text: document({ ...baseRule, globs: ['{{src}}stores\\**\\*.ts'] }),

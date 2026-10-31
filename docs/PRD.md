@@ -339,7 +339,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 | `order` | ✓ | Sort order in shared files (10 arch, 20 lang, 30 framework, 40 library) |
 | `description` | ✓ | One line; shown in pickers and used for description-based activation |
 | `scope` | ✓ (rules) | `always` · `glob` · `auto` · `manual` (§5.3) |
-| `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}` |
+| `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}`; **no commas** |
 | `detect.packages` | | Package names that trigger auto-selection; **all** listed packages must be present |
 | `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`); **all** listed files must exist |
 | `appliesTo` | | Package → semver range, e.g. `{ next: ">=15" }` |
@@ -476,7 +476,7 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
 ```
 
-**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules carry `description` and one quoted `applyTo` string. VS Code loads a file when `description` matches the task, and when `applyTo` matches a file being created or edited. GitHub.com path-specific instructions read `applyTo`.
+**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules carry `description` and one quoted `applyTo` string. VS Code loads a file when `description` matches the task, and when `applyTo` matches a file being created or edited. GitHub.com path-specific instructions read `applyTo`. An `auto` rule whose globs do not render still writes `description` and omits `applyTo`. A `glob` rule with no rendered patterns is omitted. A workflow id `agentinit-<id>` together with a manual fragment `<id>` is a plan error: both would write `.github/prompts/agentinit-<id>.prompt.md`.
 ```markdown
 ---
 description: React Server Components by default, strict client boundaries, and App Router data conventions.
@@ -687,7 +687,7 @@ Rule fixes ship as patch releases via changesets. Team fragments (v0.2) and opt-
 2. **Token budget:** each fragment stays under **120 lines** (~800 tokens).
 3. **Actionable directives only:** imperative verbs (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`); no textbook explanations.
 4. **Version-aware and sourced:** set `appliesTo` when guidance depends on a major version; cite official docs in `sources` and set `verifiedAt`.
-5. **Portable globs:** no brace patterns; use one glob per extension.
+5. **Portable globs:** no brace patterns and no commas; use one glob per extension.
 6. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
 7. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
 8. **Freshness:** fragments with `verifiedAt` older than 6 months are flagged in CI and re-verified or deprecated.

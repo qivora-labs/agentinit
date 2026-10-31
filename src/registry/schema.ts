@@ -58,6 +58,10 @@ function globProblem(glob: string): string | undefined {
   if (withoutPlaceholders.includes('{') || withoutPlaceholders.includes('}')) {
     return 'brace patterns are not allowed';
   }
+  // Cursor, Windsurf, and Copilot join patterns with commas.
+  if (glob.includes(',')) {
+    return 'commas are not allowed';
+  }
   return undefined;
 }
 

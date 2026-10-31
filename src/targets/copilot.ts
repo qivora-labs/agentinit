@@ -1,3 +1,4 @@
+import { AgentInitError } from '../errors.js';
 import type { RenderedFragment, RenderedWorkflow, TargetAdapter } from '../plan/types.js';
 import type { FileOp } from '../types.js';
 
@@ -6,25 +7,25 @@ const POINTER = 'Follow `AGENTS.md` at the repository root.\n\nScoped rules are 
 /**
  * Copilot reads `AGENTS.md` on many surfaces and only the pointer on others
  * (PRD §5.1, §5.3, §13). The managed block names `AGENTS.md` and
- * `.github/instructions/`; `always` text stays in `AGENTS.md`. `glob` and
- * `auto` share one instruction file: `description` is the VS Code on-demand
- * field, and `applyTo` is what GitHub.com reads (PRD §5.3, §13). `applyTo`
- * is always one double-quoted comma-separated string. A glob or auto fragment whose
- * rendered glob list is empty is omitted. Manual rules and workflows are
- * prompt files. Prompt frontmatter uses `description` and, for workflows,
- * `argument-hint`. `agent` stays unset so the current agent runs the prompt.
- * Markers are added by the IO layer.
+ * `.github/instructions/`; `always` text stays in `AGENTS.md`. `description`
+ * is the VS Code on-demand field, and `applyTo` is what GitHub.com reads.
+ * `applyTo` is one double-quoted comma-separated string. A pattern that
+ * contains a comma is a plan error. A `glob` fragment with no rendered
+ * patterns is omitted. An `auto` fragment in that case still writes
+ * `description` and omits `applyTo`. Manual prompts use the `agentinit-`
+ * prefix. A workflow that would take the same prompt path is a plan error.
+ * Prompt frontmatter uses `description` and, for workflows, `argument-hint`.
+ * `agent` stays unset so the current agent runs the prompt. Markers are
+ * added by the IO layer.
  */
 export const copilotAdapter: TargetAdapter = (ctx) => {
+  assertDistinctPromptPaths(ctx.fragments.manual, ctx.workflows);
   const ops: FileOp[] = [copilotInstructionsOp()];
   for (const fragment of ctx.fragments.glob) {
-    const op = instructionOp(fragment);
+    const op = globInstruction(fragment);
     if (op !== undefined) ops.push(op);
   }
-  for (const fragment of ctx.fragments.auto) {
-    const op = instructionOp(fragment);
-    if (op !== undefined) ops.push(op);
-  }
+  for (const fragment of ctx.fragments.auto) ops.push(autoInstruction(fragment));
   for (const fragment of ctx.fragments.manual) ops.push(manualPromptOp(fragment));
   for (const workflow of ctx.workflows) ops.push(workflowPromptOp(workflow));
   return ops;
@@ -40,20 +41,79 @@ function copilotInstructionsOp(): FileOp {
   };
 }
 
-/** `glob` and `auto` share this shape. Copilot code review ignores a file with no `applyTo`. */
-function instructionOp(fragment: RenderedFragment): FileOp | undefined {
-  const globs = fragment.globs.filter((glob) => glob.length > 0);
+/** A glob rule with no patterns never matches, so the file is omitted. */
+function globInstruction(fragment: RenderedFragment): FileOp | undefined {
+  const globs = nonemptyGlobs(fragment);
   if (globs.length === 0) return undefined;
-  const lines = [`description: ${yamlScalar(fragment.description)}`, `applyTo: ${quoted(globs.join(','))}`];
+  return instructionFile(fragment, globs);
+}
+
+/** `description` stays so VS Code can load the rule when no pattern rendered. */
+function autoInstruction(fragment: RenderedFragment): FileOp {
+  return instructionFile(fragment, nonemptyGlobs(fragment));
+}
+
+function instructionFile(fragment: RenderedFragment, globs: readonly string[]): FileOp {
+  const lines = [`description: ${yamlScalar(fragment.description)}`];
+  if (globs.length > 0) lines.push(`applyTo: ${applyTo(globs)}`);
   return fileOp(
     `.github/instructions/agentinit-${fragment.id}.instructions.md`,
     document(frontmatter(lines), fragment.body),
   );
 }
 
+function nonemptyGlobs(fragment: RenderedFragment): string[] {
+  return fragment.globs.filter((glob) => glob.length > 0);
+}
+
+/**
+ * `applyTo` joins patterns with commas. A comma inside one pattern cannot be
+ * told apart from the separator.
+ */
+function applyTo(globs: readonly string[]): string {
+  for (const glob of globs) {
+    if (glob.includes(',')) {
+      throw new AgentInitError(
+        `Glob "${glob}" contains a comma. Copilot applyTo joins patterns with commas, so one pattern cannot contain a comma.`,
+      );
+    }
+  }
+  return quoted(globs.join(','));
+}
+
+/**
+ * Manual prompts and workflows share `.github/prompts/`, and the filename is
+ * the slash command. `agentinit-<id>` is reserved for the manual fragment
+ * `<id>` only when that fragment is in the plan.
+ */
+function assertDistinctPromptPaths(
+  manuals: readonly RenderedFragment[],
+  workflows: readonly RenderedWorkflow[],
+): void {
+  const manualIds = new Map(manuals.map((fragment) => [manualPromptPath(fragment.id), fragment.id]));
+  for (const workflow of workflows) {
+    const path = workflowPromptPath(workflow.id);
+    const manualId = manualIds.get(path);
+    if (manualId !== undefined) {
+      throw new AgentInitError(
+        `Workflow "${workflow.id}" and manual fragment "${manualId}" both write "${path}". ` +
+          'Rename one of them so the Copilot prompt paths differ.',
+      );
+    }
+  }
+}
+
+function manualPromptPath(id: string): string {
+  return `.github/prompts/agentinit-${id}.prompt.md`;
+}
+
+function workflowPromptPath(id: string): string {
+  return `.github/prompts/${id}.prompt.md`;
+}
+
 function manualPromptOp(fragment: RenderedFragment): FileOp {
   return fileOp(
-    `.github/prompts/agentinit-${fragment.id}.prompt.md`,
+    manualPromptPath(fragment.id),
     document(frontmatter([`description: ${yamlScalar(fragment.description)}`]), fragment.body),
   );
 }
@@ -63,7 +123,7 @@ function workflowPromptOp(workflow: RenderedWorkflow): FileOp {
   if (workflow.argumentHint !== undefined) {
     lines.push(`argument-hint: ${yamlScalar(workflow.argumentHint)}`);
   }
-  return fileOp(`.github/prompts/${workflow.id}.prompt.md`, document(frontmatter(lines), workflow.body));
+  return fileOp(workflowPromptPath(workflow.id), document(frontmatter(lines), workflow.body));
 }
 
 function fileOp(path: string, content: string): FileOp {

@@ -1,5 +1,6 @@
 import { parse as parseYaml } from 'yaml';
 import { describe, expect, it } from 'vitest';
+import { AgentInitError } from '../../src/errors.js';
 import { buildPlan } from '../../src/plan/build-plan.js';
 import { renderTargetContext } from '../../src/plan/render.js';
 import { copilotAdapter } from '../../src/targets/copilot.js';
@@ -190,7 +191,7 @@ describe('copilotAdapter', () => {
     expect(parseYaml(frontmatter(text))).toEqual({ description: 'File scoped rule.', applyTo: parsed });
   });
 
-  it('omits a glob or auto instruction when the rendered glob list is empty', () => {
+  it('omits a glob instruction when the rendered glob list is empty', () => {
     const empty = copilotAdapter(
       renderTargetContext(
         profile(),
@@ -205,21 +206,88 @@ describe('copilotAdapter', () => {
             globs: ['{{scripts.missing}}/**/*.ts'],
             body: 'GLOB_RULE',
           }),
-          ruleFragment({
-            id: 'zustand',
-            name: 'Zustand',
-            category: 'library',
-            scope: 'auto',
-            order: 40,
-            globs: ['{{scripts.missing}}/**/*.ts'],
-            body: 'AUTO_RULE',
-          }),
         ]),
       ),
     );
     expect(empty.map((op) => op.path)).toEqual(['.github/copilot-instructions.md']);
     expect(content(empty, '.github/copilot-instructions.md')).not.toContain('GLOB_RULE');
-    expect(content(empty, '.github/copilot-instructions.md')).not.toContain('AUTO_RULE');
+  });
+
+  it('writes description only when an auto rule renders no globs', () => {
+    const text = content(
+      copilotAdapter(
+        renderTargetContext(
+          profile(),
+          resolved([
+            layeredFragment(),
+            ruleFragment({
+              id: 'zustand',
+              name: 'Zustand',
+              category: 'library',
+              scope: 'auto',
+              order: 40,
+              description: 'Client state that the server does not own.',
+              globs: ['{{scripts.missing}}/**/*.ts'],
+              body: 'AUTO_RULE',
+            }),
+          ]),
+        ),
+      ),
+      '.github/instructions/agentinit-zustand.instructions.md',
+    );
+    expect(text).toContain('AUTO_RULE');
+    expect(text).not.toMatch(/^applyTo:/mu);
+    expect(parseYaml(frontmatter(text))).toEqual({
+      description: 'Client state that the server does not own.',
+    });
+  });
+
+  it('rejects a rendered glob that contains a comma', () => {
+    const run = (): string => instruction('glob', ['src/a,b.ts']);
+    expect(run).toThrow(AgentInitError);
+    expect(run).toThrow(
+      'Glob "src/a,b.ts" contains a comma. Copilot applyTo joins patterns with commas, so one pattern cannot contain a comma.',
+    );
+  });
+
+  it('rejects a workflow prompt path that matches a manual prompt', () => {
+    const run = (): FileOp[] =>
+      copilotAdapter(
+        renderTargetContext(
+          profile(),
+          resolved(
+            [
+              layeredFragment(),
+              ruleFragment({
+                id: 'review',
+                name: 'Review',
+                category: 'library',
+                scope: 'manual',
+                order: 40,
+                body: 'MANUAL_RULE',
+              }),
+            ],
+            [workflowFragment({ id: 'agentinit-review', name: 'Review', order: 50, body: 'WORKFLOW' })],
+          ),
+        ),
+      );
+    expect(run).toThrow(AgentInitError);
+    expect(run).toThrow(
+      'Workflow "agentinit-review" and manual fragment "review" both write ".github/prompts/agentinit-review.prompt.md". Rename one of them so the Copilot prompt paths differ.',
+    );
+  });
+
+  it('writes a workflow whose id starts with agentinit- when that prompt path is free', () => {
+    const ops = copilotAdapter(
+      renderTargetContext(
+        profile(),
+        resolved(
+          [layeredFragment()],
+          [workflowFragment({ id: 'agentinit-customize', name: 'Customize', order: 50, body: 'WORKFLOW' })],
+        ),
+      ),
+    );
+    expect(ops.map((op) => op.path)).toContain('.github/prompts/agentinit-customize.prompt.md');
   });
 
   it.each([
