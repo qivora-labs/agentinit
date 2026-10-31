@@ -112,7 +112,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T20](T20-plan-core-and-shared-targets.md) | Plan core, `AGENTS.md`, `ARCHITECTURE.md` | M4 | T06, T07 | L | done |
 | [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | done |
 | [T22](T22-target-claude.md) | Claude Code target | M4 | T20 | M | done |
-| [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | todo |
+| [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | done |
 | [T24](T24-target-copilot.md) | GitHub Copilot target | M4 | T20 | M | todo |
 | [T25](T25-manifest-and-managed-blocks.md) | Manifest & managed blocks | M5 | T03 | M | todo |
 | [T26](T26-apply-engine.md) | Apply engine | M5 | T25 | L | todo |
