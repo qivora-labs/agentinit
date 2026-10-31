@@ -22,10 +22,10 @@ Generate `CLAUDE.md`, path-scoped rules, and skills for Claude Code.
 - Shared outputs (T20).
 
 ## Acceptance criteria
-- [ ] Snapshot tests for the `CLAUDE.md` block, each scope, and one workflow.
-- [ ] `paths` is a YAML list; frontmatter round-trips through `yaml.parse`.
-- [ ] Workflows and manual rules both set `disable-model-invocation: true`.
-- [ ] No Claude file duplicates `always` content (it arrives via `@AGENTS.md`).
+- [x] Snapshot tests for the `CLAUDE.md` block, each scope, and one workflow.
+- [x] `paths` is a YAML list; frontmatter round-trips through `yaml.parse`.
+- [x] Workflows and manual rules both set `disable-model-invocation: true`.
+- [x] No Claude file duplicates `always` content (it arrives via `@AGENTS.md`).
 
 ## Verify
 ```bash
@@ -36,4 +36,10 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(targets): add claude code rules and skills output`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Checked [Claude Code memory](https://code.claude.com/docs/en/claude-md) and [skills](https://code.claude.com/docs/en/skills) on 2026-10-31. `CLAUDE.md` imports with a bare `@AGENTS.md` line (backticks would keep it literal). Path-scoped rules use a `paths` YAML list of quoted globs. A rule with no `paths` field loads at launch. Skill frontmatter uses `name`, `description`, `argument-hint`, and `disable-model-invocation`.
+- `CLAUDE.md` is managed block `claude` (`target: 'claude'`). The inner content is `@AGENTS.md` plus one line pointing at `.claude/rules/`. Markers stay in `src/io/`.
+- Manual skill `name` is the fragment id, so the command is `/<id>` (PRD §5.3). The directory is `agentinit-<id>`. Workflow `name` is also the id, at `.claude/skills/<id>/SKILL.md`. Registry ids are unique, so the two commands cannot collide.
+- A `glob` or `auto` fragment whose rendered glob list is empty is omitted. Writing the file without `paths` would load that scoped body every session.
+- Every `paths` entry is double-quoted. A leading `*` is a YAML alias, which is how `**/*.ts` renders when `srcDir` is empty. `auto` uses that same list and has no `description` field.
+- `argument-hint` is omitted when `argumentHint` is absent. A value that is not a plain YAML scalar is one double-quoted string (`[path]`, a colon, a boolean-like name such as `on`, or a number such as `15` or `1e2`).
+- Plan tests that selected `claude` to mean "an agent with no adapter" now select `windsurf`.
