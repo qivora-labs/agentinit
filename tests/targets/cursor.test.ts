@@ -269,6 +269,9 @@ describe('cursorAdapter', () => {
       'ARCHITECTURE.md',
     ]);
     expect(buildPlan(profile({ agents: ['copilot'] }), selection).ops.map((op) => op.path)).toEqual([
+      '.github/copilot-instructions.md',
+      '.github/instructions/agentinit-app-router.instructions.md',
+      '.github/prompts/new-feature.prompt.md',
       'AGENTS.md',
       'ARCHITECTURE.md',
     ]);
