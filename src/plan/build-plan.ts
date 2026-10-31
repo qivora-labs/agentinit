@@ -3,6 +3,7 @@ import { AgentInitError } from '../errors.js';
 import type { ResolvedSelection } from '../registry/resolve.js';
 import { agentsMdAdapter } from '../targets/agents-md.js';
 import { architectureMdAdapter } from '../targets/architecture-md.js';
+import { claudeAdapter } from '../targets/claude.js';
 import { cursorAdapter } from '../targets/cursor.js';
 import type { AgentTarget, FileOp, ProjectProfile } from '../types.js';
 import { renderTargetContext } from './render.js';
@@ -14,12 +15,13 @@ const SHARED_ADAPTERS: readonly TargetAdapter[] = [agentsMdAdapter, architecture
 const AGENT_ORDER = ['cursor', 'claude', 'windsurf', 'copilot'] as const satisfies readonly AgentTarget[];
 
 /**
- * T22–T24 add the remaining entries. A missing or `undefined` entry adds no
+ * T23–T24 add the remaining entries. A missing or `undefined` entry adds no
  * files, so shared outputs stay free of that agent's content. `undefined`
  * is allowed so a test can clear an entry without deleting the key.
  */
 export const agentAdapters: Partial<Record<AgentTarget, TargetAdapter | undefined>> = {
   cursor: cursorAdapter,
+  claude: claudeAdapter,
 };
 
 export function buildPlan(profile: ProjectProfile, resolved: ResolvedSelection): Plan {
