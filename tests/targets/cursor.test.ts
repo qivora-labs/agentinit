@@ -22,6 +22,30 @@ function frontmatter(text: string): string {
   return body;
 }
 
+function globRule(globs: readonly string[], srcDir: '' | 'src' = 'src'): string {
+  return content(
+    cursorAdapter(
+      renderTargetContext(
+        profile({ srcDir }),
+        resolved([
+          layeredFragment(),
+          ruleFragment({
+            id: 'app-router',
+            name: 'App Router',
+            category: 'framework',
+            scope: 'glob',
+            order: 30,
+            description: 'File scoped rule.',
+            globs: [...globs],
+            body: 'RULE',
+          }),
+        ]),
+      ),
+    ),
+    '.cursor/rules/agentinit-app-router.mdc',
+  );
+}
+
 describe('cursorAdapter', () => {
   const ctx = renderTargetContext(
     profile(),
@@ -123,6 +147,38 @@ describe('cursorAdapter', () => {
     expect(parseYaml(frontmatter(text))).toEqual({
       description: GLOB_DESCRIPTION,
       globs: 'src/app/**/*.ts,src/app/**/*.tsx',
+      alwaysApply: false,
+    });
+  });
+
+  it.each([
+    {
+      behavior: 'quotes a glob list that starts with *',
+      srcDir: 'src' as const,
+      globs: ['**/*.test.tsx', '*.test.ts'],
+      line: 'globs: "**/*.test.tsx,*.test.ts"',
+      parsed: '**/*.test.tsx,*.test.ts',
+    },
+    {
+      behavior: 'quotes globs that start with * when srcDir is empty',
+      srcDir: '' as const,
+      globs: ['{{src}}**/*.tsx', '{{src}}**/*.css'],
+      line: 'globs: "**/*.tsx,**/*.css"',
+      parsed: '**/*.tsx,**/*.css',
+    },
+  ])('$behavior and round-trips through yaml.parse', ({ srcDir, globs, line, parsed }) => {
+    const text = globRule(globs, srcDir);
+    expect(text).toContain(`${line}\n`);
+    expect(text).not.toMatch(/globs:\s*\[/u);
+    expect(text).not.toMatch(/globs:\s*"[^"]+"\s*,/u);
+    expect(parseYaml(frontmatter(text))).toMatchObject({ globs: parsed, alwaysApply: false });
+  });
+
+  it('omits globs when the rendered list is empty', () => {
+    const text = globRule(['{{scripts.missing}}/**/*.ts']);
+    expect(text).not.toMatch(/^globs:/mu);
+    expect(parseYaml(frontmatter(text))).toEqual({
+      description: 'File scoped rule.',
       alwaysApply: false,
     });
   });

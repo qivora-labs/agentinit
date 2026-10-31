@@ -40,6 +40,7 @@ pnpm lint && pnpm typecheck && pnpm test
 ## Notes
 - Checked [Cursor rules](https://cursor.com/docs/rules) on 2026-10-31. `globs` is a comma-separated string. File-scoped rules auto-attach when `globs` is set and `alwaysApply` is false. Agent-decided rules are `description` plus `alwaysApply: false` and no `globs`. Manual rules are `alwaysApply: false` with both `description` and `globs` omitted. The docs' file-scoped example omits `description`; this adapter still writes it, and a present `globs` field keeps the rule file-scoped.
 - Cursor's docs separate multiple globs with a comma and, in one table, a space (`docs/**/*.md, docs/**/*.mdx`). Serialization follows PRD §5.4 and has no space: `src/app/**/*.ts,src/app/**/*.tsx`.
+- A joined `globs` value that is not a YAML plain scalar is one double-quoted string (`globs: "**/*.test.tsx,*.test.ts"`). A leading `*` is an alias, which is how `vitest` globs and `{{src}}**/*` render when `srcDir` is empty. Safe values stay unquoted. This is not a YAML list and not one pair of quotes per pattern.
 - [Plugin commands](https://cursor.com/docs/reference/plugins) may include optional `name` and `description` frontmatter. Workflows stay the rendered body only, matching this repo's `.cursor/commands/*.md` files.
 - Rule and workflow ops are whole files (`kind: 'file'`, `target: 'cursor'`).
 - A `glob` fragment whose rendered glob list is empty omits `globs`. An empty `globs:` value is not a pattern. A glob that itself contains a comma would be ambiguous in this field; the registry schema does not forbid that.

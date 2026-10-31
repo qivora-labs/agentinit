@@ -5,8 +5,10 @@ type CursorRuleScope = 'glob' | 'auto' | 'manual';
 
 /**
  * Cursor reads `AGENTS.md` itself, so `always` fragments produce no files
- * (PRD §5.1, §5.3). `globs` stays an unquoted comma-separated scalar: a YAML
- * list, or quotes from a general serializer, would not match `.mdc` files.
+ * (PRD §5.1, §5.3). `globs` is one comma-separated scalar, never a YAML list
+ * and never one quoted pattern per glob. A value YAML would misread (a
+ * leading asterisk is an alias) is one double-quoted string. A path-prefixed
+ * list such as the PRD §5.4 example stays unquoted.
  * A description that contains `:` or `#` is double-quoted so the frontmatter
  * stays valid YAML.
  */
@@ -23,7 +25,10 @@ function ruleOp(fragment: RenderedFragment, scope: CursorRuleScope): FileOp {
   const lines: string[] = [];
   if (scope !== 'manual') lines.push(`description: ${yamlScalar(fragment.description)}`);
   // An empty list is omitted: `globs:` with no value is not a pattern.
-  if (scope === 'glob' && fragment.globs.length > 0) lines.push(`globs: ${fragment.globs.join(',')}`);
+  // Quote the joined value only when it is not a plain YAML scalar.
+  if (scope === 'glob' && fragment.globs.length > 0) {
+    lines.push(`globs: ${yamlScalar(fragment.globs.join(','))}`);
+  }
   lines.push('alwaysApply: false');
   return fileOp(`.cursor/rules/agentinit-${fragment.id}.mdc`, document(frontmatter(lines), fragment.body));
 }
@@ -51,8 +56,9 @@ function document(...parts: readonly string[]): string {
 
 /**
  * Plain when YAML would keep the text. `:` and `#` are always quoted: a colon
- * opens a mapping and a hash starts a comment. Quotes, backslashes, and
- * keywords are quoted so a later `yaml.parse` returns the same string.
+ * opens a mapping and a hash starts a comment. A leading `*` is an alias.
+ * Quotes, backslashes, and keywords are quoted so a later `yaml.parse` returns
+ * the same string.
  */
 function yamlScalar(value: string): string {
   if (isPlainScalar(value)) return value;
