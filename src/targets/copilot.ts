@@ -7,9 +7,9 @@ const POINTER = 'Follow `AGENTS.md` at the repository root.\n\nScoped rules are 
  * Copilot reads `AGENTS.md` on many surfaces and only the pointer on others
  * (PRD §5.1, §5.3, §13). The managed block names `AGENTS.md` and
  * `.github/instructions/`; `always` text stays in `AGENTS.md`. `glob` and
- * `auto` share one instruction file: `applyTo` is the glob fallback, and
- * `description` is the VS Code on-demand field. `applyTo` is always one
- * double-quoted comma-separated string. A glob or auto fragment whose
+ * `auto` share one instruction file: `description` is the VS Code on-demand
+ * field, and `applyTo` is what GitHub.com reads (PRD §5.3, §13). `applyTo`
+ * is always one double-quoted comma-separated string. A glob or auto fragment whose
  * rendered glob list is empty is omitted. Manual rules and workflows are
  * prompt files. Prompt frontmatter uses `description` and, for workflows,
  * `argument-hint`. `agent` stays unset so the current agent runs the prompt.

@@ -441,8 +441,8 @@ Most agents read `AGENTS.md` **and** their own files. To avoid loading the same 
 | Scope | Cursor | Claude Code | Windsurf | Copilot |
 | :--- | :--- | :--- | :--- | :--- |
 | `always` | `AGENTS.md` | `AGENTS.md` (via `@AGENTS.md`) | `AGENTS.md` | `AGENTS.md` (via pointer) |
-| `glob` | `.mdc` with `globs` | rule with `paths` | `trigger: glob` | `applyTo` |
-| `auto` | `.mdc` with `description`, no `globs` (agent decides) | rule with `paths` (glob fallback) | `trigger: model_decision` | `applyTo` (glob fallback) |
+| `glob` | `.mdc` with `globs` | rule with `paths` | `trigger: glob` | `applyTo` and `description` |
+| `auto` | `.mdc` with `description`, no `globs` (agent decides) | rule with `paths` (glob fallback) | `trigger: model_decision` | `applyTo` and `description` |
 | `manual` | `.mdc` with no `globs` or `description` (`@`-mention) | skill with `disable-model-invocation: true` (`/id`) | `trigger: manual` (`@`-mention) | prompt file `agentinit-<id>.prompt.md` |
 
 `auto` exists because glob-scoped rules load only when the agent reads a matching file, so they can miss the moment a new file of that kind is created. Description-based activation covers that case where an agent supports it.
@@ -476,9 +476,10 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
 ```
 
-**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules:
+**GitHub Copilot** — `.github/copilot-instructions.md` contains a managed block pointing to `AGENTS.md`. Scoped rules carry `description` and one quoted `applyTo` string. VS Code loads a file when `description` matches the task, and when `applyTo` matches a file being created or edited. GitHub.com path-specific instructions read `applyTo`.
 ```markdown
 ---
+description: React Server Components by default, strict client boundaries, and App Router data conventions.
 applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ---
 ```
@@ -724,7 +725,8 @@ There is no telemetry, so every metric uses public signals. Targets are for the 
 ## 13. Known Limitations (v0.1)
 
 - **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. An opt-in inline mode is planned for v0.2.
-- **Glob-scoped rules in Claude Code and Copilot** may not load when a new file is being created, because those tools have no description-based rule activation; `auto` falls back to globs there.
+- **Glob-scoped rules in Claude Code** may not load when a new file is being created. Claude has no description-based rule activation, so `auto` falls back to globs there.
+- **Copilot on GitHub.com** reads `applyTo` on path-specific instructions, so those rules may not load when a new file is being created. VS Code loads the same file when `description` matches the task.
 - **Monorepos** are detected but not compiled; users run the CLI inside one package.
 - **Legacy files** (`.cursorrules`, `.windsurfrules`) are left untouched and keep loading alongside the new rules.
 - **Greenfield mode** can't run with `--yes`.
