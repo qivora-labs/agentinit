@@ -139,6 +139,7 @@ describe('malformed markers', () => {
   ])('throws a readable error for %s', (_name, text, detail) => {
     expect(() => findBlocks(text, FILE)).toThrow(AgentInitError);
     expect(() => upsertBlock(text, 'core', 'x\n', FILE)).toThrow(AgentInitError);
+    expect(() => removeBlock(text, 'core', FILE)).toThrow(AgentInitError);
     try {
       findBlocks(text, FILE);
     } catch (error) {
@@ -223,5 +224,56 @@ describe('removeBlock', () => {
       expect(error.message).toContain(FILE);
       expect(error.message).toContain('was not found');
     }
+  });
+
+  it('keeps a marker-like user line and the blank line in front of it', () => {
+    const before = '# User doc\n\n';
+    const after = '\n<!-- agentinit:begin id=example --> still notes\n';
+    const text = `${before}${block('core', 'generated\n')}${after}`;
+    expect(removeBlock(text, 'core', FILE)).toBe(`${before}${after}`);
+  });
+
+  it('does not leave a leading blank line when the first of two blocks is removed', () => {
+    const text = upsertBlock(createWithBlock('core', 'A\n'), 'claude', 'B\n', FILE);
+    expect(removeBlock(text, 'core', FILE)).toBe(createWithBlock('claude', 'B\n'));
+  });
+
+  it('does not leave a leading CRLF when the first of two blocks is removed', () => {
+    const text = upsertBlock(block('core', 'A\r\n', '\r\n'), 'claude', 'B\n', FILE);
+    expect(removeBlock(text, 'core', FILE)).toBe(block('claude', 'B\r\n', '\r\n'));
+  });
+
+  it('keeps the blank line before user text when the only block is removed', () => {
+    const after = '\n# More\n';
+    const text = `${block('core', 'generated\n')}${after}`;
+    expect(removeBlock(text, 'core', FILE)).toBe(after);
+  });
+});
+
+describe('block content', () => {
+  it.each([
+    ['a begin marker', '<!-- agentinit:begin id=other -->\n'],
+    ['an end marker', '<!-- agentinit:end id=other -->\n'],
+    ['an indented marker', '  <!-- agentinit:begin id=other -->\n'],
+    ['a CRLF marker line', '<!-- agentinit:end id=other -->\r\nrest\n'],
+  ])('rejects inner content that contains %s', (_name, inner) => {
+    expect(() => upsertBlock('user\n', 'core', inner, FILE)).toThrow(AgentInitError);
+    expect(() => createWithBlock('core', inner)).toThrow(AgentInitError);
+    expect(() => upsertBlock(block('core', 'old\n'), 'core', inner, FILE)).toThrow(AgentInitError);
+    try {
+      upsertBlock('user\n', 'core', inner, FILE);
+    } catch (error) {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return;
+      expect(error.message).toContain(FILE);
+      expect(error.message).toContain('marker line');
+      expect(error.hint).toContain('own line');
+    }
+  });
+
+  it('allows marker text that is not on its own line', () => {
+    const inner = 'see <!-- agentinit:begin id=other --> inline\n';
+    const next = upsertBlock('user\n', 'core', inner, FILE);
+    expect(findBlocks(next, FILE)[0]?.inner).toBe(inner);
   });
 });

@@ -8,6 +8,9 @@ const END_MARKER = /^[ \t]*<!-- agentinit:end id=([^\s>#\\]+) -->[ \t]*$/;
 const MARKER_HINT =
   'Give every begin marker a matching end marker, and do not nest markers or repeat an id.';
 
+const INNER_MARKER_HINT =
+  'Do not put an agentinit begin or end marker on its own line inside the block.';
+
 export interface Block {
   readonly id: string;
   /** Index of the begin marker. */
@@ -87,17 +90,18 @@ export function upsertBlock(text: string, id: string, inner: string, file: strin
   const ending = fileEnding(text);
   const existing = blocks.find((block) => block.id === id);
   if (existing === undefined) {
-    return appendBlock(text, renderBlock(id, inner, ending), ending);
+    return appendBlock(text, renderBlock(id, inner, ending, file), ending);
   }
-  const body = normalizeInner(inner, ending);
+  const body = normalizeInner(inner, ending, file);
   return text.slice(0, existing.innerStart) + body + text.slice(existing.innerEnd);
 }
 
 /**
  * Removes `id` and the one line ending inserted in front of it when this block
  * is at the end of the file, or when another managed block follows after a blank
- * line. That keeps add/remove cycles from eating a user's trailing blank line or
- * leaving a gap between blocks. Any other text after the block stays byte-for-byte.
+ * line. A block at the start of the file has that separator in front of the next
+ * block instead, so the separator is taken from there. Any other text after the
+ * block stays byte-for-byte, including a line that only looks like a marker.
  */
 export function removeBlock(text: string, id: string, file: string): string {
   assertBlockId(id, file);
@@ -108,10 +112,13 @@ export function removeBlock(text: string, id: string, file: string): string {
       hint: 'Check the block id.',
     });
   }
-  const after = text.slice(existing.end);
+  let after = text.slice(existing.end);
   let before = text.slice(0, existing.start);
-  if (after.length === 0 || followedByAppendedBlock(after)) {
+  if (after.length === 0) {
     before = withoutInsertedEnding(before);
+  } else if (followedByAppendedBlock(after, existing.end, blocks)) {
+    if (existing.start === 0) after = withoutLeadingEnding(after);
+    else before = withoutInsertedEnding(before);
   }
   return before + after;
 }
@@ -122,8 +129,8 @@ export function createWithBlock(id: string, inner: string): string {
   return renderBlock(id, inner, '\n');
 }
 
-function renderBlock(id: string, inner: string, ending: '\n' | '\r\n'): string {
-  const body = normalizeInner(inner, ending);
+function renderBlock(id: string, inner: string, ending: '\n' | '\r\n', file?: string): string {
+  const body = normalizeInner(inner, ending, file);
   return `<!-- agentinit:begin id=${id} -->${ending}${body}<!-- agentinit:end id=${id} -->${ending}`;
 }
 
@@ -135,18 +142,15 @@ function appendBlock(text: string, block: string, ending: '\n' | '\r\n'): string
 }
 
 /**
- * The following text is the one line ending inserted when a later block was
- * appended, then that block's begin marker. User text after a block does not
- * look like this, so its blank lines stay.
+ * `after` is one inserted line ending, then a block `findBlocks` already
+ * accepted. A line that only resembles a marker is not in `blocks`, so the
+ * blank line in front of it stays.
  */
-function followedByAppendedBlock(after: string): boolean {
-  let rest = after;
-  if (rest.startsWith('\r\n')) rest = rest.slice(2);
-  else if (rest.startsWith('\n')) rest = rest.slice(1);
-  else return false;
-  const newlineAt = rest.indexOf('\n');
-  const line = (newlineAt === -1 ? rest : rest.slice(0, newlineAt)).replace(/\r$/, '');
-  return BEGIN_MARKER.test(line);
+function followedByAppendedBlock(after: string, end: number, blocks: readonly Block[]): boolean {
+  const separator = leadingEndingLength(after);
+  if (separator === 0) return false;
+  const nextStart = end + separator;
+  return blocks.some((block) => block.start === nextStart);
 }
 
 /** Inverse of the single line ending `appendBlock` inserts. */
@@ -156,11 +160,32 @@ function withoutInsertedEnding(before: string): string {
   return before;
 }
 
-function normalizeInner(inner: string, ending: '\n' | '\r\n'): string {
+function withoutLeadingEnding(after: string): string {
+  return after.slice(leadingEndingLength(after));
+}
+
+function leadingEndingLength(text: string): number {
+  if (text.startsWith('\r\n')) return 2;
+  if (text.startsWith('\n')) return 1;
+  return 0;
+}
+
+function normalizeInner(inner: string, ending: '\n' | '\r\n', file?: string): string {
   const lf = inner.replaceAll('\r\n', '\n');
   const converted = ending === '\n' ? lf : lf.replaceAll('\n', '\r\n');
-  if (converted.length === 0 || converted.endsWith(ending)) return converted;
-  return converted + ending;
+  const body = converted.length === 0 || converted.endsWith(ending) ? converted : `${converted}${ending}`;
+  assertInnerHasNoMarkers(body, file);
+  return body;
+}
+
+function assertInnerHasNoMarkers(body: string, file?: string): void {
+  for (const line of splitLines(body)) {
+    if (!BEGIN_MARKER.test(line.text) && !END_MARKER.test(line.text)) continue;
+    const where = file === undefined ? '' : `${file}: `;
+    throw new AgentInitError(`${where}managed block content contains a marker line.`, {
+      hint: INNER_MARKER_HINT,
+    });
+  }
 }
 
 function fileEnding(text: string): '\n' | '\r\n' {
