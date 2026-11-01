@@ -33,12 +33,12 @@ Read/write the manifest with stable hashes, and safely insert, update, or remove
 - Deciding when to write, conflicts, backups (T26).
 
 ## Acceptance criteria
-- [ ] Hash is identical for LF and CRLF versions of the same content.
-- [ ] Manifest round-trips (`serialize` → `read`) and its serialization is stable across runs.
-- [ ] `upsertBlock` on a file with surrounding user content leaves that content byte-for-byte identical (property-style test with several inputs).
-- [ ] CRLF file keeps CRLF everywhere after an upsert.
-- [ ] Each malformed-marker case throws a readable error.
-- [ ] `removeBlock` leaves no leftover blank-line growth after repeated add/remove cycles.
+- [x] Hash is identical for LF and CRLF versions of the same content.
+- [x] Manifest round-trips (`serialize` → `read`) and its serialization is stable across runs.
+- [x] `upsertBlock` on a file with surrounding user content leaves that content byte-for-byte identical (property-style test with several inputs).
+- [x] CRLF file keeps CRLF everywhere after an upsert.
+- [x] Each malformed-marker case throws a readable error.
+- [x] `removeBlock` leaves no leftover blank-line growth after repeated add/remove cycles.
 
 ## Verify
 ```bash
@@ -49,4 +49,12 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(io): add manifest, content hashing, and managed blocks`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `findBlocks`, `upsertBlock`, and `removeBlock` take a `file` path so malformed-marker errors can name the file. The task signatures omitted it; callers (T26) know the path.
+- `contentHash` replaces `\r\n` with `\n` only. A lone `\r` stays in the hashed text.
+- Manifest keys follow PRD §6.2 order (`cliVersion`, `mode`, `selections`, `fragments`, `files`). `fragments` and `files` keys are sorted by UTF-16 code unit. Selection arrays keep the order they were given.
+- `language` is `typescript-strict` | `typescript`, `mode` is `existing` | `greenfield`, and `agents` entries are the four v0.1 targets. A file key is a relative POSIX path, or that path plus `#` and a block id. `sha256` is 64 lowercase hex digits. Unknown keys are rejected.
+- Missing manifest returns `null`. Invalid JSON or schema throws `AgentInitError` with a hint to fix `.agentinit/manifest.json` or delete it and run `agentinit init`.
+- Markers must occupy a whole line (optional surrounding spaces or tabs). Text that merely contains a marker is user content.
+- Inserted newlines use CRLF when the file contains any `\r\n`; otherwise LF. Bytes outside the inner span are not rewritten, so a mixed file keeps its existing endings outside the edit. `createWithBlock` and an empty file use LF.
+- Appending adds the fewest newlines that leave exactly one blank line before the block. Removing a block at end of file also drops one preceding blank line, so add/remove cycles on a normal file do not grow. A file that already ended with a blank line loses that one line. A file with no trailing newline gains one after an add/remove cycle. User content after a block is left byte-for-byte, including its blank lines.
+- A begin/end id mismatch throws and is not paired. `removeBlock` throws when the id is absent. Block ids must be non-empty and must not contain whitespace or `>`.
