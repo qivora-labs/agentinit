@@ -1,0 +1,275 @@
+import { readFile } from 'node:fs/promises';
+import * as path from 'node:path';
+import { AgentInitError } from '../errors.js';
+import type { AgentTarget, FileOp } from '../types.js';
+import { contentHash } from './hash.js';
+import { findBlocks } from './managed-block.js';
+import type { Manifest } from './manifest.js';
+
+export type ChangeKind =
+  | 'create'
+  | 'update'
+  | 'unchanged'
+  | 'conflict-unmanaged'
+  | 'conflict-edited'
+  | 'delete-stale';
+
+export interface Change {
+  readonly kind: ChangeKind;
+  /** Project-relative POSIX path. */
+  readonly path: string;
+  readonly opKind: 'file' | 'managed-block';
+  readonly blockId?: string;
+  readonly target?: AgentTarget | 'shared';
+  /**
+   * Desired bytes. Full file text for a file op, inner block text for a
+   * managed block. Omitted when a stale owned entry has nothing to write.
+   */
+  readonly content?: string;
+  /** Manifest hash when this path or block is already owned. */
+  readonly ownedHash?: string;
+}
+
+interface PlanInput {
+  readonly ops: readonly FileOp[];
+}
+
+/**
+ * Read-only classification of a plan against the manifest and the files on disk.
+ * Ownership is the manifest key (`path` or `path#blockId`), not the presence of markers.
+ */
+export async function computeChanges(
+  root: string,
+  plan: PlanInput,
+  manifest: Manifest | null,
+): Promise<Change[]> {
+  const files = manifest?.files ?? {};
+  const seen = new Set<string>();
+  for (const op of plan.ops) {
+    assertOp(op);
+    const key = opKey(op);
+    if (seen.has(key)) {
+      throw new AgentInitError(`${key} is written more than once in the plan.`);
+    }
+    seen.add(key);
+  }
+
+  const paths = new Set<string>();
+  for (const op of plan.ops) paths.add(op.path);
+  for (const key of Object.keys(files)) paths.add(manifestKeyPath(key));
+
+  const disk = new Map<string, string | null>();
+  await Promise.all(
+    [...paths].map(async (relPath) => {
+      disk.set(relPath, await readProjectText(root, relPath));
+    }),
+  );
+
+  const changes: Change[] = [];
+  for (const op of plan.ops) {
+    const current = disk.get(op.path) ?? null;
+    const owned = files[opKey(op)]?.sha256;
+    changes.push(classifyOp(op, current, owned));
+  }
+
+  const staleKeys = Object.keys(files)
+    .filter((key) => !seen.has(key))
+    .sort(comparePath);
+  for (const key of staleKeys) {
+    const owned = files[key]?.sha256;
+    if (owned === undefined) continue;
+    const stale = classifyStale(key, owned, disk.get(manifestKeyPath(key)) ?? null);
+    if (stale !== null) changes.push(stale);
+  }
+  return changes;
+}
+
+/** Manifest key for a change. A block id is appended with `#`. */
+export function changeKey(change: Pick<Change, 'path' | 'blockId'>): string {
+  return change.blockId === undefined ? change.path : `${change.path}#${change.blockId}`;
+}
+
+/**
+ * Inner text `upsertBlock` will store, in LF. Manifest hashes use this so a
+ * missing trailing newline does not look like an edit on the next run.
+ */
+export function canonicalBlockInner(content: string): string {
+  const lf = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+  if (lf.length === 0 || lf.endsWith('\n')) return lf;
+  return `${lf}\n`;
+}
+
+export function assertProjectRelative(relPath: string): void {
+  if (
+    relPath.length === 0 ||
+    relPath.startsWith('/') ||
+    /^[A-Za-z]:/u.test(relPath) ||
+    relPath.includes('\\') ||
+    relPath.includes('\0') ||
+    relPath.includes('#')
+  ) {
+    throw new AgentInitError(`"${relPath}" is not a relative project path.`);
+  }
+  const segments = relPath.split('/');
+  if (segments.some((segment) => segment.length === 0 || segment === '.' || segment === '..')) {
+    throw new AgentInitError(`"${relPath}" is not a relative project path.`);
+  }
+}
+
+/** Absolute path for `relPath`, which must stay inside `root`. */
+export function resolveProjectPath(root: string, relPath: string): string {
+  assertProjectRelative(relPath);
+  const rootAbs = path.resolve(root);
+  const abs = path.resolve(rootAbs, relPath);
+  const relative = path.relative(rootAbs, abs);
+  if (relative.length === 0 || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new AgentInitError(`Refusing to use a path outside the project: ${relPath}.`);
+  }
+  return abs;
+}
+
+/** `null` when the file is absent. A directory or a permission error is reported. */
+export async function readProjectText(root: string, relPath: string): Promise<string | null> {
+  const abs = resolveProjectPath(root, relPath);
+  try {
+    return await readFile(abs, 'utf8');
+  } catch (error) {
+    const code = nodeErrorCode(error);
+    if (code === 'ENOENT') return null;
+    if (code === 'EISDIR') {
+      throw new AgentInitError(`${relPath} is a directory.`, {
+        hint: 'Choose a file path.',
+      });
+    }
+    if (code === 'ENOTDIR') {
+      throw new AgentInitError(`Cannot read ${relPath}: a parent path is a file.`, {
+        hint: 'Move that file aside and run again.',
+      });
+    }
+    if (code === 'EACCES' || code === 'EPERM') {
+      throw new AgentInitError(`Cannot read ${relPath}: permission denied.`, {
+        hint: 'Check the file permissions and try again.',
+      });
+    }
+    throw error;
+  }
+}
+
+function classifyOp(op: FileOp, current: string | null, owned: string | undefined): Change {
+  if (op.kind === 'managed-block') return classifyBlock(op, current, owned);
+  return classifyFile(op, current, owned);
+}
+
+function classifyFile(op: FileOp, current: string | null, owned: string | undefined): Change {
+  if (current === null) return planChange('create', op);
+  if (owned === undefined) return planChange('conflict-unmanaged', op);
+  const currentHash = contentHash(current);
+  if (currentHash === contentHash(op.content)) return planChange('unchanged', op, owned);
+  if (currentHash === owned) return planChange('update', op, owned);
+  return planChange('conflict-edited', op, owned);
+}
+
+function classifyBlock(op: FileOp, current: string | null, owned: string | undefined): Change {
+  const blockId = op.blockId;
+  if (blockId === undefined) {
+    throw new AgentInitError(`${op.path}: managed-block operations need a block id.`);
+  }
+  if (current === null) return planChange('create', op);
+  const blocks = findBlocks(current, op.path);
+  const existing = blocks.find((block) => block.id === blockId);
+  const desired = contentHash(canonicalBlockInner(op.content));
+  if (existing === undefined) {
+    // A missing owned block was removed by hand. That is an edit, so --yes skips it.
+    if (owned === undefined) return planChange('conflict-unmanaged', op);
+    return planChange('conflict-edited', op, owned);
+  }
+  const innerHash = contentHash(existing.inner);
+  if (innerHash === desired) return planChange('unchanged', op, owned);
+  // Markers we did not record still hold someone else's text. Do not adopt over it.
+  if (owned === undefined || innerHash !== owned) return planChange('conflict-edited', op, owned);
+  return planChange('update', op, owned);
+}
+
+function classifyStale(key: string, owned: string, current: string | null): Change | null {
+  const { path: relPath, blockId } = splitManifestKey(key);
+  if (current === null) return null;
+  if (blockId === undefined) {
+    if (contentHash(current) === owned) return staleChange('delete-stale', relPath, 'file', owned);
+    return staleChange('conflict-edited', relPath, 'file', owned);
+  }
+  const blocks = findBlocks(current, relPath);
+  const existing = blocks.find((block) => block.id === blockId);
+  if (existing === undefined) return null;
+  if (contentHash(existing.inner) === owned) {
+    return staleChange('delete-stale', relPath, 'managed-block', owned, blockId);
+  }
+  return staleChange('conflict-edited', relPath, 'managed-block', owned, blockId);
+}
+
+function planChange(kind: ChangeKind, op: FileOp, owned?: string): Change {
+  return {
+    kind,
+    path: op.path,
+    opKind: op.kind,
+    target: op.target,
+    content: op.content,
+    ...(op.blockId === undefined ? {} : { blockId: op.blockId }),
+    ...(owned === undefined ? {} : { ownedHash: owned }),
+  };
+}
+
+function staleChange(
+  kind: 'delete-stale' | 'conflict-edited',
+  relPath: string,
+  opKind: 'file' | 'managed-block',
+  owned: string,
+  blockId?: string,
+): Change {
+  return {
+    kind,
+    path: relPath,
+    opKind,
+    ownedHash: owned,
+    ...(blockId === undefined ? {} : { blockId }),
+  };
+}
+
+function assertOp(op: FileOp): void {
+  assertProjectRelative(op.path);
+  if (op.kind === 'managed-block' && (op.blockId === undefined || op.blockId.length === 0)) {
+    throw new AgentInitError(`${op.path}: managed-block operations need a block id.`);
+  }
+  if (op.kind === 'file' && op.blockId !== undefined) {
+    throw new AgentInitError(`${op.path}: file operations cannot include a block id.`);
+  }
+}
+
+function opKey(op: FileOp): string {
+  if (op.kind === 'file') return op.path;
+  const blockId = op.blockId;
+  if (blockId === undefined) {
+    throw new AgentInitError(`${op.path}: managed-block operations need a block id.`);
+  }
+  return `${op.path}#${blockId}`;
+}
+
+function manifestKeyPath(key: string): string {
+  return splitManifestKey(key).path;
+}
+
+function splitManifestKey(key: string): { path: string; blockId?: string } {
+  const hash = key.indexOf('#');
+  if (hash === -1) return { path: key };
+  return { path: key.slice(0, hash), blockId: key.slice(hash + 1) };
+}
+
+function comparePath(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function nodeErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+  return typeof error.code === 'string' ? error.code : undefined;
+}

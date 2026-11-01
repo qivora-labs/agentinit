@@ -115,7 +115,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | done |
 | [T24](T24-target-copilot.md) | GitHub Copilot target | M4 | T20 | M | done |
 | [T25](T25-manifest-and-managed-blocks.md) | Manifest & managed blocks | M5 | T03 | M | done |
-| [T26](T26-apply-engine.md) | Apply engine | M5 | T25 | L | todo |
+| [T26](T26-apply-engine.md) | Apply engine | M5 | T25 | L | done |
 | [T27](T27-init-command.md) | `init` command end to end | M5 | T19, T21–T24, T26 | L | todo |
 | [T28](T28-doctor-command.md) | `doctor` command | M5 | T18, T21–T24, T26 | M | todo |
 | [T29](T29-fixtures-and-acceptance-tests.md) | Fixtures & acceptance tests | M6 | T27, T28, T09–T13 | L | todo |
