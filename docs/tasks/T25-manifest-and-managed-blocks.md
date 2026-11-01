@@ -13,7 +13,7 @@ Read/write the manifest with stable hashes, and safely insert, update, or remove
 
 ## Scope
 `src/io/hash.ts`:
-- `contentHash(text) → string`: SHA-256 hex of the text with `\r\n` → `\n`.
+- `contentHash(text) → string`: SHA-256 hex of the text with line endings normalized to LF (`\r\n` and a lone `\r` become `\n`).
 
 `src/io/manifest.ts`:
 - zod schema matching PRD §6.2 (`cliVersion`, `mode`, `selections`, `fragments`, `files` keyed by path or `path#blockId`).
@@ -33,12 +33,12 @@ Read/write the manifest with stable hashes, and safely insert, update, or remove
 - Deciding when to write, conflicts, backups (T26).
 
 ## Acceptance criteria
-- [ ] Hash is identical for LF and CRLF versions of the same content.
-- [ ] Manifest round-trips (`serialize` → `read`) and its serialization is stable across runs.
-- [ ] `upsertBlock` on a file with surrounding user content leaves that content byte-for-byte identical (property-style test with several inputs).
-- [ ] CRLF file keeps CRLF everywhere after an upsert.
-- [ ] Each malformed-marker case throws a readable error.
-- [ ] `removeBlock` leaves no leftover blank-line growth after repeated add/remove cycles.
+- [x] Hash is identical for LF and CRLF versions of the same content.
+- [x] Manifest round-trips (`serialize` → `read`) and its serialization is stable across runs.
+- [x] `upsertBlock` on a file with surrounding user content leaves that content byte-for-byte identical (property-style test with several inputs).
+- [x] CRLF file keeps CRLF everywhere after an upsert.
+- [x] Each malformed-marker case throws a readable error.
+- [x] `removeBlock` leaves no leftover blank-line growth after repeated add/remove cycles.
 
 ## Verify
 ```bash
@@ -49,4 +49,13 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(io): add manifest, content hashing, and managed blocks`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `findBlocks`, `upsertBlock`, and `removeBlock` take a `file` path so malformed-marker errors can name the file. The task signatures omitted it; callers (T26) know the path.
+- `contentHash` normalizes line endings to LF. `\r\n` is replaced before a lone `\r`, so a CRLF pair stays one newline.
+- Manifest keys follow PRD §6.2 order (`cliVersion`, `mode`, `selections`, `fragments`, `files`). `fragments` and `files` keys are sorted by UTF-16 code unit. Selection arrays keep the order they were given.
+- `language` is `typescript-strict` | `typescript`, `mode` is `existing` | `greenfield`, and `agents` entries are the four v0.1 targets. A file key is a relative POSIX path, or that path plus `#` and a block id. `sha256` is 64 lowercase hex digits. Unknown keys are rejected.
+- Missing manifest returns `null`. Invalid JSON or schema throws `AgentInitError` with a hint to fix `.agentinit/manifest.json` or delete it and run `agentinit init`.
+- Markers must occupy a whole line (optional surrounding spaces or tabs). Text that merely contains a marker is user content.
+- Inserted newlines use CRLF when the file contains any `\r\n`; otherwise LF. Bytes outside the inner span are not rewritten, so a mixed file keeps its existing endings outside the edit. `createWithBlock` and an empty file use LF.
+- Appending inserts exactly one line ending before the block (none on an empty file). A file that already ends in a newline gets one blank line; an existing trailing blank line stays and one more is added; a file with no trailing newline gets the marker on the next line. Removing drops that one line ending when the block is at the end of the file, or when another managed block follows after a blank line, so add/remove cycles restore the original bytes. The following block counts only when `findBlocks` recorded it there; a line that merely resembles a marker stays, blank line included. A block at the start of the file has no leading separator, so the separator in front of the next block is dropped instead and the file does not gain a leading blank line. Other text after a block stays byte-for-byte, including its blank lines.
+- Block content must not contain a whole-line begin or end marker. `upsertBlock` and `createWithBlock` throw rather than write a file the next parse cannot read. Marker text that shares a line with other content is allowed.
+- A begin/end id mismatch throws and is not paired. `removeBlock` throws when the id is absent. Block ids must be non-empty and must not contain whitespace, `#`, `\`, or `>`, so `path#id` manifest keys stay unambiguous.
