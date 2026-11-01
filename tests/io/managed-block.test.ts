@@ -80,9 +80,14 @@ describe('upsertBlock', () => {
     expect(next).toBe(`${user}\n${block('core', 'generated\n')}`);
   });
 
-  it('does not add a second blank line when the file already ends with one', () => {
+  it('keeps a pre-existing trailing blank line and inserts its own separator', () => {
     const user = 'user line\n\n';
-    expect(upsertBlock(user, 'core', 'generated\n', FILE)).toBe(`${user}${block('core', 'generated\n')}`);
+    expect(upsertBlock(user, 'core', 'generated\n', FILE)).toBe(`${user}\n${block('core', 'generated\n')}`);
+  });
+
+  it('puts the marker on the next line when the file has no trailing newline', () => {
+    const user = 'user line';
+    expect(upsertBlock(user, 'core', 'generated\n', FILE)).toBe(`${user}\n${block('core', 'generated\n')}`);
   });
 
   it('keeps CRLF everywhere after an upsert', () => {
@@ -146,17 +151,58 @@ describe('malformed markers', () => {
   });
 });
 
+describe('block ids', () => {
+  it.each([
+    ['a hash', 'core#x'],
+    ['a backslash', 'core\\x'],
+  ])('rejects a block id with %s', (_name, id) => {
+    expect(() => createWithBlock(id, 'x\n')).toThrow(AgentInitError);
+    expect(() => upsertBlock('user\n', id, 'x\n', FILE)).toThrow(AgentInitError);
+    try {
+      upsertBlock('user\n', id, 'x\n', FILE);
+    } catch (error) {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return;
+      expect(error.message).toContain(FILE);
+      expect(error.message).toContain(id);
+      expect(error.hint).toContain('#');
+    }
+  });
+
+  it('treats a marker whose id contains # as user content', () => {
+    const text = '<!-- agentinit:begin id=core#x -->\ninner\n<!-- agentinit:end id=core#x -->\n';
+    expect(findBlocks(text, FILE)).toEqual([]);
+  });
+});
+
 describe('removeBlock', () => {
-  it('leaves no leftover blank-line growth after repeated add/remove cycles', () => {
-    const originals = ['user line\n', '', 'user line\r\n'];
+  it.each([
+    ['a trailing newline', 'user line\n'],
+    ['an empty file', ''],
+    ['CRLF', 'user line\r\n'],
+    ['a trailing blank line', 'user line\n\n'],
+    ['CRLF and a trailing blank line', 'user line\r\n\r\n'],
+    ['no trailing newline', 'user line'],
+  ])('leaves no leftover blank-line growth for a file with %s', (_name, original) => {
+    let text = original;
+    for (let cycle = 0; cycle < 5; cycle += 1) {
+      text = upsertBlock(text, 'core', `generated ${String(cycle)}\n`, FILE);
+      expect(text.startsWith(original)).toBe(true);
+      text = removeBlock(text, 'core', FILE);
+      expect(text).toBe(original);
+    }
+  });
+
+  it.each([
+    ['front to back', ['core', 'claude']],
+    ['back to front', ['claude', 'core']],
+  ])('restores the file when two appended blocks are removed %s', (_name, order) => {
+    const originals = ['user line\n', 'user line\n\n', 'user line', 'user line\r\n'];
     for (const original of originals) {
-      let text = original;
-      for (let cycle = 0; cycle < 5; cycle += 1) {
-        text = upsertBlock(text, 'core', `generated ${String(cycle)}\n`, FILE);
-        expect(text.startsWith(original)).toBe(true);
-        text = removeBlock(text, 'core', FILE);
-        expect(text).toBe(original);
-      }
+      let text = upsertBlock(original, 'core', 'A\n', FILE);
+      text = upsertBlock(text, 'claude', 'B\n', FILE);
+      for (const id of order) text = removeBlock(text, id, FILE);
+      expect(text).toBe(original);
     }
   });
 
@@ -165,16 +211,6 @@ describe('removeBlock', () => {
     const after = '\n# More\n';
     const text = `${before}${block('core', 'generated\n')}${after}`;
     expect(removeBlock(text, 'core', FILE)).toBe(`${before}${after}`);
-  });
-
-  it('drops one pre-existing trailing blank line when the removed block is at the end', () => {
-    const text = `user line\n\n${block('core', 'generated\n')}`;
-    expect(removeBlock(text, 'core', FILE)).toBe('user line\n');
-  });
-
-  it('gives a file with no trailing newline a single trailing newline after an add/remove cycle', () => {
-    const removed = removeBlock(upsertBlock('user line', 'core', 'generated\n', FILE), 'core', FILE);
-    expect(removed).toBe('user line\n');
   });
 
   it('throws when the id is not in the file', () => {

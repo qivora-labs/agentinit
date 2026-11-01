@@ -137,7 +137,8 @@ function fileKeyProblem(key: string): string | undefined {
   const filePath = key.slice(0, hash);
   const blockId = key.slice(hash + 1);
   if (filePath.length === 0) return 'path before # must not be empty';
-  if (blockId.length === 0 || /[\s>]/.test(blockId)) return 'block id after # is not valid';
+  // Same charset as managed-block ids: no whitespace, `#`, `\`, or `>`.
+  if (blockId.length === 0 || /[\s>#\\]/.test(blockId)) return 'block id after # is not valid';
   return undefined;
 }
 

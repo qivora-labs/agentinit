@@ -1,7 +1,9 @@
 import { AgentInitError } from '../errors.js';
 
-const BEGIN_MARKER = /^[ \t]*<!-- agentinit:begin id=([^\s>]+) -->[ \t]*$/;
-const END_MARKER = /^[ \t]*<!-- agentinit:end id=([^\s>]+) -->[ \t]*$/;
+// `#` and `\` are excluded so a block id can be stored as a manifest key `path#id`.
+const BLOCK_ID = /^[^\s>#\\]+$/;
+const BEGIN_MARKER = /^[ \t]*<!-- agentinit:begin id=([^\s>#\\]+) -->[ \t]*$/;
+const END_MARKER = /^[ \t]*<!-- agentinit:end id=([^\s>#\\]+) -->[ \t]*$/;
 
 const MARKER_HINT =
   'Give every begin marker a matching end marker, and do not nest markers or repeat an id.';
@@ -75,7 +77,9 @@ export function findBlocks(text: string, file: string): Block[] {
  * Replaces the inner content of `id`, or appends the block at the end.
  * Bytes outside the inner span are copied unchanged.
  * Inserted newlines use CRLF when the file already contains `\r\n`, otherwise LF.
- * A new block is separated from existing text by exactly one blank line.
+ * A new block is preceded by exactly one inserted line ending, so a file that
+ * already ends in a newline gets one blank line and an existing trailing blank
+ * line is kept. A file with no trailing newline gets the marker on the next line.
  */
 export function upsertBlock(text: string, id: string, inner: string, file: string): string {
   assertBlockId(id, file);
@@ -90,9 +94,10 @@ export function upsertBlock(text: string, id: string, inner: string, file: strin
 }
 
 /**
- * Removes `id`. A block at the end of the file also drops one preceding blank line,
- * so an append/remove cycle does not leave a growing gap. User content after the
- * block is kept byte-for-byte, including its blank lines.
+ * Removes `id` and the one line ending inserted in front of it when this block
+ * is at the end of the file, or when another managed block follows after a blank
+ * line. That keeps add/remove cycles from eating a user's trailing blank line or
+ * leaving a gap between blocks. Any other text after the block stays byte-for-byte.
  */
 export function removeBlock(text: string, id: string, file: string): string {
   assertBlockId(id, file);
@@ -104,8 +109,11 @@ export function removeBlock(text: string, id: string, file: string): string {
     });
   }
   const after = text.slice(existing.end);
-  if (after.length > 0) return text.slice(0, existing.start) + after;
-  return withoutTrailingBlankLine(text.slice(0, existing.start));
+  let before = text.slice(0, existing.start);
+  if (after.length === 0 || followedByAppendedBlock(after)) {
+    before = withoutInsertedEnding(before);
+  }
+  return before + after;
 }
 
 /** New files use LF. The end marker stays on its own line. */
@@ -121,19 +129,30 @@ function renderBlock(id: string, inner: string, ending: '\n' | '\r\n'): string {
 
 function appendBlock(text: string, block: string, ending: '\n' | '\r\n'): string {
   if (text.length === 0) return block;
-  if (text.endsWith(ending + ending)) return text + block;
-  if (text.endsWith(ending)) return text + ending + block;
-  return text + ending + ending + block;
+  // Always insert a fresh ending. Reusing a user's trailing blank line makes
+  // add/remove unable to restore that blank line.
+  return text + ending + block;
 }
 
 /**
- * Drop the separator blank line added when a block was appended.
- * A file that already ended in a blank line loses that one line; a file with
- * no trailing newline gains one after an add/remove cycle.
+ * The following text is the one line ending inserted when a later block was
+ * appended, then that block's begin marker. User text after a block does not
+ * look like this, so its blank lines stay.
  */
-function withoutTrailingBlankLine(before: string): string {
-  if (before.endsWith('\r\n\r\n')) return before.slice(0, -2);
-  if (before.endsWith('\n\n')) return before.slice(0, -1);
+function followedByAppendedBlock(after: string): boolean {
+  let rest = after;
+  if (rest.startsWith('\r\n')) rest = rest.slice(2);
+  else if (rest.startsWith('\n')) rest = rest.slice(1);
+  else return false;
+  const newlineAt = rest.indexOf('\n');
+  const line = (newlineAt === -1 ? rest : rest.slice(0, newlineAt)).replace(/\r$/, '');
+  return BEGIN_MARKER.test(line);
+}
+
+/** Inverse of the single line ending `appendBlock` inserts. */
+function withoutInsertedEnding(before: string): string {
+  if (before.endsWith('\r\n')) return before.slice(0, -2);
+  if (before.endsWith('\n')) return before.slice(0, -1);
   return before;
 }
 
@@ -149,10 +168,10 @@ function fileEnding(text: string): '\n' | '\r\n' {
 }
 
 function assertBlockId(id: string, file?: string): void {
-  if (id.length > 0 && !/[\s>]/.test(id)) return;
+  if (BLOCK_ID.test(id)) return;
   const where = file === undefined ? '' : `${file}: `;
   throw new AgentInitError(`${where}managed block id "${id}" is not valid.`, {
-    hint: 'Use an id without spaces or ">".',
+    hint: 'Use an id without spaces, "#", ">", or backslashes.',
   });
 }
 

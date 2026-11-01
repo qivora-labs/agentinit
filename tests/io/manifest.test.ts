@@ -163,4 +163,16 @@ describe('readManifest', () => {
       return true;
     });
   });
+
+  it('rejects a block id that contains >', async () => {
+    const root = await tempDir();
+    const serialized = serializeManifest(sampleManifest()).replace('AGENTS.md#core', 'AGENTS.md#core>');
+    await writeManifest(root, serialized);
+    await expect(readManifest(root)).rejects.toSatisfy((error: unknown) => {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return false;
+      expect(error.message).toContain('block id after # is not valid');
+      return true;
+    });
+  });
 });
