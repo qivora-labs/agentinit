@@ -229,6 +229,38 @@ describe('doctor', () => {
     });
   });
 
+  it('reports a required fragment whose package was removed', async () => {
+    const dir = await copyFixture('next15-src');
+    const before = await readPackage(dir);
+    before.devDependencies = { ...before.devDependencies, tailwindcss: '4.1.0' };
+    await writePackage(dir, before);
+    await writeFile(path.join(dir, 'components.json'), '{}\n');
+    const init = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(init.code).toBe(0);
+
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      selections: { libraries: string[] };
+    };
+    expect(saved.selections.libraries).toContain('shadcn');
+    expect(saved.selections.libraries).toContain('tailwind');
+    saved.selections.libraries = saved.selections.libraries.filter((id) => id !== 'tailwind');
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const after = await readPackage(dir);
+    delete after.devDependencies?.tailwindcss;
+    await writePackage(dir, after);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.issues).toContainEqual({
+      kind: 'package-removed',
+      message: 'Tailwind CSS (tailwind) is selected, but tailwindcss is not in the project.',
+      fix: FIX,
+    });
+  });
+
   it('reports a selected fragment whose package was removed', async () => {
     const dir = await initYes('next15-src');
     const manifest = await readPackage(dir);

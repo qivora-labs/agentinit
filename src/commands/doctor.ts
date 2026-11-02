@@ -20,7 +20,12 @@ import { findBlocks } from '../io/managed-block.js';
 import { readManifest, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { loadRegistry, type Registry } from '../registry/load.js';
-import { resolveSelection, type ProjectFacts, type Selection } from '../registry/resolve.js';
+import {
+  resolveSelection,
+  type ProjectFacts,
+  type ResolvedSelection,
+  type Selection,
+} from '../registry/resolve.js';
 import type { ProjectProfile } from '../types.js';
 import type { Logger } from '../ui/logger.js';
 
@@ -77,7 +82,7 @@ async function issuesForManifest(root: string, registry: Registry, manifest: Man
     initialized: true,
     changes,
     unselected: existing ? unselectedFragments(registry, detection, manifest) : [],
-    fragments: existing ? checkedFragments(registry, manifest) : [],
+    fragments: existing ? checkedFragments(resolved) : [],
     packages: existing ? installedPackages(root) : {},
     warnings: plan.warnings,
     legacyFiles: findLegacyFiles(root),
@@ -177,20 +182,23 @@ function unselectedFragments(registry: Registry, detection: DetectionResult, man
   return fragments;
 }
 
-function checkedFragments(registry: Registry, manifest: Manifest): CheckedFragment[] {
-  const ids = [...manifest.selections.frameworks, ...manifest.selections.libraries];
-  return ids.map((id) => {
-    const fragment = registry.byId.get(id);
-    if (fragment === undefined || fragment.meta.category === 'workflow') {
-      throw new AgentInitError(`Unknown fragment "${id}".`);
-    }
-    return {
-      id: fragment.meta.id,
-      name: fragment.meta.name,
-      packages: fragment.meta.detect?.packages ?? [],
-      appliesTo: fragment.meta.appliesTo ?? {},
-    };
-  });
+/**
+ * Package checks follow the fragments `buildPlan` compiles. A `requires`
+ * dependency is included even when the manifest selection does not list it.
+ */
+function checkedFragments(resolved: ResolvedSelection): CheckedFragment[] {
+  const checked: CheckedFragment[] = [];
+  for (const fragment of resolved.fragments) {
+    const meta = fragment.meta;
+    if (meta.category !== 'framework' && meta.category !== 'library') continue;
+    checked.push({
+      id: meta.id,
+      name: meta.name,
+      packages: meta.detect?.packages ?? [],
+      appliesTo: meta.appliesTo ?? {},
+    });
+  }
+  return checked;
 }
 
 async function driftChanges(root: string, changes: readonly Change[]): Promise<DriftChange[]> {
