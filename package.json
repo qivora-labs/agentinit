@@ -51,6 +51,7 @@
     "test:watch": "vitest",
     "check:package": "publint",
     "registry:check": "tsx scripts/check-registry.ts",
+    "smoke": "tsx scripts/smoke.ts",
     "changeset": "changeset",
     "release": "pnpm build && changeset publish"
   },
