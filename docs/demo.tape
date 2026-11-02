@@ -1,21 +1,32 @@
 # Record the README demo GIF.
 # Prerequisites: https://github.com/charmbracelet/vhs
-# From a temp directory with a small Next.js/TS fixture (or tests/fixtures/next15-src):
+# From the repo root (after pnpm install):
 #   vhs docs/demo.tape
-# Output: docs/demo.gif (commit after a human records it).
+# Output: docs/demo.gif
 
 Output docs/demo.gif
 
 Require node
+Require pnpm
 
 Set Shell "bash"
-Set FontSize 18
-Set Width 1200
-Set Height 700
+Set FontSize 16
+Set Width 1000
+Set Height 900
 Set TypingSpeed 45ms
 Set Theme "Catppuccin Mocha"
 Set Padding 20
+Set WaitTimeout 90s
 
-Type "npx @agentinit/cli init --yes" Sleep 300ms Enter
+# Build the CLI, copy next15-src, and shim `npx @agentinit/cli` → local dist.
+Hide
+Type "source docs/demo-setup.sh"
+Enter
+Wait
+Show
 
-Sleep 8s
+Type "npx @agentinit/cli init --yes"
+Sleep 300ms
+Enter
+Wait+Screen /Always-on tokens/
+Sleep 4s

@@ -12,7 +12,7 @@ No accounts, API keys, LLM calls, or telemetry.
 
 ![Demo](docs/demo.gif)
 
-<!-- Record with: vhs docs/demo.tape -->
+<!-- Re-record from repo root: vhs docs/demo.tape -->
 
 ## Quick start
 
@@ -43,10 +43,14 @@ From `npx @agentinit/cli init --yes` on the `next15-src` fixture (Next.js App Ro
 │   ├── rules
 │   │   └── agentinit-nextjs-app-router.md (created)
 │   └── skills
-│       ├── new-feature/SKILL.md (created)
-│       ├── refactor/SKILL.md (created)
-│       ├── review-arch/SKILL.md (created)
-│       └── write-tests/SKILL.md (created)
+│       ├── new-feature
+│       │   └── SKILL.md (created)
+│       ├── refactor
+│       │   └── SKILL.md (created)
+│       ├── review-arch
+│       │   └── SKILL.md (created)
+│       └── write-tests
+│           └── SKILL.md (created)
 ├── .cursor
 │   ├── commands
 │   │   ├── new-feature.md (created)
