@@ -32,6 +32,10 @@ export interface RunOptions {
   readonly prompter?: Prompter;
   /** Backup timestamps. Tests pass a fixed clock. */
   readonly now?: Date;
+  /** When true before rename, `init` deletes temp files and writes nothing. */
+  readonly shouldStop?: () => boolean;
+  /** True while temp files exist and the process must not exit yet. */
+  readonly onAtomicWrite?: (active: boolean) => void;
 }
 
 export async function run(argv: string[], io: CommandIo = defaultIo, options: RunOptions = {}): Promise<number> {
@@ -62,6 +66,8 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
       category: commandName === 'list' ? readCategoryFlag(parsed.options.category) : undefined,
       prompter: options.prompter,
       now: options.now,
+      shouldStop: options.shouldStop,
+      onAtomicWrite: options.onAtomicWrite,
     });
   } catch (error) {
     return reportError(error, io, json);
@@ -201,6 +207,8 @@ async function dispatch(
     category: string | undefined;
     prompter: Prompter | undefined;
     now: Date | undefined;
+    shouldStop: (() => boolean) | undefined;
+    onAtomicWrite: ((active: boolean) => void) | undefined;
   },
 ): Promise<number> {
   switch (name) {
@@ -209,6 +217,8 @@ async function dispatch(
         stdout: io.stdout,
         ...(io.prompter === undefined ? {} : { prompter: io.prompter }),
         ...(io.now === undefined ? {} : { now: io.now }),
+        ...(io.shouldStop === undefined ? {} : { shouldStop: io.shouldStop }),
+        ...(io.onAtomicWrite === undefined ? {} : { onAtomicWrite: io.onAtomicWrite }),
       });
     case 'list':
       return await list(ctx, logger, listOptions(io));

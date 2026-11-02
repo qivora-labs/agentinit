@@ -1,0 +1,11 @@
+{
+  "name": "jsonc-tsconfig-extends",
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}

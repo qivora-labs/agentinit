@@ -1,0 +1,847 @@
+===== .agentinit/.gitignore
+backups/
+
+===== .agentinit/manifest.json
+{
+  "cliVersion": "0.0.0",
+  "mode": "existing",
+  "selections": {
+    "language": "typescript-strict",
+    "frameworks": [
+      "react-vite"
+    ],
+    "libraries": [],
+    "architecture": "flat",
+    "agents": [
+      "cursor",
+      "claude",
+      "windsurf",
+      "copilot"
+    ]
+  },
+  "fragments": {
+    "flat": "1.0.0",
+    "react-vite": "1.0.0",
+    "typescript-strict": "1.0.0"
+  },
+  "files": {
+    ".claude/rules/agentinit-react-vite.md": {
+      "sha256": "a1768e0653ab95f4d7a1d97166f1cc92399ec4b96b8da229de4be309d3891163"
+    },
+    ".claude/skills/new-feature/SKILL.md": {
+      "sha256": "a7801bf226f2da603ffae6027563e315c05b0d0f56811de2d5561909eb1b66cd"
+    },
+    ".claude/skills/refactor/SKILL.md": {
+      "sha256": "0942b08a3ced6c20ebd8ada7efb39674861bed31de67d078d95b82f800239540"
+    },
+    ".claude/skills/review-arch/SKILL.md": {
+      "sha256": "ad442d4b066318ed1668a87c6bfd71b7315946abeb140c2f30cbc9bde5ff8907"
+    },
+    ".claude/skills/write-tests/SKILL.md": {
+      "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
+    },
+    ".cursor/commands/new-feature.md": {
+      "sha256": "26132b7cfd01488b4bb5e06f66ac4c96b64bb62d7307f633dd16d48ece04a466"
+    },
+    ".cursor/commands/refactor.md": {
+      "sha256": "917eb341a23b94ffb83a54d0c39a81fc32716fa116dca0906ff368e336568a5a"
+    },
+    ".cursor/commands/review-arch.md": {
+      "sha256": "e49ea0256a29559c2ccddac15a7d0a9b38850131194b554aa4465f1d26378e9a"
+    },
+    ".cursor/commands/write-tests.md": {
+      "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
+    },
+    ".cursor/rules/agentinit-react-vite.mdc": {
+      "sha256": "fe15ff0aefc7478ccfaddc954e17cd05e68d32d382b6371b0d6b4640e946d242"
+    },
+    ".github/copilot-instructions.md#copilot": {
+      "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
+    },
+    ".github/instructions/agentinit-react-vite.instructions.md": {
+      "sha256": "f34313daff04723f601fbc6aa2d00ebc7e6db54d13aeb8241108038f0ec58dc1"
+    },
+    ".github/prompts/new-feature.prompt.md": {
+      "sha256": "365725572f80debba865aac34d9083362002c9a260bfe6a552eb18c13f531a70"
+    },
+    ".github/prompts/refactor.prompt.md": {
+      "sha256": "60d95b5e8e789fd97f4590af9c86bb38055e8d52eb4353b8fa5a18d0ccaac4c5"
+    },
+    ".github/prompts/review-arch.prompt.md": {
+      "sha256": "db83e0d9d28dad35e28dd40385ddc76367069bca2f58c9dcd27e199372de64e4"
+    },
+    ".github/prompts/write-tests.prompt.md": {
+      "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
+    },
+    ".windsurf/rules/agentinit-react-vite.md": {
+      "sha256": "d637d3562e0122275f87a1e779c712bb44a97b48968785dfabbe0dd9623a69fe"
+    },
+    ".windsurf/workflows/new-feature.md": {
+      "sha256": "381d4743ce68111f8aa6c9b31d6ee25b96868bdaa03b215b2ed035ee3057c6c1"
+    },
+    ".windsurf/workflows/refactor.md": {
+      "sha256": "ec2fc4d04df95d2d07b3d31355a65380ba499cef1e3ceba9cdda87ace6946250"
+    },
+    ".windsurf/workflows/review-arch.md": {
+      "sha256": "dff8e090b5c3ad43fc6bd3dc3a094df2e6849750fe989dee7765abf07365fac9"
+    },
+    ".windsurf/workflows/write-tests.md": {
+      "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
+    },
+    "AGENTS.md#core": {
+      "sha256": "2d0151a5d49064db55dfa1bcd2e26d71698a832858de316d57f28208c54b2a18"
+    },
+    "ARCHITECTURE.md#architecture": {
+      "sha256": "91c1205933e997f976b9fd0dafe20571715b202bf9e14c926922df25f7e5f047"
+    },
+    "CLAUDE.md#claude": {
+      "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
+    }
+  }
+}
+
+===== .claude/rules/agentinit-react-vite.md
+---
+paths:
+  - "src/**/*.tsx"
+---
+
+## Boundary
+These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
+
+## Directives
+- **ALWAYS** call a React Hook other than `use` at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
+- **NEVER** pass `use` a Promise created during render. Reuse one cached Promise and read it under `<Suspense>`. **NEVER** call `use` inside `try/catch`.
+- **ALWAYS** run a mutation that is an Action from `<form action>` or from `startTransition`. **PREFER** `useActionState` when the UI needs the Action result and the pending flag.
+- **ALWAYS** read a public build value from `import.meta.env.VITE_*`. The value is a string. **NEVER** put a secret in a `VITE_` variable, and **NEVER** set Vite `envPrefix` to an empty string.
+- **ALWAYS** call `lazy` at module scope on a default export, and render that component under `<Suspense>`. **NEVER** call `lazy` inside a component.
+
+## Contract
+```tsx
+// ✅ Good: conditional use, public env string, lazy at module scope
+const ThemeContext = createContext<string | null>(null);
+const Preview = lazy(() => import('./Preview'));
+
+export function Title({ show }: { show: boolean }) {
+  if (!show) return null;
+  const name = use(ThemeContext);
+  return (
+    <Suspense fallback="Loading">
+      <Preview title={name ?? import.meta.env.VITE_APP_TITLE} />
+    </Suspense>
+  );
+}
+
+// ❌ Anti-pattern: lazy during render, and a secret behind the public prefix
+export function Bad() {
+  const Chart = lazy(() => import('./Chart'));
+  return <Chart token={import.meta.env.VITE_SECRET} />;
+}
+```
+
+===== .claude/skills/new-feature/SKILL.md
+---
+name: new-feature
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+argument-hint: <feature-name> <short description>
+disable-model-invocation: true
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `pnpm lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .claude/skills/refactor/SKILL.md
+---
+name: refactor
+description: Pin current behavior with tests, then change structure in small steps.
+argument-hint: <target> <goal>
+disable-model-invocation: true
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `pnpm lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .claude/skills/review-arch/SKILL.md
+---
+name: review-arch
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+argument-hint: "[path]"
+disable-model-invocation: true
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .claude/skills/write-tests/SKILL.md
+---
+name: write-tests
+description: Cover a target's observable behavior with the active test library.
+argument-hint: <target>
+disable-model-invocation: true
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/commands/new-feature.md
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `pnpm lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .cursor/commands/refactor.md
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `pnpm lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/commands/review-arch.md
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .cursor/commands/write-tests.md
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/rules/agentinit-react-vite.mdc
+---
+description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
+alwaysApply: false
+---
+
+## Boundary
+These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
+
+## Directives
+- **ALWAYS** call a React Hook other than `use` at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
+- **NEVER** pass `use` a Promise created during render. Reuse one cached Promise and read it under `<Suspense>`. **NEVER** call `use` inside `try/catch`.
+- **ALWAYS** run a mutation that is an Action from `<form action>` or from `startTransition`. **PREFER** `useActionState` when the UI needs the Action result and the pending flag.
+- **ALWAYS** read a public build value from `import.meta.env.VITE_*`. The value is a string. **NEVER** put a secret in a `VITE_` variable, and **NEVER** set Vite `envPrefix` to an empty string.
+- **ALWAYS** call `lazy` at module scope on a default export, and render that component under `<Suspense>`. **NEVER** call `lazy` inside a component.
+
+## Contract
+```tsx
+// ✅ Good: conditional use, public env string, lazy at module scope
+const ThemeContext = createContext<string | null>(null);
+const Preview = lazy(() => import('./Preview'));
+
+export function Title({ show }: { show: boolean }) {
+  if (!show) return null;
+  const name = use(ThemeContext);
+  return (
+    <Suspense fallback="Loading">
+      <Preview title={name ?? import.meta.env.VITE_APP_TITLE} />
+    </Suspense>
+  );
+}
+
+// ❌ Anti-pattern: lazy during render, and a secret behind the public prefix
+export function Bad() {
+  const Chart = lazy(() => import('./Chart'));
+  return <Chart token={import.meta.env.VITE_SECRET} />;
+}
+```
+
+===== .github/copilot-instructions.md
+<!-- agentinit:begin id=copilot -->
+Follow `AGENTS.md` at the repository root.
+
+Scoped rules are in `.github/instructions/`.
+<!-- agentinit:end id=copilot -->
+
+===== .github/instructions/agentinit-react-vite.instructions.md
+---
+description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
+applyTo: "src/**/*.tsx"
+---
+
+## Boundary
+These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
+
+## Directives
+- **ALWAYS** call a React Hook other than `use` at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
+- **NEVER** pass `use` a Promise created during render. Reuse one cached Promise and read it under `<Suspense>`. **NEVER** call `use` inside `try/catch`.
+- **ALWAYS** run a mutation that is an Action from `<form action>` or from `startTransition`. **PREFER** `useActionState` when the UI needs the Action result and the pending flag.
+- **ALWAYS** read a public build value from `import.meta.env.VITE_*`. The value is a string. **NEVER** put a secret in a `VITE_` variable, and **NEVER** set Vite `envPrefix` to an empty string.
+- **ALWAYS** call `lazy` at module scope on a default export, and render that component under `<Suspense>`. **NEVER** call `lazy` inside a component.
+
+## Contract
+```tsx
+// ✅ Good: conditional use, public env string, lazy at module scope
+const ThemeContext = createContext<string | null>(null);
+const Preview = lazy(() => import('./Preview'));
+
+export function Title({ show }: { show: boolean }) {
+  if (!show) return null;
+  const name = use(ThemeContext);
+  return (
+    <Suspense fallback="Loading">
+      <Preview title={name ?? import.meta.env.VITE_APP_TITLE} />
+    </Suspense>
+  );
+}
+
+// ❌ Anti-pattern: lazy during render, and a secret behind the public prefix
+export function Bad() {
+  const Chart = lazy(() => import('./Chart'));
+  return <Chart token={import.meta.env.VITE_SECRET} />;
+}
+```
+
+===== .github/prompts/new-feature.prompt.md
+---
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+argument-hint: <feature-name> <short description>
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `pnpm lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .github/prompts/refactor.prompt.md
+---
+description: Pin current behavior with tests, then change structure in small steps.
+argument-hint: <target> <goal>
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `pnpm lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .github/prompts/review-arch.prompt.md
+---
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+argument-hint: "[path]"
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .github/prompts/write-tests.prompt.md
+---
+description: Cover a target's observable behavior with the active test library.
+argument-hint: <target>
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .windsurf/rules/agentinit-react-vite.md
+---
+trigger: model_decision
+description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
+---
+
+## Boundary
+These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
+
+## Directives
+- **ALWAYS** call a React Hook other than `use` at the top level of a component or another Hook. **PREFER** `use(SomeContext)` when the read is inside a condition or a loop.
+- **NEVER** pass `use` a Promise created during render. Reuse one cached Promise and read it under `<Suspense>`. **NEVER** call `use` inside `try/catch`.
+- **ALWAYS** run a mutation that is an Action from `<form action>` or from `startTransition`. **PREFER** `useActionState` when the UI needs the Action result and the pending flag.
+- **ALWAYS** read a public build value from `import.meta.env.VITE_*`. The value is a string. **NEVER** put a secret in a `VITE_` variable, and **NEVER** set Vite `envPrefix` to an empty string.
+- **ALWAYS** call `lazy` at module scope on a default export, and render that component under `<Suspense>`. **NEVER** call `lazy` inside a component.
+
+## Contract
+```tsx
+// ✅ Good: conditional use, public env string, lazy at module scope
+const ThemeContext = createContext<string | null>(null);
+const Preview = lazy(() => import('./Preview'));
+
+export function Title({ show }: { show: boolean }) {
+  if (!show) return null;
+  const name = use(ThemeContext);
+  return (
+    <Suspense fallback="Loading">
+      <Preview title={name ?? import.meta.env.VITE_APP_TITLE} />
+    </Suspense>
+  );
+}
+
+// ❌ Anti-pattern: lazy during render, and a secret behind the public prefix
+export function Bad() {
+  const Chart = lazy(() => import('./Chart'));
+  return <Chart token={import.meta.env.VITE_SECRET} />;
+}
+```
+
+===== .windsurf/workflows/new-feature.md
+---
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `pnpm lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .windsurf/workflows/refactor.md
+---
+description: Pin current behavior with tests, then change structure in small steps.
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `pnpm lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .windsurf/workflows/review-arch.md
+---
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .windsurf/workflows/write-tests.md
+---
+description: Cover a target's observable behavior with the active test library.
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== AGENTS.md
+<!-- agentinit:begin id=core -->
+# AGENTS.md
+
+Always-on rules for this project. Scoped rules and workflows stay in each agent's own files.
+
+## Contents
+
+- [Project commands](#project-commands)
+- [Architecture](#architecture)
+- [TypeScript Strict](#typescript-strict)
+
+## Project commands
+
+- `pnpm build`
+- `pnpm dev`
+- `pnpm lint`
+
+## Architecture
+
+- Put new components in `src/components/` and new hooks in `src/hooks/`.
+- Put new helpers in `src/utils/` and shared types in `src/types/`.
+- Keep each new file to one component, one hook, or one helper.
+- When a type folder would take on a second domain, add `src/features/<feature>/` for the new domain.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
+
+## TypeScript Strict
+
+### Boundary
+These rules apply to every `.ts` and `.tsx` file. The project typechecks with `strict` enabled. `unknown` is the top type for a value that is not yet checked. `any` turns checking off for that value.
+
+### Directives
+- **NEVER** use the `any` type. **ALWAYS** hold an unchecked value as `unknown` and narrow it before property access, a call, or assignment to a specific type.
+- **ALWAYS** write an explicit return type on an exported function. **PREFER** inference for a function that is not exported.
+- **NEVER** use the postfix `!` non-null assertion. Narrow `null` and `undefined` with a check.
+- **ALWAYS** check a config object literal with `satisfies` when the variable should keep its specific property types.
+- **PREFER** a discriminated union (a shared literal field such as `status`) over a boolean plus optional fields.
+- **ALWAYS** finish a `switch` on that discriminant with a `default` that assigns the value to `never`.
+- **ALWAYS** use `import type` for a binding used only as a type. **NEVER** use `import type` for a value you call, construct, or extend.
+- **NEVER** set `strict` or `strictNullChecks` to `false`.
+
+### Contract
+```ts
+// ✅ Good: unknown is narrowed, the union is exhaustive, config keeps its own types
+import type { InvoiceId } from './ids';
+
+type Invoice =
+  | { status: 'open'; id: InvoiceId; total: number }
+  | { status: 'paid'; id: InvoiceId; total: number; paidOn: string };
+
+type RGB = [red: number, green: number, blue: number];
+type ThemeName = 'danger' | 'ok';
+
+export const theme = {
+  danger: [255, 0, 0],
+  ok: '#00ff00',
+} satisfies Record<ThemeName, string | RGB>;
+
+export function label(invoice: Invoice): string {
+  switch (invoice.status) {
+    case 'open':
+      return 'Open';
+    case 'paid':
+      return invoice.paidOn;
+    default: {
+      const unexpected: never = invoice;
+      throw new Error(`Unhandled invoice: ${String(unexpected)}`);
+    }
+  }
+}
+
+export function amount(input: unknown): number {
+  if (typeof input !== 'number') throw new Error('Expected a number');
+  return input;
+}
+
+// ❌ Anti-pattern: any, a boolean flag, and a non-null assertion
+type Loose = { paid: boolean; paidOn?: string };
+export function paidOn(invoice: Loose, input: any): string {
+  return invoice.paidOn!.slice(0, input.total);
+}
+```
+<!-- agentinit:end id=core -->
+
+===== ARCHITECTURE.md
+<!-- agentinit:begin id=architecture -->
+# ARCHITECTURE.md
+
+Describes the folders that exist today and the conventions for new code. Existing files stay where they are.
+
+## Layout
+
+No folders were detected under the source root.
+
+## Conventions for new code
+
+- **DEFAULT** to one folder per file type: `components/`, `hooks/`, `utils/`, and `types/` under `src/`.
+- **ALWAYS** give a new file a single component, hook, or helper.
+- **PREFER** `src/features/<feature>/` for new code once a type folder would mix a second domain.
+- **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+<!-- agentinit:end id=architecture -->
+
+===== CLAUDE.md
+<!-- agentinit:begin id=claude -->
+@AGENTS.md
+
+Scoped rules live in `.claude/rules/`.
+<!-- agentinit:end id=claude -->
+
+===== package-lock.json
+{
+  "name": "vite-react",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "node_modules/react": {
+      "version": "19.0.0"
+    },
+    "node_modules/react-dom": {
+      "version": "19.0.0"
+    },
+    "node_modules/typescript": {
+      "version": "5.9.0"
+    },
+    "node_modules/vite": {
+      "version": "6.2.0"
+    }
+  }
+}
+
+===== package.json
+{
+  "name": "vite-react",
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0",
+    "vite": "6.2.0"
+  }
+}
+
+===== src/App.ts
+export const label = 'vite';
+
+===== src/main.ts
+import { label } from './App.js';
+
+export const title = label;
+
+===== tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx"
+  }
+}
+
+===== vite.config.ts
+export const port = 5173;
+

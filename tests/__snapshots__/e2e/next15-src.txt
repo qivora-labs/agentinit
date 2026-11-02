@@ -821,6 +821,11 @@ Scoped rules live in `.claude/rules/`.
   }
 }
 
+===== src/app/layout.ts
+export function RootLayout(): string {
+  return 'app';
+}
+
 ===== src/app/page.ts
 export {};
 

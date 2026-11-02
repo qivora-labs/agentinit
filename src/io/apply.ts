@@ -3,6 +3,7 @@ import { lstat, mkdir, realpath, rename, rm, rmdir, stat, writeFile } from 'node
 import * as path from 'node:path';
 import { createPatch } from 'diff';
 import { AgentInitError, NotInteractiveError } from '../errors.js';
+import { CANCELLED } from '../exit-codes.js';
 import type { Prompter } from '../ui/prompter.js';
 import {
   canonicalBlockInner,
@@ -58,6 +59,13 @@ export interface ApplyOptions {
    * A throw leaves the project tree unchanged.
    */
   readonly beforeRename?: () => void | Promise<void>;
+  /**
+   * Checked after temps exist and before any rename. True aborts the write
+   * and removes the temps. SIGINT sets this so Ctrl-C leaves no partial files.
+   */
+  readonly shouldStop?: () => boolean;
+  /** True while temps exist and a signal handler must not exit the process. */
+  readonly onAtomicWrite?: (active: boolean) => void;
 }
 
 type Choice = 'adopt' | 'backup-replace' | 'skip';
@@ -106,6 +114,8 @@ export async function applyChanges(
     gitignore,
     serializeManifest({ ...options.manifest, files: manifestFiles }),
     options.beforeRename,
+    options.shouldStop,
+    options.onAtomicWrite,
   );
   return result;
 }
@@ -496,10 +506,13 @@ async function commit(
   gitignore: string | null,
   manifestBody: string,
   beforeRename: ApplyOptions['beforeRename'],
+  shouldStop: ApplyOptions['shouldStop'],
+  onAtomicWrite: ApplyOptions['onAtomicWrite'],
 ): Promise<void> {
   const createdDirs: string[] = [];
   const pending: PendingWrite[] = [];
   const deletes: string[] = [];
+  onAtomicWrite?.(true);
   try {
     for (const outcome of outcomes) {
       if (outcome.backup !== null) {
@@ -517,7 +530,9 @@ async function commit(
     await stage(root, MANIFEST_PATH, manifestBody, 'manifest', pending, createdDirs);
 
     // Every temp exists before the first rename, so a failure here changes no target.
+    if (shouldStop?.() === true) throw new AgentInitError('Interrupted.', { exitCode: CANCELLED });
     await beforeRename?.();
+    if (shouldStop?.() === true) throw new AgentInitError('Interrupted.', { exitCode: CANCELLED });
 
     // The ignore rule is in the tree before backup files, so a crash cannot
     // leave a backup directory that Git would commit.
@@ -535,6 +550,8 @@ async function commit(
   } catch (error) {
     await cleanup(pending, createdDirs);
     throw asWriteError(error);
+  } finally {
+    onAtomicWrite?.(false);
   }
 }
 

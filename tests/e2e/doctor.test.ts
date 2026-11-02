@@ -340,6 +340,40 @@ describe('doctor', () => {
     });
   });
 
+  it('Exits 0 on a freshly initialized project and 2 after adding a supported package to package.json', async () => {
+    const dir = await initYes('next15-src');
+    const fresh = await runCli(['doctor', '--cwd', dir]);
+    expect(fresh.code).toBe(0);
+    expect(fresh.stdout).toBe('No issues found.\n');
+
+    const manifest = await readPackage(dir);
+    manifest.dependencies = { ...manifest.dependencies, zustand: '5.0.0' };
+    await writePackage(dir, manifest);
+    const dirty = await runCli(['doctor', '--cwd', dir]);
+    expect(dirty.code).toBe(2);
+    expect(dirty.stdout).toContain('zustand');
+  });
+
+  it('Never modifies any file', async () => {
+    const freshDir = await initYes('next15-src');
+    const freshDigest = await treeDigest(freshDir);
+    expect((await runCli(['doctor', '--cwd', freshDir])).code).toBe(0);
+    expect(await treeDigest(freshDir)).toBe(freshDigest);
+
+    const dirtyDir = await initYes('next15-src');
+    const manifest = await readPackage(dirtyDir);
+    manifest.dependencies = { ...manifest.dependencies, zustand: '5.0.0' };
+    await writePackage(dirtyDir, manifest);
+    const dirtyDigest = await treeDigest(dirtyDir);
+    expect((await runCli(['doctor', '--cwd', dirtyDir])).code).toBe(2);
+    expect(await treeDigest(dirtyDir)).toBe(dirtyDigest);
+
+    const plain = await copyFixture('next15-src');
+    const plainDigest = await treeDigest(plain);
+    expect((await runCli(['doctor', '--cwd', plain])).code).toBe(2);
+    expect(await treeDigest(plain)).toBe(plainDigest);
+  });
+
   it('exits 1 for an unsupported project and writes nothing', async () => {
     const dir = await copyFixture('js-only');
     const digest = await treeDigest(dir);
