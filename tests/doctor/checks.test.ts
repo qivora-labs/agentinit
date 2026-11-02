@@ -7,6 +7,7 @@ import {
   checkUnselected,
   collectDoctorIssues,
   formatDoctorReport,
+  notInitializedIssue,
   type DriftChange,
 } from '../../src/doctor/checks.js';
 
@@ -241,6 +242,11 @@ describe('checkLegacy', () => {
 describe('formatDoctorReport', () => {
   it('prints a clean project as no issues', () => {
     expect(formatDoctorReport([])).toBe('No issues found.');
+  });
+
+  it('prints the not-initialized title once', () => {
+    expect(formatDoctorReport([notInitializedIssue()])).toBe(`Not initialized
+  Fix: ${FIX}`);
   });
 
   it('groups issues and prints a fix for each one', () => {

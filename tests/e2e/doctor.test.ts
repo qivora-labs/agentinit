@@ -161,8 +161,7 @@ describe('doctor', () => {
     const digest = await treeDigest(dir);
     const result = await runCli(['doctor', '--cwd', dir]);
     expect(result.code).toBe(2);
-    expect(result.stdout).toContain('Not initialized');
-    expect(result.stdout).toContain(`Fix: ${FIX}`);
+    expect(result.stdout).toBe(`Not initialized\n  Fix: ${FIX}\n`);
     expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
     expect(await treeDigest(dir)).toBe(digest);
   });

@@ -105,8 +105,7 @@ describe('run', () => {
     const dir = await tempDir();
     const result = await runCli(['doctor', '--cwd', dir]);
     expect(result.code).toBe(2);
-    expect(result.stdout).toContain('Not initialized');
-    expect(result.stdout).toContain('npx @agentinit/cli init');
+    expect(result.stdout).toBe('Not initialized\n  Fix: npx @agentinit/cli init\n');
     expect(result.stderr).toBe('');
   });
 

@@ -294,8 +294,10 @@ function packageRemoved(fragment: CheckedFragment, packageName: string): DoctorI
 function formatGroup(group: { title: string; issues: readonly DoctorIssue[] }): string {
   const lines = [group.title];
   for (const issue of group.issues) {
-    lines.push(`  ${issue.message}`);
-    lines.push(`    Fix: ${issue.fix}`);
+    // The not-initialized message is the group title. Print that phrase once.
+    const repeated = issue.message === group.title;
+    if (!repeated) lines.push(`  ${issue.message}`);
+    lines.push(`${repeated ? '  ' : '    '}Fix: ${issue.fix}`);
   }
   return lines.join('\n');
 }
