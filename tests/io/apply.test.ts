@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -499,16 +499,22 @@ describe('applyChanges safety', () => {
     const root = await tempDir();
     const target = path.join(root, 'rule.md');
     await writeFile(target, 'owned\n');
-    await chmod(root, 0o555);
+    const changes = await planChanges(root, [file('rule.md', 'next\n')], manifest({ 'rule.md': contentHash('owned\n') }));
+    // Mode 0555 stops the temp file from being created on POSIX. Windows ignores
+    // that bit on directories, so the destination is marked read-only instead;
+    // replacing it fails with EPERM.
+    const windows = process.platform === 'win32';
+    if (windows) await chmod(target, 0o444);
+    else await chmod(root, 0o555);
     try {
-      const changes = await planChanges(root, [file('rule.md', 'next\n')], manifest({ 'rule.md': contentHash('owned\n') }));
       await expect(applyChanges(root, changes, applyOptions())).rejects.toThrow(
         /Cannot write rule\.md: permission denied/,
       );
     } finally {
-      await chmod(root, 0o755);
+      if (windows) await chmod(target, 0o644);
+      else await chmod(root, 0o755);
     }
-    expect((await lstat(target)).isFile()).toBe(true);
+    expect(await readFile(target, 'utf8')).toBe('owned\n');
   });
 
   it('reports a readable error when the parent path is a file', async () => {
