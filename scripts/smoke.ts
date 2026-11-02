@@ -164,7 +164,7 @@ function runTool(
   cwd: string,
   timeoutMs: number,
 ): Promise<CommandResult> {
-  // npm and pnpm on Windows are .cmd shims, which Node will not run without a shell.
+  // npm and pnpm on Windows are .cmd shims, which Node will not run without cmd.exe.
   const windowsShim = process.platform === 'win32' && command !== 'tar';
   const executable = windowsShim ? `${command}.cmd` : command;
   return runExecutable(executable, args, cwd, windowsShim, timeoutMs);
@@ -174,26 +174,59 @@ function runBinary(executable: string, args: readonly string[], cwd: string): Pr
   return runExecutable(executable, args, cwd, process.platform === 'win32', 120_000);
 }
 
+/**
+ * `cmd.exe /d /s /c` arguments. Node's `shell: true` joins argv with spaces and
+ * does not quote it, so a temp path under `C:\Users\Foo Bar\` is split.
+ * `/s` strips one pair of surrounding quotes; each special argument is quoted
+ * inside that pair.
+ */
+export function windowsCmdArgs(executable: string, args: readonly string[]): readonly [string, string, string, string] {
+  const command = [executable, ...args].map(quoteCmdArg).join(' ');
+  return ['/d', '/s', '/c', `"${command}"`];
+}
+
+/** Tokens cmd.exe can take literally. Anything else is quoted. */
+const CMD_PLAIN = /^[A-Za-z0-9_./:=+@\\-]+$/u;
+
+function quoteCmdArg(value: string): string {
+  if (value.length === 0) return '""';
+  const trailing = /\\+$/u.exec(value);
+  if (CMD_PLAIN.test(value) && trailing === null) return value;
+  // A trailing backslash would escape the closing quote. `%` still expands inside quotes.
+  const slashes = trailing === null ? '' : trailing[0];
+  const body = `${value.slice(0, value.length - slashes.length)}${slashes}${slashes}`
+    .replaceAll('"', '""')
+    .replaceAll('%', '%%');
+  return `"${body}"`;
+}
+
 function runExecutable(
   executable: string,
   args: readonly string[],
   cwd: string,
-  shell: boolean,
+  cmd: boolean,
   timeoutMs: number,
 ): Promise<CommandResult> {
+  // `.cmd` shims have to run through cmd.exe. Build that command line here so
+  // Node does not concatenate the arguments itself.
+  const command = cmd ? windowsCmdArgs(executable, args) : null;
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, [...args], {
-      cwd,
-      shell,
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        npm_config_audit: 'false',
-        npm_config_fund: 'false',
-        NO_UPDATE_NOTIFIER: '1',
+    const child = spawn(
+      command === null ? executable : (process.env.comspec ?? 'cmd.exe'),
+      command === null ? [...args] : [...command],
+      {
+        cwd,
+        windowsHide: true,
+        windowsVerbatimArguments: command !== null,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          npm_config_audit: 'false',
+          npm_config_fund: 'false',
+          NO_UPDATE_NOTIFIER: '1',
+        },
       },
-    });
+    );
     const out = child.stdout;
     const err = child.stderr;
     let stdout = '';

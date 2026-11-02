@@ -37,4 +37,5 @@ pnpm smoke
 - The temp install project gets a private `package.json` so `npm install` does not prompt. npm still downloads the tarball's runtime dependencies. Audit and fund requests are disabled so that install does not add registry calls beyond those dependencies.
 - Removing `registry` from `files` failed with `Tarball is missing registry/. Include "registry" in package.json "files".` The field was restored.
 - `tests/scripts/smoke.test.ts` covers the path allowlist, including a tarball that omits `registry`. The install-and-run checks stay in `pnpm smoke`.
-- The `smoke` job needs `ci` and runs on `ubuntu-latest` and `windows-latest` with Node 22. It was not executed on GitHub in this session.
+- The `smoke` job needs `ci` and runs on `ubuntu-latest` and `windows-latest` with Node 22. It was not executed on GitHub in this session, so the index stays `todo` until that job passes.
+- Windows runs `.cmd` shims through `cmd.exe /d /s /c` with each special argument quoted. `shell: true` joins argv with spaces, so a temp path that contains a space would split.

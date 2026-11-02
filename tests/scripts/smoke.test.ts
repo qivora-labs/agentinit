@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertTarballEntries } from '../../scripts/smoke.js';
+import { assertTarballEntries, windowsCmdArgs } from '../../scripts/smoke.js';
 
 const published = [
   'package/package.json',
@@ -37,5 +37,42 @@ describe('assertTarballEntries', () => {
     expect(() => {
       assertTarballEntries(published, { requireReadme: true });
     }).toThrow(/missing README.md/);
+  });
+});
+
+describe('windowsCmdArgs', () => {
+  it.each([
+    [
+      'quotes a temp path that contains spaces',
+      'npm.cmd',
+      ['install', String.raw`C:\Users\Foo Bar\pkg.tgz`],
+      String.raw`"npm.cmd install "C:\Users\Foo Bar\pkg.tgz""`,
+    ],
+    [
+      'quotes the shim path passed to init --cwd',
+      String.raw`C:\Users\Foo Bar\install\node_modules\.bin\agentinit.cmd`,
+      ['init', '--yes', '--dry-run', '--cwd', String.raw`C:\Users\Foo Bar\project`],
+      String.raw`""C:\Users\Foo Bar\install\node_modules\.bin\agentinit.cmd" init --yes --dry-run --cwd "C:\Users\Foo Bar\project""`,
+    ],
+    [
+      'quotes parentheses so they are not a cmd group',
+      'npm.cmd',
+      ['install', String.raw`C:\Program Files (x86)\pkg.tgz`],
+      String.raw`"npm.cmd install "C:\Program Files (x86)\pkg.tgz""`,
+    ],
+    [
+      'doubles percent signs so cmd does not expand them',
+      'npm.cmd',
+      ['install', String.raw`C:\Users\100%\pkg.tgz`],
+      String.raw`"npm.cmd install "C:\Users\100%%\pkg.tgz""`,
+    ],
+    [
+      'leaves a plain --version command unquoted inside the /c string',
+      'agentinit.cmd',
+      ['--version'],
+      '"agentinit.cmd --version"',
+    ],
+  ])('%s', (_name, executable, args, command) => {
+    expect(windowsCmdArgs(executable, args)).toEqual(['/d', '/s', '/c', command]);
   });
 });
