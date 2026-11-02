@@ -2,3 +2,5 @@
 # init snapshot and fixtures into CRLF, and Vitest only normalizes a CRLF
 # snapshot when the received string has no CRLF at all.
 * text=auto eol=lf
+# This fixture is the CRLF preservation case. Other fixtures stay LF.
+tests/fixtures/crlf-line-endings/** text eol=crlf

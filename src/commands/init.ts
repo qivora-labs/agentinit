@@ -37,6 +37,10 @@ export interface InitOptions {
   readonly stdout?: Writable;
   readonly now?: Date;
   readonly registryDir?: string;
+  /** When true before rename, temps are removed and the project is unchanged. */
+  readonly shouldStop?: () => boolean;
+  /** True while temp files exist and the process must not exit yet. */
+  readonly onAtomicWrite?: (active: boolean) => void;
 }
 
 interface Setup {
@@ -79,6 +83,8 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     force: ctx.force,
     dryRun: ctx.dryRun,
     ...(!ctx.yes && !ctx.force ? { prompter: prompts() } : {}),
+    ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
+    ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
   });
 
   return reportApplied(ctx, logger, options, plan, applied.report, notices, nextSteps);

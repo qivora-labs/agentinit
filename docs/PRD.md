@@ -658,7 +658,8 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 - *(manual)* Time from `npx @agentinit/cli` to written files on an existing project is under 60 seconds, excluding download time.
 
 ### 8.2 Fixture Repositories
-`tests/fixtures/`, each with snapshot output for every target:
+`tests/fixtures/`, each minimal but realistic. Full generated trees, covering every target, are snapshotted for `next15-src`, `vite-react`, and `express-ts` under `tests/__snapshots__/e2e/`.
+
 `next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.

@@ -1,0 +1,844 @@
+===== .agentinit/.gitignore
+backups/
+
+===== .agentinit/manifest.json
+{
+  "cliVersion": "0.0.0",
+  "mode": "existing",
+  "selections": {
+    "language": "typescript-strict",
+    "frameworks": [
+      "express"
+    ],
+    "libraries": [],
+    "architecture": "flat",
+    "agents": [
+      "cursor",
+      "claude",
+      "windsurf",
+      "copilot"
+    ]
+  },
+  "fragments": {
+    "express": "1.0.0",
+    "flat": "1.0.0",
+    "typescript-strict": "1.0.0"
+  },
+  "files": {
+    ".claude/rules/agentinit-express.md": {
+      "sha256": "9636a7b782dd9b7459c3aa10d268c200491594a068fc40d2a1929d4502769c5d"
+    },
+    ".claude/skills/new-feature/SKILL.md": {
+      "sha256": "13a07e27a94352bb7d561c1d533f672d087453ecafa79c386507bbabc8d81274"
+    },
+    ".claude/skills/refactor/SKILL.md": {
+      "sha256": "17d44de6072b8feee422218d65479df77c36d02997096dd4dc5b90afade840be"
+    },
+    ".claude/skills/review-arch/SKILL.md": {
+      "sha256": "ad442d4b066318ed1668a87c6bfd71b7315946abeb140c2f30cbc9bde5ff8907"
+    },
+    ".claude/skills/write-tests/SKILL.md": {
+      "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
+    },
+    ".cursor/commands/new-feature.md": {
+      "sha256": "691e2997b7e6263c2e57467f1bc101f5bb2e38594b785e7e88bad8c5b57ea854"
+    },
+    ".cursor/commands/refactor.md": {
+      "sha256": "8d5dbd1e0c9c7f8ae1b072c0954664fafea9256d1026ab4cddeb575f6af2d5b5"
+    },
+    ".cursor/commands/review-arch.md": {
+      "sha256": "e49ea0256a29559c2ccddac15a7d0a9b38850131194b554aa4465f1d26378e9a"
+    },
+    ".cursor/commands/write-tests.md": {
+      "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
+    },
+    ".cursor/rules/agentinit-express.mdc": {
+      "sha256": "58a5d6dba53c268582570bcc7131e2655c1ff9b014027a082cb96dc469d3f7bb"
+    },
+    ".github/copilot-instructions.md#copilot": {
+      "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
+    },
+    ".github/instructions/agentinit-express.instructions.md": {
+      "sha256": "e9abf6968018c2064bc61d7f44ac56b6486e804354184ef77fbf1e60f8e90106"
+    },
+    ".github/prompts/new-feature.prompt.md": {
+      "sha256": "4c770c8fb5be0bd0b508e9ff83b2b737d5e1d547c40b3229f0f696f1adb89002"
+    },
+    ".github/prompts/refactor.prompt.md": {
+      "sha256": "8d878901290cafcf7750bca939105b47e3d52d7fde058b33dd5158ce6ebe03a8"
+    },
+    ".github/prompts/review-arch.prompt.md": {
+      "sha256": "db83e0d9d28dad35e28dd40385ddc76367069bca2f58c9dcd27e199372de64e4"
+    },
+    ".github/prompts/write-tests.prompt.md": {
+      "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
+    },
+    ".windsurf/rules/agentinit-express.md": {
+      "sha256": "ac3add01d5a88e47298d1e3f432db1f9c5a5169e7a0065a77384f61022160aec"
+    },
+    ".windsurf/workflows/new-feature.md": {
+      "sha256": "e851e8ca4faa06627556506b26bfe858c598e445fd988c65ce546d1625161dd4"
+    },
+    ".windsurf/workflows/refactor.md": {
+      "sha256": "33b6907113c51c734db67bcf76561e55522d2077345594371805652da8fce11f"
+    },
+    ".windsurf/workflows/review-arch.md": {
+      "sha256": "dff8e090b5c3ad43fc6bd3dc3a094df2e6849750fe989dee7765abf07365fac9"
+    },
+    ".windsurf/workflows/write-tests.md": {
+      "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
+    },
+    "AGENTS.md#core": {
+      "sha256": "f291371286f3755569004765269f4281ccc555a75bcb765802bdfa3aaabf00b5"
+    },
+    "ARCHITECTURE.md#architecture": {
+      "sha256": "5b0190de0ed8e252e9888e0cdc9988de3b4217eec7e5bd4ce30632f45a35ac1f"
+    },
+    "CLAUDE.md#claude": {
+      "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
+    }
+  }
+}
+
+===== .claude/rules/agentinit-express.md
+---
+paths:
+  - "src/routes/**/*.ts"
+  - "src/controllers/**/*.ts"
+  - "src/middleware/**/*.ts"
+  - "src/**/*.routes.ts"
+  - "src/**/*.controller.ts"
+  - "src/**/*.middleware.ts"
+---
+
+## Boundary
+These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
+
+## Directives
+- **ALWAYS** write a handler as an `async` function, or return its promise. **NEVER** start a promise you neither return nor pass to `next`.
+- **ALWAYS** register one error middleware with the signature `(err, req, res, next)` after the routes. Keep the fourth parameter even when the function does not call `next`.
+- **ALWAYS** validate `req.body`, `req.params`, and `req.query` before using them. **NEVER** assign to `req.query`. It is a getter, and the default parser is `simple`.
+- **ALWAYS** write an optional segment as `{:name}` or `{.:ext}`. **NEVER** mark it with `?`. Express 5 omits an unmatched optional param. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
+- **ALWAYS** put a group of routes on `express.Router()` and mount that router with `app.use`. Pass `{ mergeParams: true }` when the nested router reads a parent param.
+
+## Contract
+```ts
+// ✅ Good: async router handler; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res) => {
+  const id = userId(req.params.id);
+  res.json(await getUser(id));
+});
+app.use('/users', router);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not returned, so Express never sees it
+app.get('/', (_req, _res) => {
+  Promise.reject(new Error('fail'));
+});
+```
+
+===== .claude/skills/new-feature/SKILL.md
+---
+name: new-feature
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+argument-hint: <feature-name> <short description>
+disable-model-invocation: true
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `npm run lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .claude/skills/refactor/SKILL.md
+---
+name: refactor
+description: Pin current behavior with tests, then change structure in small steps.
+argument-hint: <target> <goal>
+disable-model-invocation: true
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `npm run lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .claude/skills/review-arch/SKILL.md
+---
+name: review-arch
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+argument-hint: "[path]"
+disable-model-invocation: true
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .claude/skills/write-tests/SKILL.md
+---
+name: write-tests
+description: Cover a target's observable behavior with the active test library.
+argument-hint: <target>
+disable-model-invocation: true
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/commands/new-feature.md
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `npm run lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .cursor/commands/refactor.md
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `npm run lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/commands/review-arch.md
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .cursor/commands/write-tests.md
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .cursor/rules/agentinit-express.mdc
+---
+description: Express 5 async errors, boundary validation, and modular routers.
+alwaysApply: false
+---
+
+## Boundary
+These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
+
+## Directives
+- **ALWAYS** write a handler as an `async` function, or return its promise. **NEVER** start a promise you neither return nor pass to `next`.
+- **ALWAYS** register one error middleware with the signature `(err, req, res, next)` after the routes. Keep the fourth parameter even when the function does not call `next`.
+- **ALWAYS** validate `req.body`, `req.params`, and `req.query` before using them. **NEVER** assign to `req.query`. It is a getter, and the default parser is `simple`.
+- **ALWAYS** write an optional segment as `{:name}` or `{.:ext}`. **NEVER** mark it with `?`. Express 5 omits an unmatched optional param. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
+- **ALWAYS** put a group of routes on `express.Router()` and mount that router with `app.use`. Pass `{ mergeParams: true }` when the nested router reads a parent param.
+
+## Contract
+```ts
+// ✅ Good: async router handler; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res) => {
+  const id = userId(req.params.id);
+  res.json(await getUser(id));
+});
+app.use('/users', router);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not returned, so Express never sees it
+app.get('/', (_req, _res) => {
+  Promise.reject(new Error('fail'));
+});
+```
+
+===== .github/copilot-instructions.md
+<!-- agentinit:begin id=copilot -->
+Follow `AGENTS.md` at the repository root.
+
+Scoped rules are in `.github/instructions/`.
+<!-- agentinit:end id=copilot -->
+
+===== .github/instructions/agentinit-express.instructions.md
+---
+description: Express 5 async errors, boundary validation, and modular routers.
+applyTo: "src/routes/**/*.ts,src/controllers/**/*.ts,src/middleware/**/*.ts,src/**/*.routes.ts,src/**/*.controller.ts,src/**/*.middleware.ts"
+---
+
+## Boundary
+These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
+
+## Directives
+- **ALWAYS** write a handler as an `async` function, or return its promise. **NEVER** start a promise you neither return nor pass to `next`.
+- **ALWAYS** register one error middleware with the signature `(err, req, res, next)` after the routes. Keep the fourth parameter even when the function does not call `next`.
+- **ALWAYS** validate `req.body`, `req.params`, and `req.query` before using them. **NEVER** assign to `req.query`. It is a getter, and the default parser is `simple`.
+- **ALWAYS** write an optional segment as `{:name}` or `{.:ext}`. **NEVER** mark it with `?`. Express 5 omits an unmatched optional param. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
+- **ALWAYS** put a group of routes on `express.Router()` and mount that router with `app.use`. Pass `{ mergeParams: true }` when the nested router reads a parent param.
+
+## Contract
+```ts
+// ✅ Good: async router handler; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res) => {
+  const id = userId(req.params.id);
+  res.json(await getUser(id));
+});
+app.use('/users', router);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not returned, so Express never sees it
+app.get('/', (_req, _res) => {
+  Promise.reject(new Error('fail'));
+});
+```
+
+===== .github/prompts/new-feature.prompt.md
+---
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+argument-hint: <feature-name> <short description>
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `npm run lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .github/prompts/refactor.prompt.md
+---
+description: Pin current behavior with tests, then change structure in small steps.
+argument-hint: <target> <goal>
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `npm run lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .github/prompts/review-arch.prompt.md
+---
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+argument-hint: "[path]"
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .github/prompts/write-tests.prompt.md
+---
+description: Cover a target's observable behavior with the active test library.
+argument-hint: <target>
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .windsurf/rules/agentinit-express.md
+---
+trigger: model_decision
+description: Express 5 async errors, boundary validation, and modular routers.
+---
+
+## Boundary
+These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
+
+## Directives
+- **ALWAYS** write a handler as an `async` function, or return its promise. **NEVER** start a promise you neither return nor pass to `next`.
+- **ALWAYS** register one error middleware with the signature `(err, req, res, next)` after the routes. Keep the fourth parameter even when the function does not call `next`.
+- **ALWAYS** validate `req.body`, `req.params`, and `req.query` before using them. **NEVER** assign to `req.query`. It is a getter, and the default parser is `simple`.
+- **ALWAYS** write an optional segment as `{:name}` or `{.:ext}`. **NEVER** mark it with `?`. Express 5 omits an unmatched optional param. **ALWAYS** treat a named wildcard such as `/*splat` as a string array.
+- **ALWAYS** put a group of routes on `express.Router()` and mount that router with `app.use`. Pass `{ mergeParams: true }` when the nested router reads a parent param.
+
+## Contract
+```ts
+// ✅ Good: async router handler; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res) => {
+  const id = userId(req.params.id);
+  res.json(await getUser(id));
+});
+app.use('/users', router);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not returned, so Express never sees it
+app.get('/', (_req, _res) => {
+  Promise.reject(new Error('fail'));
+});
+```
+
+===== .windsurf/workflows/new-feature.md
+---
+description: Plan a feature, wait for confirmation, then implement it and run the project checks.
+---
+
+## Purpose
+Add one feature. Plan the files, wait for confirmation, then implement that plan.
+
+## Input
+The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
+2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
+3. After the user confirms, implement only the confirmed plan. Follow the active rules.
+4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
+6. Run `npm run lint`.
+
+## Output
+List the files created or edited, the decisions you made, and the result of each check that ran.
+
+## Guardrails
+- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
+- **NEVER** create or edit a path that is not in the confirmed plan.
+- **NEVER** run network commands, install packages, or read secrets.
+- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
+
+===== .windsurf/workflows/refactor.md
+---
+description: Pin current behavior with tests, then change structure in small steps.
+---
+
+## Purpose
+Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
+
+## Input
+The user's input: a target and a goal. If either part is missing, ask for it and stop.
+
+## Steps
+1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
+2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
+3. Wait until those characterization tests pass before changing structure.
+4. Refactor toward the goal in small steps. After each step, run:
+   - `npm run lint`
+
+## Output
+Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
+
+## Guardrails
+- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
+- **NEVER** change structure while characterization tests are missing or failing.
+- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== .windsurf/workflows/review-arch.md
+---
+description: Read-only review of boundaries, dependency direction, naming, and active rules.
+---
+
+## Purpose
+Report architecture and rule problems. This review is read-only.
+
+## Input
+The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
+
+## Steps
+1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
+2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
+3. Check those same files against the active rules.
+
+## Output
+Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
+
+## Guardrails
+- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
+- **NEVER** commit.
+- **NEVER** run network commands, install packages, or read secrets.
+- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
+
+===== .windsurf/workflows/write-tests.md
+---
+description: Cover a target's observable behavior with the active test library.
+---
+
+## Purpose
+Add tests for one target, using the test library named by the active rules.
+
+## Input
+The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
+
+## Steps
+1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
+2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
+3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
+
+## Output
+List the tests written, what each one covers, and the result of the test command.
+
+## Guardrails
+- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
+- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
+- **NEVER** run network commands, install packages, or read secrets.
+
+===== AGENTS.md
+<!-- agentinit:begin id=core -->
+# AGENTS.md
+
+Always-on rules for this project. Scoped rules and workflows stay in each agent's own files.
+
+## Contents
+
+- [Project commands](#project-commands)
+- [Architecture](#architecture)
+- [TypeScript Strict](#typescript-strict)
+
+## Project commands
+
+- `npm run build`
+- `npm run dev`
+- `npm run lint`
+
+## Architecture
+
+- Put new components in `src/components/` and new hooks in `src/hooks/`.
+- Put new helpers in `src/utils/` and shared types in `src/types/`.
+- Keep each new file to one component, one hook, or one helper.
+- When a type folder would take on a second domain, add `src/features/<feature>/` for the new domain.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
+
+## TypeScript Strict
+
+### Boundary
+These rules apply to every `.ts` and `.tsx` file. The project typechecks with `strict` enabled. `unknown` is the top type for a value that is not yet checked. `any` turns checking off for that value.
+
+### Directives
+- **NEVER** use the `any` type. **ALWAYS** hold an unchecked value as `unknown` and narrow it before property access, a call, or assignment to a specific type.
+- **ALWAYS** write an explicit return type on an exported function. **PREFER** inference for a function that is not exported.
+- **NEVER** use the postfix `!` non-null assertion. Narrow `null` and `undefined` with a check.
+- **ALWAYS** check a config object literal with `satisfies` when the variable should keep its specific property types.
+- **PREFER** a discriminated union (a shared literal field such as `status`) over a boolean plus optional fields.
+- **ALWAYS** finish a `switch` on that discriminant with a `default` that assigns the value to `never`.
+- **ALWAYS** use `import type` for a binding used only as a type. **NEVER** use `import type` for a value you call, construct, or extend.
+- **NEVER** set `strict` or `strictNullChecks` to `false`.
+
+### Contract
+```ts
+// ✅ Good: unknown is narrowed, the union is exhaustive, config keeps its own types
+import type { InvoiceId } from './ids';
+
+type Invoice =
+  | { status: 'open'; id: InvoiceId; total: number }
+  | { status: 'paid'; id: InvoiceId; total: number; paidOn: string };
+
+type RGB = [red: number, green: number, blue: number];
+type ThemeName = 'danger' | 'ok';
+
+export const theme = {
+  danger: [255, 0, 0],
+  ok: '#00ff00',
+} satisfies Record<ThemeName, string | RGB>;
+
+export function label(invoice: Invoice): string {
+  switch (invoice.status) {
+    case 'open':
+      return 'Open';
+    case 'paid':
+      return invoice.paidOn;
+    default: {
+      const unexpected: never = invoice;
+      throw new Error(`Unhandled invoice: ${String(unexpected)}`);
+    }
+  }
+}
+
+export function amount(input: unknown): number {
+  if (typeof input !== 'number') throw new Error('Expected a number');
+  return input;
+}
+
+// ❌ Anti-pattern: any, a boolean flag, and a non-null assertion
+type Loose = { paid: boolean; paidOn?: string };
+export function paidOn(invoice: Loose, input: any): string {
+  return invoice.paidOn!.slice(0, input.total);
+}
+```
+<!-- agentinit:end id=core -->
+
+===== ARCHITECTURE.md
+<!-- agentinit:begin id=architecture -->
+# ARCHITECTURE.md
+
+Describes the folders that exist today and the conventions for new code. Existing files stay where they are.
+
+## Layout
+
+None of the detected folders match a row in the architecture map.
+
+## Other existing folders
+
+These folders are already in the project:
+
+- `src/middleware`
+- `src/routes`
+
+## Conventions for new code
+
+- **DEFAULT** to one folder per file type: `components/`, `hooks/`, `utils/`, and `types/` under `src/`.
+- **ALWAYS** give a new file a single component, hook, or helper.
+- **PREFER** `src/features/<feature>/` for new code once a type folder would mix a second domain.
+- **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+<!-- agentinit:end id=architecture -->
+
+===== CLAUDE.md
+<!-- agentinit:begin id=claude -->
+@AGENTS.md
+
+Scoped rules live in `.claude/rules/`.
+<!-- agentinit:end id=claude -->
+
+===== package-lock.json
+{
+  "name": "express-ts",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "node_modules/express": {
+      "version": "5.1.0"
+    },
+    "node_modules/typescript": {
+      "version": "5.9.0"
+    }
+  }
+}
+
+===== package.json
+{
+  "name": "express-ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint .",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}
+
+===== src/index.ts
+export function createApp(): { listen: (port: number) => void } {
+  return {
+    listen(_port: number) {
+      // The HTTP server starts here.
+    },
+  };
+}
+
+createApp().listen(3000);
+
+===== src/middleware/errors.ts
+export function reportError(error: unknown): string {
+  return error instanceof Error ? error.message : 'error';
+}
+
+===== src/routes/health.ts
+export function health(): { ok: true } {
+  return { ok: true };
+}
+
+===== tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "dist"
+  }
+}
+

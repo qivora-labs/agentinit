@@ -1,0 +1,15 @@
+{
+  "name": "api",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "workspace:*",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}

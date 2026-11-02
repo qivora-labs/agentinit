@@ -1,0 +1,7 @@
+{
+  // Comments and a trailing comma must still parse.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+  },
+}

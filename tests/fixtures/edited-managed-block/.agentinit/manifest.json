@@ -1,0 +1,97 @@
+{
+  "cliVersion": "0.0.0",
+  "mode": "existing",
+  "selections": {
+    "language": "typescript-strict",
+    "frameworks": [
+      "nextjs-app-router"
+    ],
+    "libraries": [],
+    "architecture": "flat",
+    "agents": [
+      "cursor",
+      "claude",
+      "windsurf",
+      "copilot"
+    ]
+  },
+  "fragments": {
+    "flat": "1.0.0",
+    "nextjs-app-router": "1.0.0",
+    "typescript-strict": "1.0.0"
+  },
+  "files": {
+    ".claude/rules/agentinit-nextjs-app-router.md": {
+      "sha256": "9af400564da84b363900619664a1ae6a584af15764ff971831bd65f3a4293e0a"
+    },
+    ".claude/skills/new-feature/SKILL.md": {
+      "sha256": "a7801bf226f2da603ffae6027563e315c05b0d0f56811de2d5561909eb1b66cd"
+    },
+    ".claude/skills/refactor/SKILL.md": {
+      "sha256": "0942b08a3ced6c20ebd8ada7efb39674861bed31de67d078d95b82f800239540"
+    },
+    ".claude/skills/review-arch/SKILL.md": {
+      "sha256": "ad442d4b066318ed1668a87c6bfd71b7315946abeb140c2f30cbc9bde5ff8907"
+    },
+    ".claude/skills/write-tests/SKILL.md": {
+      "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
+    },
+    ".cursor/commands/new-feature.md": {
+      "sha256": "26132b7cfd01488b4bb5e06f66ac4c96b64bb62d7307f633dd16d48ece04a466"
+    },
+    ".cursor/commands/refactor.md": {
+      "sha256": "917eb341a23b94ffb83a54d0c39a81fc32716fa116dca0906ff368e336568a5a"
+    },
+    ".cursor/commands/review-arch.md": {
+      "sha256": "e49ea0256a29559c2ccddac15a7d0a9b38850131194b554aa4465f1d26378e9a"
+    },
+    ".cursor/commands/write-tests.md": {
+      "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
+    },
+    ".cursor/rules/agentinit-nextjs-app-router.mdc": {
+      "sha256": "9c1d12fa4f2357c1cc4a229714187e7a2fe66ceb3eabf40a11b44a82c49fdd87"
+    },
+    ".github/copilot-instructions.md#copilot": {
+      "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
+    },
+    ".github/instructions/agentinit-nextjs-app-router.instructions.md": {
+      "sha256": "01eb136a141627655230072b9f8f3808d0514370c3867a613420b526be7de97a"
+    },
+    ".github/prompts/new-feature.prompt.md": {
+      "sha256": "365725572f80debba865aac34d9083362002c9a260bfe6a552eb18c13f531a70"
+    },
+    ".github/prompts/refactor.prompt.md": {
+      "sha256": "60d95b5e8e789fd97f4590af9c86bb38055e8d52eb4353b8fa5a18d0ccaac4c5"
+    },
+    ".github/prompts/review-arch.prompt.md": {
+      "sha256": "db83e0d9d28dad35e28dd40385ddc76367069bca2f58c9dcd27e199372de64e4"
+    },
+    ".github/prompts/write-tests.prompt.md": {
+      "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
+    },
+    ".windsurf/rules/agentinit-nextjs-app-router.md": {
+      "sha256": "69fd4b08ca9fba70fde9f555a25de742772087c3858ffade99d4f62c23acaff1"
+    },
+    ".windsurf/workflows/new-feature.md": {
+      "sha256": "381d4743ce68111f8aa6c9b31d6ee25b96868bdaa03b215b2ed035ee3057c6c1"
+    },
+    ".windsurf/workflows/refactor.md": {
+      "sha256": "ec2fc4d04df95d2d07b3d31355a65380ba499cef1e3ceba9cdda87ace6946250"
+    },
+    ".windsurf/workflows/review-arch.md": {
+      "sha256": "dff8e090b5c3ad43fc6bd3dc3a094df2e6849750fe989dee7765abf07365fac9"
+    },
+    ".windsurf/workflows/write-tests.md": {
+      "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
+    },
+    "AGENTS.md#core": {
+      "sha256": "2d0151a5d49064db55dfa1bcd2e26d71698a832858de316d57f28208c54b2a18"
+    },
+    "ARCHITECTURE.md#architecture": {
+      "sha256": "572ee3ceebc4776b49f101ba5a0b4cf4fa2f16f58f2130edbd122df8a30830de"
+    },
+    "CLAUDE.md#claude": {
+      "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
+    }
+  }
+}

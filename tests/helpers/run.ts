@@ -45,6 +45,7 @@ export async function runCli(
     readonly stdoutTTY?: boolean;
     readonly prompter?: Prompter;
     readonly now?: Date;
+    readonly shouldStop?: () => boolean;
   },
 ): Promise<RunResult> {
   const stdout = captureStream(options?.stdoutTTY ?? false);
@@ -57,6 +58,7 @@ export async function runCli(
   const code = await run(argv, io, {
     ...(options?.prompter === undefined ? {} : { prompter: options.prompter }),
     ...(options?.now === undefined ? {} : { now: options.now }),
+    ...(options?.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
   });
   return { code, stdout: stdout.text(), stderr: stderr.text() };
 }
