@@ -17,7 +17,7 @@ cat >"$DEMO/.bin/npx" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 REAL_NPX=$(printf '%q' "$REAL_NPX")
-if [ "\${1:-}" = "--yes" ]; then shift; fi
+if [ "\${1:-}" = "--yes" ] || [ "\${1:-}" = "-y" ]; then shift; fi
 if [ "\${1:-}" = "@agentinit/cli" ]; then
   shift
   exec agentinit "\$@"
