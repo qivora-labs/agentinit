@@ -118,16 +118,15 @@ describe('runGreenfieldWizard', () => {
     expect(calls.filter((call) => call.method === 'multiselect')).toHaveLength(1);
   });
 
-  it('starts later prompts from a saved selection', async () => {
+  it('starts later prompts from a saved selection and skips agents', async () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'fastify' },
       { type: 'select', value: 'typescript' },
       { type: 'multiselect', value: ['vitest'] },
       { type: 'select', value: 'layered' },
-      { type: 'multiselect', value: ['claude'] },
     ]);
 
-    await runGreenfieldWizard(prompter, await bundledRegistry(), {
+    const result = await runGreenfieldWizard(prompter, await bundledRegistry(), {
       initial: {
         language: 'typescript',
         architecture: 'layered',
@@ -139,11 +138,29 @@ describe('runGreenfieldWizard', () => {
 
     const selects = calls.filter((call) => call.method === 'select');
     const multis = calls.filter((call) => call.method === 'multiselect');
+    expect(result.agents).toEqual(['claude']);
     expect(choicePrompt(selects[0]).initialValue).toBe('fastify');
     expect(choicePrompt(selects[1]).initialValue).toBe('typescript');
     expect(choicePrompt(selects[2]).initialValue).toBe('layered');
     expect(choicePrompt(multis[0]).initialValues).toEqual(['vitest']);
-    expect(choicePrompt(multis[1]).initialValues).toEqual(['claude']);
+    expect(multis).toHaveLength(1);
+  });
+
+  it('lets --agents replace a saved agent list without asking', async () => {
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'fastify' },
+      { type: 'select', value: 'typescript' },
+      { type: 'multiselect', value: [] },
+      { type: 'select', value: 'layered' },
+    ]);
+
+    const result = await runGreenfieldWizard(prompter, await bundledRegistry(), {
+      agents: ['copilot'],
+      initial: { agents: ['claude'] },
+    });
+
+    expect(result.agents).toEqual(['copilot']);
+    expect(calls.filter((call) => call.method === 'multiselect')).toHaveLength(1);
   });
 
   it('uses --agents and does not ask', async () => {

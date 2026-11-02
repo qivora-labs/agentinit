@@ -52,8 +52,8 @@ node dist/cli.js init --yes --cwd /tmp/ai-demo   # expect "Already up to date."
 
 ## Notes
 - Saved selections replace fresh suggestions only where detection does not contradict them. Language, architecture, and agents stay as saved (`--agents` still wins). Framework and library membership follows detection, so a new package is added and a removed package is dropped. Saved architecture is given confidence `1` so a later `--yes` run does not replace it with `flat`.
-- The manifest does not store package versions or layout. A re-run summary lists added and removed framework and library ids. Layout is included only when a greenfield manifest meets a new `package.json`. Version changes are not shown.
-- With a manifest, agent selection is not asked again. `--agents` replaces that list.
+- The manifest does not store package versions or layout. A re-run summary lists added and removed framework and library ids. Layout is included only when a greenfield manifest meets a new `package.json`. Version changes are not shown. The summary also includes unsupported-version notices and legacy-file warnings. An up-to-date re-run still prints those lines, including on `--json` `notices`.
+- With a manifest, agent selection is not asked again, including a greenfield re-run. `--agents` replaces that list.
 - A greenfield manifest and no `package.json` stays greenfield even after rules exist, because those files are not ignorable and `detectProject` would otherwise reject the directory. `--yes` on greenfield still exits `1`.
 - `--json` writes the init report to stdout (dry-run and a real run). The logger sends other init text to stderr in json mode.
 - `fragments` in the manifest records resolved rule fragments. Workflows are not selections; their files are still hashed.

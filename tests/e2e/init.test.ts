@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { compareText } from '../../src/compare-text.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
 import { runCli } from '../helpers/run.js';
+import { recordingPrompter } from '../ui/recording-prompter.js';
 
 const fixtures = fileURLToPath(new URL('../fixtures/', import.meta.url));
 const directories: string[] = [];
@@ -78,6 +79,14 @@ const LAYERED_ANSWERS: readonly FakeAnswer[] = [
   { type: 'multiselect', value: [] },
   { type: 'select', value: 'layered' },
   { type: 'multiselect', value: ['cursor'] },
+];
+
+/** A saved manifest skips the agent prompt, so the re-run has no fifth answer. */
+const VITE_RERUN: readonly FakeAnswer[] = [
+  { type: 'select', value: 'react-vite' },
+  { type: 'select', value: 'typescript-strict' },
+  { type: 'multiselect', value: [] },
+  { type: 'select', value: 'feature-based' },
 ];
 
 function interactive(answers: readonly FakeAnswer[]) {
@@ -159,6 +168,62 @@ describe('init', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('prints the init report as json on a real run', async () => {
+    const dir = await copyFixture('next15-src');
+    const result = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const parsed: unknown = JSON.parse(result.stdout);
+    expect(parsed).toMatchObject({ dryRun: false, upToDate: false });
+    expect(result.stdout).toContain('"path": "AGENTS.md"');
+    expect(result.stderr).toBe('');
+    expect(await listFiles(dir)).toContain('.agentinit/manifest.json');
+  });
+
+  it('prints detection notices when a re-run is already up to date', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const before = await listFiles(dir);
+    const bytes = new Map<string, Buffer>();
+    for (const file of before) {
+      if (file === 'package.json') continue;
+      bytes.set(file, await readFile(path.join(dir, file)));
+    }
+
+    const packagePath = path.join(dir, 'package.json');
+    const manifest = JSON.parse(await readFile(packagePath, 'utf8')) as {
+      dependencies: Record<string, string>;
+    };
+    manifest.dependencies.tailwindcss = '3.4.0';
+    await writeFile(packagePath, `${JSON.stringify(manifest, null, 2)}\n`);
+    await writeFile(path.join(dir, '.cursorrules'), 'legacy\n');
+
+    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(again.code).toBe(0);
+    expect(again.stdout).toContain('Already up to date.');
+    expect(again.stderr).toContain('tailwindcss@3.4.0 detected — no matching rules yet.');
+    expect(again.stderr).toContain('.cursorrules still loads alongside the new rules and will not be modified.');
+
+    const json = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(json.code).toBe(0);
+    const parsed: unknown = JSON.parse(json.stdout);
+    expect(parsed).toMatchObject({
+      dryRun: false,
+      upToDate: true,
+      notices: [
+        'tailwindcss@3.4.0 detected — no matching rules yet.',
+        '.cursorrules still loads alongside the new rules and will not be modified.',
+      ],
+    });
+
+    const after = await listFiles(dir);
+    expect(after.filter((file) => !before.includes(file))).toEqual(['.cursorrules']);
+    expect(after.some((file) => file.includes('tailwind'))).toBe(false);
+    for (const [file, content] of bytes) {
+      expect(await readFile(path.join(dir, file))).toEqual(content);
+    }
+    expect(await readFile(path.join(dir, '.cursorrules'), 'utf8')).toBe('legacy\n');
+  });
+
   it('rejects greenfield --yes and writes a greenfield project interactively', async () => {
     const rejected = await emptyDir();
     const refusal = await runCli(['init', '--yes', '--cwd', rejected]);
@@ -173,12 +238,15 @@ describe('init', () => {
     expect(result.stderr).not.toContain('This is a bug');
     const architecture = await readFile(path.join(dir, 'ARCHITECTURE.md'), 'utf8');
     expect(architecture).toContain('Planned layout');
-    expect(await readFile(path.join(dir, 'AGENTS.md'), 'utf8')).toContain('# AGENTS.md');
+    const agentsMd = await readFile(path.join(dir, 'AGENTS.md'), 'utf8');
+    expect(agentsMd).toContain('# AGENTS.md');
+    expect(agentsMd).not.toContain('## Project commands');
+    expect(await listFiles(dir)).toContain('.cursor/rules/agentinit-react-vite.mdc');
     expect(result.stdout).toContain('pnpm create vite@latest');
     expect(result.stdout).toContain('npx @agentinit/cli');
 
     const digest = await treeDigest(dir);
-    const again = await runCli(['init', '--cwd', dir], interactive(VITE_ANSWERS));
+    const again = await runCli(['init', '--cwd', dir], interactive(VITE_RERUN));
     expect(again.code).toBe(0);
     expect(again.stdout).toContain('Already up to date.');
     expect(await treeDigest(dir)).toBe(digest);
@@ -206,9 +274,22 @@ describe('init', () => {
     await mkdir(path.join(dir, 'src/app'), { recursive: true });
     await writeFile(path.join(dir, 'src/app/page.ts'), 'export {}\n');
 
-    const result = await runCli(['init', '--cwd', dir], interactive([{ type: 'select', value: 'use' }]));
+    const recorded = recordingPrompter([{ type: 'select', value: 'use' }]);
+    const result = await runCli(['init', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
     expect(result.code).toBe(0);
     expect(result.stderr).not.toContain('This is a bug');
+    const note = recorded.calls.find((call) => call.method === 'note');
+    expect(note).toMatchObject({ method: 'note', title: 'What changed' });
+    if (note?.method !== 'note') throw new Error('expected a summary note');
+    expect(note.message).toContain('Keeping the saved architecture and agents.');
+    expect(note.message).toContain('Added:');
+    expect(note.message).toContain('Removed:');
+    expect(note.message).toContain('Layout: src/');
+    expect(note.message).not.toContain('Package manager:');
 
     const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
       mode: string;
@@ -224,8 +305,13 @@ describe('init', () => {
   it('replaces unedited Cursor files when the agent switches to Claude', async () => {
     const dir = await copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir])).code).toBe(0);
-    const cursor = (await listFiles(dir)).filter((file) => file.startsWith('.cursor/'));
-    expect(cursor.length).toBeGreaterThan(0);
+    const first = await listFiles(dir);
+    expect(first.some((file) => file.startsWith('.cursor/'))).toBe(true);
+    expect(first.some((file) => file.startsWith('.claude/') || file === 'CLAUDE.md')).toBe(false);
+    expect(first.some((file) => file.startsWith('.windsurf/'))).toBe(false);
+    expect(first.some((file) => file.startsWith('.github/'))).toBe(false);
+    expect(first).toContain('AGENTS.md');
+    expect(first).toContain('ARCHITECTURE.md');
 
     const result = await runCli(['init', '--yes', '--agents', 'claude', '--cwd', dir]);
     expect(result.code).toBe(0);

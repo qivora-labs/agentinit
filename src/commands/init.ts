@@ -70,7 +70,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const notices = noticeLines(registry, detection, resolved, setup.notices);
   const nextSteps = profile.mode === 'greenfield' ? greenfieldNextSteps(profile.frameworks) : [];
 
-  if (!hasWork(changes)) return reportUpToDate(ctx, logger, options, plan);
+  if (!hasWork(changes)) return reportUpToDate(ctx, logger, options, plan, notices);
 
   const applied = await applyChanges(root, changes, {
     now: options.now ?? new Date(),
@@ -309,12 +309,19 @@ function unique(lines: readonly string[]): string[] {
   return result;
 }
 
-function reportUpToDate(ctx: RunContext, logger: Logger, options: InitOptions, plan: Plan): number {
+function reportUpToDate(
+  ctx: RunContext,
+  logger: Logger,
+  options: InitOptions,
+  plan: Plan,
+  notices: readonly string[],
+): number {
   if (ctx.json) {
-    writeStdout(options, `${JSON.stringify(reportPayload(ctx, plan, [], [], []), null, 2)}\n`);
+    writeStdout(options, `${JSON.stringify(reportPayload(ctx, plan, [], notices, []), null, 2)}\n`);
     return SUCCESS;
   }
   logger.info(UP_TO_DATE);
+  for (const notice of notices) logger.warn(notice);
   return SUCCESS;
 }
 
