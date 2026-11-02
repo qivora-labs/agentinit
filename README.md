@@ -164,7 +164,7 @@ jobs:
 
 ## How it stays safe
 
-- **Managed blocks** — shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCHITECTURE.md`) only change content between `<!-- agentinit:begin -->` / `<!-- agentinit:end -->` markers. Your edits outside the markers stay.
+- **Managed blocks** — shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCHITECTURE.md`) only change content between `<!-- agentinit:begin id=core -->` / `<!-- agentinit:end id=core -->` markers. Your edits outside the markers stay.
 - **Manifest** — `.agentinit/manifest.json` (committed) stores content hashes. Matching hashes regenerate silently; edited files prompt (or are skipped with `--yes`).
 - **Backups** — when a file is replaced, a copy goes under `.agentinit/backups/` (gitignored by AgentInit).
 - **Idempotent** — re-running `init` with the same selections is a no-op when nothing drifted.
