@@ -118,6 +118,34 @@ describe('runGreenfieldWizard', () => {
     expect(calls.filter((call) => call.method === 'multiselect')).toHaveLength(1);
   });
 
+  it('starts later prompts from a saved selection', async () => {
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'fastify' },
+      { type: 'select', value: 'typescript' },
+      { type: 'multiselect', value: ['vitest'] },
+      { type: 'select', value: 'layered' },
+      { type: 'multiselect', value: ['claude'] },
+    ]);
+
+    await runGreenfieldWizard(prompter, await bundledRegistry(), {
+      initial: {
+        language: 'typescript',
+        architecture: 'layered',
+        frameworks: ['fastify'],
+        libraries: ['vitest'],
+        agents: ['claude'],
+      },
+    });
+
+    const selects = calls.filter((call) => call.method === 'select');
+    const multis = calls.filter((call) => call.method === 'multiselect');
+    expect(choicePrompt(selects[0]).initialValue).toBe('fastify');
+    expect(choicePrompt(selects[1]).initialValue).toBe('typescript');
+    expect(choicePrompt(selects[2]).initialValue).toBe('layered');
+    expect(choicePrompt(multis[0]).initialValues).toEqual(['vitest']);
+    expect(choicePrompt(multis[1]).initialValues).toEqual(['claude']);
+  });
+
   it('uses --agents and does not ask', async () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'express' },

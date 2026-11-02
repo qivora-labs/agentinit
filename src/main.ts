@@ -5,6 +5,7 @@ import type { Readable, Writable } from 'node:stream';
 import { doctor } from './commands/doctor.js';
 import { init } from './commands/init.js';
 import { list, type ListOptions } from './commands/list.js';
+import type { Prompter } from './ui/prompter.js';
 import { AGENT_TARGETS, createRunContext, parseAgents, type RunContext } from './context.js';
 import { AgentInitError } from './errors.js';
 import { ERROR, SUCCESS } from './exit-codes.js';
@@ -26,7 +27,14 @@ const defaultIo: CommandIo = {
   stdin: process.stdin,
 };
 
-export async function run(argv: string[], io: CommandIo = defaultIo): Promise<number> {
+export interface RunOptions {
+  /** Interactive tests inject a scripted prompter. The default is Clack. */
+  readonly prompter?: Prompter;
+  /** Backup timestamps. Tests pass a fixed clock. */
+  readonly now?: Date;
+}
+
+export async function run(argv: string[], io: CommandIo = defaultIo, options: RunOptions = {}): Promise<number> {
   let json = false;
   try {
     const cli = createCli();
@@ -52,6 +60,8 @@ export async function run(argv: string[], io: CommandIo = defaultIo): Promise<nu
     return await dispatch(commandName, ctx, createLogger(io, ctx.json), {
       stdout: io.stdout,
       category: commandName === 'list' ? readCategoryFlag(parsed.options.category) : undefined,
+      prompter: options.prompter,
+      now: options.now,
     });
   } catch (error) {
     return reportError(error, io, json);
@@ -186,11 +196,20 @@ async function dispatch(
   name: string,
   ctx: RunContext,
   logger: Logger,
-  io: { stdout: CommandIo['stdout']; category: string | undefined },
+  io: {
+    stdout: CommandIo['stdout'];
+    category: string | undefined;
+    prompter: Prompter | undefined;
+    now: Date | undefined;
+  },
 ): Promise<number> {
   switch (name) {
     case 'init':
-      return init(ctx, logger);
+      return await init(ctx, logger, {
+        stdout: io.stdout,
+        ...(io.prompter === undefined ? {} : { prompter: io.prompter }),
+        ...(io.now === undefined ? {} : { now: io.now }),
+      });
     case 'list':
       return await list(ctx, logger, listOptions(io));
     case 'doctor':
