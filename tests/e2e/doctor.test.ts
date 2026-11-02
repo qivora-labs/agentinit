@@ -135,6 +135,13 @@ describe('doctor', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('ignores --agents and keeps the manifest selection', async () => {
+    const dir = await initYes('next15-src');
+    const result = await runCli(['doctor', '--agents', 'cursor', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBe('No issues found.\n');
+  });
+
   it('reports no issues for a freshly initialized greenfield project', async () => {
     const dir = await emptyDir();
     const init = await runCli(['init', '--cwd', dir], {
