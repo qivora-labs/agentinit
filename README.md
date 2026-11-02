@@ -134,7 +134,7 @@ npx @agentinit/cli list --json
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up. |
-| `--json` | Machine-readable output for `list`, `doctor`, and `--dry-run`. |
+| `--json` | Machine-readable output for `init`, `list`, `doctor`, and `--dry-run`. |
 | `-h`, `--help` | Show help. |
 | `-v`, `--version` | Show version. |
 
