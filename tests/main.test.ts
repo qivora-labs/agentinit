@@ -101,11 +101,12 @@ describe('run', () => {
     expect(result.stderr).not.toContain('This is a bug');
   });
 
-  it('stubs doctor with exit code 1', async () => {
+  it('reports an empty directory as not initialized', async () => {
     const dir = await tempDir();
     const result = await runCli(['doctor', '--cwd', dir]);
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('not implemented yet');
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe('Not initialized\n  Fix: npx @agentinit/cli init\n');
+    expect(result.stderr).toBe('');
   });
 
   it('routes a bare invocation to init', async () => {

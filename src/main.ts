@@ -213,7 +213,7 @@ async function dispatch(
     case 'list':
       return await list(ctx, logger, listOptions(io));
     case 'doctor':
-      return doctor(ctx, logger);
+      return await doctor(ctx, logger, { stdout: io.stdout });
     default:
       throw new AgentInitError(`Unknown command "${name}".`);
   }
