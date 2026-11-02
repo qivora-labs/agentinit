@@ -12,16 +12,9 @@ import { readManifest, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
 import type { Plan, PlanWarning } from '../plan/types.js';
 import { loadRegistry, type Registry } from '../registry/load.js';
-import {
-  resolveSelection,
-  type FragmentConflict,
-  type ProjectFacts,
-  type ResolvedSelection,
-  type Selection,
-} from '../registry/resolve.js';
+import type { ProjectFacts, ResolvedSelection, Selection } from '../registry/resolve.js';
 import type { AgentTarget, Language, ProjectProfile } from '../types.js';
 import { confirmGitRoot } from '../ui/git-root.js';
-import { applyConflictDecisions, promptConflicts } from '../ui/conflicts.js';
 import { isNonInteractiveSetup, nonInteractiveSelection } from '../ui/defaults.js';
 import {
   formatLowConfidence,
@@ -36,6 +29,7 @@ import { formatDiffs, formatFileTree, formatTokenLine, type ReportFile } from '.
 import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
 import { confirmDetected } from '../ui/summary.js';
 import { runGreenfieldWizard, type GreenfieldInitial } from '../ui/wizard.js';
+import { resolveWithConflicts } from './resolve-conflicts.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 export interface InitOptions {
@@ -259,53 +253,6 @@ function factsFor(detection: DetectionResult): ProjectFacts {
   if (detection.mode === 'greenfield') return { packages: {}, files: [] };
   const packages: Record<string, string | null> = { ...detection.draft.packages };
   return { packages, files: [] };
-}
-
-/**
- * Keep-both leaves the pair in the next `resolveSelection`. Remember it so
- * the prompt does not repeat. `--yes` never asks and keeps both.
- */
-async function resolveWithConflicts(
-  registry: Registry,
-  selection: Selection,
-  facts: ProjectFacts,
-  interactive: boolean,
-  prompts: () => Prompter,
-): Promise<ResolvedSelection> {
-  const answered = new Set<string>();
-  let current = selection;
-  for (;;) {
-    const resolved = resolveSelection(registry, current, facts);
-    const pending = resolved.conflicts.filter((conflict) => !answered.has(conflictKey(conflict)));
-    if (pending.length === 0 || !interactive) return resolved;
-    const decisions = await promptConflicts(prompts(), pending, registry);
-    for (const decision of decisions) {
-      if (decision.choice === 'keep-both') answered.add(conflictKey(decision));
-    }
-    const next = applyConflictDecisions(current, decisions);
-    if (sameSelection(current, next) && decisions.every((decision) => decision.choice !== 'keep-both')) {
-      throw new AgentInitError('Could not resolve fragment conflicts.');
-    }
-    current = next;
-  }
-}
-
-function conflictKey(conflict: Pick<FragmentConflict, 'a' | 'b'>): string {
-  return `${conflict.a}\0${conflict.b}`;
-}
-
-function sameSelection(left: Selection, right: Selection): boolean {
-  return (
-    left.language === right.language &&
-    left.architecture === right.architecture &&
-    sameIds(left.frameworks, right.frameworks) &&
-    sameIds(left.libraries, right.libraries)
-  );
-}
-
-function sameIds(left: readonly string[], right: readonly string[]): boolean {
-  if (left.length !== right.length) return false;
-  return left.every((id, index) => id === right[index]);
 }
 
 function manifestBody(profile: ProjectProfile, resolved: ResolvedSelection): Omit<Manifest, 'files'> {
