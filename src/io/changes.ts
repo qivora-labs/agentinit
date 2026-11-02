@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile, realpath } from 'node:fs/promises';
 import * as path from 'node:path';
 import { AgentInitError } from '../errors.js';
 import type { AgentTarget, FileOp } from '../types.js';
@@ -121,18 +121,83 @@ export function resolveProjectPath(root: string, relPath: string): string {
   assertProjectRelative(relPath);
   const rootAbs = path.resolve(root);
   const abs = path.resolve(rootAbs, relPath);
-  const relative = path.relative(rootAbs, abs);
-  if (relative.length === 0 || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+  if (pathEscapes(rootAbs, abs)) {
     throw new AgentInitError(`Refusing to use a path outside the project: ${relPath}.`);
   }
   return abs;
 }
 
-/** `null` when the file is absent. A directory or a permission error is reported. */
-export async function readProjectText(root: string, relPath: string): Promise<string | null> {
+/** True when `candidate` is outside `rootAbs` after a lexical or realpath resolution. */
+export function pathEscapes(rootAbs: string, candidate: string): boolean {
+  const relative = path.relative(rootAbs, candidate);
+  return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
+}
+
+export interface ProjectPathInfo {
+  /** Lexical absolute path. Symlinks are checked, not rewritten. */
+  readonly abs: string;
+  /** False when the path, or a parent that is not a symlink, is absent. */
+  readonly exists: boolean;
+  readonly directory: boolean;
+}
+
+/**
+ * Resolves symlinks one component at a time. A broken symlink, or a target
+ * outside the project, throws before the caller reads or creates anything.
+ * `exists` is false for a path that was never there.
+ */
+export async function inspectProjectPath(
+  root: string,
+  relPath: string,
+  purpose: 'read' | 'write',
+): Promise<ProjectPathInfo> {
   const abs = resolveProjectPath(root, relPath);
+  const rootAbs = path.resolve(root);
+  let realRoot: string;
   try {
-    return await readFile(abs, 'utf8');
+    realRoot = await realpath(rootAbs);
+  } catch (error) {
+    throw toAccessError(error, relPath, purpose);
+  }
+
+  const segments = relPath.split('/');
+  let cursor = rootAbs;
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index];
+    if (segment === undefined) continue;
+    cursor = path.join(cursor, segment);
+    const last = index === segments.length - 1;
+    let info: Awaited<ReturnType<typeof lstat>>;
+    try {
+      info = await lstat(cursor);
+    } catch (error) {
+      if (nodeErrorCode(error) === 'ENOENT') return { abs, exists: false, directory: false };
+      throw toAccessError(error, relPath, purpose);
+    }
+    if (info.isSymbolicLink()) {
+      const target = await symlinkTarget(cursor, realRoot, relPath, purpose);
+      const directory = target.directory;
+      if (!last && !directory) throw parentFileError(relPath, purpose);
+      if (last) return { abs, exists: true, directory };
+      continue;
+    }
+    if (!last && !info.isDirectory()) throw parentFileError(relPath, purpose);
+    if (last) return { abs, exists: true, directory: info.isDirectory() };
+  }
+  return { abs, exists: false, directory: false };
+}
+
+/** `null` when the file is absent. A directory, a bad symlink, or a permission error is reported. */
+export async function readProjectText(root: string, relPath: string): Promise<string | null> {
+  const located = await inspectProjectPath(root, relPath, 'read');
+  if (!located.exists) return null;
+  if (located.directory) {
+    throw new AgentInitError(`${relPath} is a directory.`, {
+      hint: 'Choose a file path.',
+    });
+  }
+  try {
+    return await readFile(located.abs, 'utf8');
   } catch (error) {
     const code = nodeErrorCode(error);
     if (code === 'ENOENT') return null;
@@ -141,18 +206,58 @@ export async function readProjectText(root: string, relPath: string): Promise<st
         hint: 'Choose a file path.',
       });
     }
-    if (code === 'ENOTDIR') {
-      throw new AgentInitError(`Cannot read ${relPath}: a parent path is a file.`, {
-        hint: 'Move that file aside and run again.',
-      });
-    }
-    if (code === 'EACCES' || code === 'EPERM') {
-      throw new AgentInitError(`Cannot read ${relPath}: permission denied.`, {
-        hint: 'Check the file permissions and try again.',
-      });
-    }
-    throw error;
+    if (code === 'ENOTDIR') throw parentFileError(relPath, 'read');
+    throw toAccessError(error, relPath, 'read');
   }
+}
+
+async function symlinkTarget(
+  linkPath: string,
+  realRoot: string,
+  relPath: string,
+  purpose: 'read' | 'write',
+): Promise<{ directory: boolean }> {
+  let target: string;
+  try {
+    target = await realpath(linkPath);
+  } catch (error) {
+    const code = nodeErrorCode(error);
+    if (code === 'ENOENT' || code === 'ELOOP') {
+      throw new AgentInitError(`Refusing to use ${relPath}: it is a broken symlink.`);
+    }
+    throw toAccessError(error, relPath, purpose);
+  }
+  if (pathEscapes(realRoot, target)) {
+    throw new AgentInitError(`Refusing to use a path outside the project: ${relPath}.`);
+  }
+  try {
+    const info = await lstat(target);
+    return { directory: info.isDirectory() };
+  } catch (error) {
+    throw toAccessError(error, relPath, purpose);
+  }
+}
+
+function parentFileError(relPath: string, purpose: 'read' | 'write'): AgentInitError {
+  if (purpose === 'write') {
+    return new AgentInitError(`Cannot create ${relPath}: a file is in the way.`, {
+      hint: 'Move that file aside and run again.',
+    });
+  }
+  return new AgentInitError(`Cannot read ${relPath}: a parent path is a file.`, {
+    hint: 'Move that file aside and run again.',
+  });
+}
+
+function toAccessError(error: unknown, relPath: string, purpose: 'read' | 'write'): Error {
+  const code = nodeErrorCode(error);
+  if (code === 'EACCES' || code === 'EPERM') {
+    return new AgentInitError(`Cannot ${purpose} ${relPath}: permission denied.`, {
+      hint: 'Check the file permissions and try again.',
+    });
+  }
+  if (error instanceof Error) return error;
+  return new AgentInitError(`Cannot ${purpose} ${relPath}.`);
 }
 
 function classifyOp(op: FileOp, current: string | null, owned: string | undefined): Change {

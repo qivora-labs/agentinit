@@ -509,7 +509,7 @@ Shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCH
 ...generated content...
 <!-- agentinit:end id=core -->
 ```
-Content outside the markers is never modified.
+Adopting or updating a block leaves every byte outside the markers unchanged. Backup & replace (§6.3) copies the original file to backups, then writes a fresh file; skipped or unchanged blocks from that file are kept.
 
 ### 6.2 Manifest (`.agentinit/manifest.json`, committed)
 ```json
@@ -538,7 +538,7 @@ Content outside the markers is never modified.
 ### 6.3 Conflicts With Existing Files
 For each existing file AgentInit wants to write that it doesn't already own:
 - **Adopt** — keep the user's content and add the managed block (shared files only; the `--yes` default for them).
-- **Backup & replace** — back up (§6.4), then generate fresh.
+- **Backup & replace** — back up (§6.4), then write a fresh file. For a managed block, the file contains that block plus any skipped or unchanged blocks from the original.
 - **Skip** — leave the file untouched (the `--yes` default for non-shared files, including same-named workflows).
 
 Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules.

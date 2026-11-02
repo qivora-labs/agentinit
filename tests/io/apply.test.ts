@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -229,6 +229,21 @@ describe('applyChanges stale files', () => {
     expect(result.manifestFiles['rule.md']).toBeUndefined();
   });
 
+  it('keeps a stale edited block', async () => {
+    const root = await tempDir();
+    const previous = contentHash('rules\n');
+    const text = `# Notes\n\n${createWithBlock('core', 'edited rules\n')}`;
+    await writeFile(path.join(root, 'AGENTS.md'), text);
+    const changes = await planChanges(root, [], manifest({ 'AGENTS.md#core': previous }));
+
+    const result = await applyChanges(root, changes, applyOptions());
+
+    expect(changes[0]?.kind).toBe('conflict-edited');
+    expect(reportAction(result, 'AGENTS.md')).toBe('skipped');
+    expect(await readFile(path.join(root, 'AGENTS.md'), 'utf8')).toBe(text);
+    expect(result.manifestFiles['AGENTS.md#core']?.sha256).toBe(previous);
+  });
+
   it('removes an unedited stale block and leaves the surrounding text', async () => {
     const root = await tempDir();
     const inner = 'rules\n';
@@ -314,6 +329,18 @@ describe('applyChanges writes', () => {
     await applyChanges(root, changes, applyOptions({ force: true }));
 
     expect(await readFile(path.join(root, '.agentinit/.gitignore'), 'utf8')).toBe('secrets/\nbackups/\n');
+  });
+
+  it('appends backups/ when an existing line only ignores a subdirectory', async () => {
+    const root = await tempDir();
+    await mkdir(path.join(root, '.agentinit'));
+    await writeFile(path.join(root, '.agentinit/.gitignore'), 'backups/old/\n');
+    await writeFile(path.join(root, 'rule.md'), 'user\n');
+    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+
+    await applyChanges(root, changes, applyOptions({ force: true }));
+
+    expect(await readFile(path.join(root, '.agentinit/.gitignore'), 'utf8')).toBe('backups/old/\nbackups/\n');
   });
 
   it('leaves a gitignore that already ignores backups untouched', async () => {
@@ -411,6 +438,77 @@ describe('applyChanges safety', () => {
     const result = await applyChanges(root, changes, applyOptions({ prompter }));
     expect(calls).toEqual([]);
     expect(reportAction(result, 'rule.md')).toBe('skipped');
+  });
+
+  it('keeps a skipped block when another block in the file is backup-replaced', async () => {
+    const root = await tempDir();
+    const original = `# Notes\n\n${createWithBlock('core', 'user core\n')}${createWithBlock('commands', 'user commands\n')}`;
+    await writeFile(path.join(root, 'AGENTS.md'), original);
+    const previousCommands = contentHash('old commands\n');
+    const changes = await planChanges(
+      root,
+      [block('AGENTS.md', 'core', 'new core\n'), block('AGENTS.md', 'commands', 'new commands\n')],
+      manifest({
+        'AGENTS.md#core': contentHash('old core\n'),
+        'AGENTS.md#commands': previousCommands,
+      }),
+    );
+    const { prompter } = recordingPrompter([
+      { type: 'select', value: 'backup-replace' },
+      { type: 'select', value: 'skip' },
+    ]);
+
+    const result = await applyChanges(root, changes, applyOptions({ yes: false, prompter }));
+
+    expect(result.report.map((entry) => [entry.blockId, entry.action])).toEqual([
+      ['core', 'backed-up'],
+      ['commands', 'skipped'],
+    ]);
+    const next = await readFile(path.join(root, 'AGENTS.md'), 'utf8');
+    expect(next).toContain('new core\n');
+    expect(next).toContain('user commands\n');
+    expect(next).not.toContain('user core');
+    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/AGENTS.md`), 'utf8')).toBe(original);
+    expect(result.manifestFiles['AGENTS.md#core']?.sha256).toBe(contentHash(canonicalBlockInner('new core\n')));
+    expect(result.manifestFiles['AGENTS.md#commands']?.sha256).toBe(previousCommands);
+  });
+
+  it('does not create a directory through a symlink that leaves the project', async () => {
+    const root = await tempDir();
+    const outside = await tempDir();
+    await symlink(outside, path.join(root, 'nested'));
+    await expect(
+      applyChanges(
+        root,
+        [
+          {
+            kind: 'create',
+            path: 'nested/new/rule.md',
+            opKind: 'file',
+            content: 'generated\n',
+            target: 'cursor',
+          },
+        ],
+        applyOptions(),
+      ),
+    ).rejects.toThrow(/outside the project: nested\/new\/rule\.md/);
+    expect(await readdir(outside)).toEqual([]);
+  });
+
+  it('names the file when a write is not permitted', async () => {
+    const root = await tempDir();
+    const target = path.join(root, 'rule.md');
+    await writeFile(target, 'owned\n');
+    await chmod(root, 0o555);
+    try {
+      const changes = await planChanges(root, [file('rule.md', 'next\n')], manifest({ 'rule.md': contentHash('owned\n') }));
+      await expect(applyChanges(root, changes, applyOptions())).rejects.toThrow(
+        /Cannot write rule\.md: permission denied/,
+      );
+    } finally {
+      await chmod(root, 0o755);
+    }
+    expect((await lstat(target)).isFile()).toBe(true);
   });
 
   it('reports a readable error when the parent path is a file', async () => {

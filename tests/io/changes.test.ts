@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -138,6 +138,22 @@ describe('computeChanges', () => {
     ]);
   });
 
+  it('classifies a stale edited block as conflict-edited', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'AGENTS.md'), `# Notes\n\n${createWithBlock('core', 'edited rules\n')}`);
+    const recorded = manifest({ 'AGENTS.md#core': contentHash('rules\n') });
+    const changes = await computeChanges(root, { ops: [] }, recorded);
+    expect(changes).toEqual([
+      {
+        kind: 'conflict-edited',
+        path: 'AGENTS.md',
+        opKind: 'managed-block',
+        blockId: 'core',
+        ownedHash: contentHash('rules\n'),
+      },
+    ]);
+  });
+
   it('classifies a stale edited file as conflict-edited and ignores a file that is already gone', async () => {
     const root = await tempDir();
     await writeFile(path.join(root, 'rule.md'), 'edited\n');
@@ -173,6 +189,32 @@ describe('computeChanges', () => {
       /more than once/,
     );
     await expect(computeChanges(root, { ops: [file('../a.md', 'a\n')] }, null)).rejects.toThrow(/relative project path/);
+  });
+
+  it('refuses a symlink that points outside the project', async () => {
+    const root = await tempDir();
+    const outside = await tempDir();
+    await writeFile(path.join(outside, 'secret.txt'), 'secret\n');
+    await symlink(path.join(outside, 'secret.txt'), path.join(root, 'rule.md'));
+    await expect(computeChanges(root, { ops: [file('rule.md', 'next\n')] }, null)).rejects.toThrow(
+      /outside the project: rule\.md/,
+    );
+    expect(await readFile(path.join(outside, 'secret.txt'), 'utf8')).toBe('secret\n');
+  });
+
+  it('refuses a broken symlink instead of treating it as a missing file', async () => {
+    const root = await tempDir();
+    await symlink(path.join(root, 'missing-target'), path.join(root, 'rule.md'));
+    await expect(computeChanges(root, { ops: [file('rule.md', 'next\n')] }, null)).rejects.toThrow(
+      /rule\.md: it is a broken symlink/,
+    );
+  });
+
+  it('reads an in-project symlink as the target file', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'target.md'), 'user\n');
+    await symlink('target.md', path.join(root, 'rule.md'));
+    await expect(kinds(root, [file('rule.md', 'next\n')], null)).resolves.toEqual(['conflict-unmanaged']);
   });
 
   it('rejects a directory where a file is expected', async () => {

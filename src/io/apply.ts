@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, realpath, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, realpath, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { createPatch } from 'diff';
 import { AgentInitError, NotInteractiveError } from '../errors.js';
@@ -7,6 +7,8 @@ import type { Prompter } from '../ui/prompter.js';
 import {
   canonicalBlockInner,
   changeKey,
+  inspectProjectPath,
+  pathEscapes,
   readProjectText,
   resolveProjectPath,
   type Change,
@@ -290,6 +292,11 @@ function settleBlocks(relPath: string, items: readonly Resolved[], original: str
     if (item.decision === 'skip') {
       entries.push(entry(item, action, undefined));
       if (change.ownedHash !== undefined) files.push({ key, sha256: change.ownedHash });
+      // A fresh file would drop every other block. Copy a skipped block back
+      // so Skip still leaves that text in the rebuilt file.
+      if (replaceFile && change.blockId !== undefined && original !== null) {
+        text = retainSkippedBlock(text, original, change.blockId, relPath);
+      }
       continue;
     }
     if (change.kind === 'unchanged') {
@@ -339,6 +346,12 @@ function settleBlocks(relPath: string, items: readonly Resolved[], original: str
     entries,
     files,
   };
+}
+
+function retainSkippedBlock(text: string, original: string, blockId: string, relPath: string): string {
+  const existing = findBlocks(original, relPath).find((block) => block.id === blockId);
+  if (existing === undefined) return text;
+  return placeBlock(text, blockId, existing.inner, relPath, original);
 }
 
 function actionFor(item: Resolved): ApplyAction {
@@ -463,7 +476,7 @@ async function nextGitignore(root: string): Promise<string | null> {
 function ignoresBackups(text: string): boolean {
   return text.split(/\r?\n/u).some((line) => {
     const trimmed = line.trim();
-    return trimmed === '/backups/' || trimmed.startsWith(BACKUPS_LINE);
+    return trimmed === BACKUPS_LINE || trimmed === '/backups/';
   });
 }
 
@@ -472,6 +485,7 @@ type WritePhase = 'backup' | 'file' | 'gitignore' | 'manifest';
 interface PendingWrite {
   tmp: string;
   dest: string;
+  relPath: string;
   phase: WritePhase;
   renamed: boolean;
 }
@@ -505,11 +519,17 @@ async function commit(
     // Every temp exists before the first rename, so a failure here changes no target.
     await beforeRename?.();
 
-    for (const phase of ['backup', 'file', 'gitignore'] as const) {
+    // The ignore rule is in the tree before backup files, so a crash cannot
+    // leave a backup directory that Git would commit.
+    for (const phase of ['gitignore', 'backup', 'file'] as const) {
       await renamePhase(pending, phase);
     }
     for (const relPath of deletes) {
-      await rm(resolveProjectPath(root, relPath), { force: true });
+      try {
+        await rm(resolveProjectPath(root, relPath), { force: true });
+      } catch (error) {
+        throw asWriteError(error, relPath);
+      }
     }
     await renamePhase(pending, 'manifest');
   } catch (error) {
@@ -529,14 +549,22 @@ async function stage(
   const dest = resolveProjectPath(root, relPath);
   await ensureParent(root, dest, createdDirs);
   const tmp = path.join(path.dirname(dest), `.agentinit-${randomBytes(8).toString('hex')}.tmp`);
-  await writeFile(tmp, body, 'utf8');
-  pending.push({ tmp, dest, phase, renamed: false });
+  try {
+    await writeFile(tmp, body, 'utf8');
+  } catch (error) {
+    throw asWriteError(error, relPath);
+  }
+  pending.push({ tmp, dest, relPath, phase, renamed: false });
 }
 
 async function renamePhase(pending: readonly PendingWrite[], phase: WritePhase): Promise<void> {
   for (const item of pending) {
     if (item.phase !== phase || item.renamed) continue;
-    await rename(item.tmp, item.dest);
+    try {
+      await rename(item.tmp, item.dest);
+    } catch (error) {
+      throw asWriteError(error, item.relPath);
+    }
     item.renamed = true;
   }
 }
@@ -544,23 +572,31 @@ async function renamePhase(pending: readonly PendingWrite[], phase: WritePhase):
 async function ensureParent(root: string, dest: string, created: string[]): Promise<void> {
   const lexicalRoot = path.resolve(root);
   const parent = path.dirname(dest);
+  const parentRel = path.relative(lexicalRoot, parent);
+  if (parentRel.length > 0) {
+    if (pathEscapes(lexicalRoot, parent)) {
+      throw new AgentInitError('Refusing to write outside the project.');
+    }
+    // Refuse a symlink that leaves the project before mkdir follows it.
+    const located = await inspectProjectPath(root, parentRel.split(path.sep).join('/'), 'write');
+    if (located.exists && !located.directory) {
+      throw new AgentInitError(`Cannot create ${parentRel.split(path.sep).join('/')}: a file is in the way.`, {
+        hint: 'Move that file aside and run again.',
+      });
+    }
+  }
   await mkdirChain(lexicalRoot, parent, created);
   const realRoot = await realpath(lexicalRoot);
   const realParent = await realpath(parent);
-  if (outside(realRoot, realParent)) {
+  if (pathEscapes(realRoot, realParent)) {
     throw new AgentInitError('Refusing to write outside the project.');
   }
-}
-
-function outside(rootAbs: string, candidate: string): boolean {
-  const relative = path.relative(rootAbs, candidate);
-  return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
 }
 
 async function mkdirChain(lexicalRoot: string, dir: string, created: string[]): Promise<void> {
   const relative = path.relative(lexicalRoot, dir);
   if (relative.length === 0) return;
-  if (outside(lexicalRoot, dir)) {
+  if (pathEscapes(lexicalRoot, dir)) {
     throw new AgentInitError('Refusing to write outside the project.');
   }
   let current = lexicalRoot;
@@ -568,25 +604,35 @@ async function mkdirChain(lexicalRoot: string, dir: string, created: string[]): 
   for (const part of relative.split(path.sep)) {
     current = path.join(current, part);
     rel = rel.length === 0 ? part : `${rel}/${part}`;
-    const createdNow = await createDir(current);
+    const createdNow = await createDir(current, rel);
     if (createdNow) created.push(current);
     else await assertDirectory(current, rel);
   }
 }
 
-async function createDir(dir: string): Promise<boolean> {
+async function createDir(dir: string, rel: string): Promise<boolean> {
   try {
-    await stat(dir);
+    // lstat so a symlink is not treated as missing and then created over.
+    await lstat(dir);
     return false;
   } catch (error) {
-    if (nodeErrorCode(error) !== 'ENOENT') throw error;
-    await mkdir(dir);
+    if (nodeErrorCode(error) !== 'ENOENT') throw asWriteError(error, rel);
+    try {
+      await mkdir(dir);
+    } catch (mkdirError) {
+      throw asWriteError(mkdirError, rel);
+    }
     return true;
   }
 }
 
 async function assertDirectory(dir: string, rel: string): Promise<void> {
-  const info = await stat(dir);
+  let info: Awaited<ReturnType<typeof stat>>;
+  try {
+    info = await stat(dir);
+  } catch (error) {
+    throw asWriteError(error, rel);
+  }
   if (info.isDirectory()) return;
   throw new AgentInitError(`Cannot create ${rel}: a file is in the way.`, {
     hint: 'Move that file aside and run again.',
@@ -612,10 +658,12 @@ async function cleanup(pending: readonly PendingWrite[], created: readonly strin
   }
 }
 
-function asWriteError(error: unknown): unknown {
+function asWriteError(error: unknown, relPath?: string): unknown {
+  if (error instanceof AgentInitError) return error;
   const code = nodeErrorCode(error);
   if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS') {
-    return new AgentInitError('Cannot write files: permission denied.', {
+    const target = relPath ?? 'files';
+    return new AgentInitError(`Cannot write ${target}: permission denied.`, {
       hint: 'Check the file permissions and try again.',
     });
   }
