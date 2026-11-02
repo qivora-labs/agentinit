@@ -26,14 +26,11 @@ describe('output', () => {
 
   it('Globs resolve correctly for src/ and root layouts and always use forward slashes', async () => {
     const src = await initFixture('next15-src');
-    const srcRule = await readFile(path.join(src, '.cursor/rules/agentinit-nextjs-app-router.mdc'), 'utf8');
-    expect(srcRule).toContain('globs: src/app/**/*.ts,src/app/**/*.tsx');
+    await assertAppRouterGlobs(src, 'src/app');
     await assertNoBackslashes(src);
 
     const root = await initFixture('next-app-no-src');
-    const rootRule = await readFile(path.join(root, '.cursor/rules/agentinit-nextjs-app-router.mdc'), 'utf8');
-    expect(rootRule).toContain('globs: app/**/*.ts,app/**/*.tsx');
-    expect(rootRule).not.toContain('src/app/');
+    await assertAppRouterGlobs(root, 'app');
     await assertNoBackslashes(root);
   });
 
@@ -56,6 +53,34 @@ describe('output', () => {
     expect(express).not.toContain('pnpm ');
   });
 });
+
+const APP_ROUTER_GLOBS = {
+  cursor: '.cursor/rules/agentinit-nextjs-app-router.mdc',
+  claude: '.claude/rules/agentinit-nextjs-app-router.md',
+  windsurf: '.windsurf/rules/agentinit-nextjs-app-router.md',
+  copilot: '.github/instructions/agentinit-nextjs-app-router.instructions.md',
+} as const;
+
+async function assertAppRouterGlobs(root: string, prefix: 'src/app' | 'app'): Promise<void> {
+  const ts = `${prefix}/**/*.ts`;
+  const tsx = `${prefix}/**/*.tsx`;
+  const joined = `${ts},${tsx}`;
+  const cursor = await readFile(path.join(root, APP_ROUTER_GLOBS.cursor), 'utf8');
+  const claude = await readFile(path.join(root, APP_ROUTER_GLOBS.claude), 'utf8');
+  const windsurf = await readFile(path.join(root, APP_ROUTER_GLOBS.windsurf), 'utf8');
+  const copilot = await readFile(path.join(root, APP_ROUTER_GLOBS.copilot), 'utf8');
+  expect(cursor).toContain(`globs: ${joined}`);
+  expect(claude).toContain(`  - "${ts}"`);
+  expect(claude).toContain(`  - "${tsx}"`);
+  expect(windsurf).toContain(`globs: ${joined}`);
+  expect(copilot).toContain(`applyTo: "${joined}"`);
+  if (prefix === 'app') {
+    expect(cursor).not.toContain('src/app/');
+    expect(claude).not.toContain('src/app/');
+    expect(windsurf).not.toContain('src/app/');
+    expect(copilot).not.toContain('src/app/');
+  }
+}
 
 async function initFixture(name: string): Promise<string> {
   const dir = await temp.copyFixture(name);
