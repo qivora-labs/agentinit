@@ -82,7 +82,7 @@ function createCli(): CAC {
   cli.option('--agents <list>', `Comma-separated agents: ${AGENT_TARGETS.join(', ')}`);
   cli.option('--cwd <path>', 'Run against another directory');
   cli.option('--force', 'Replace unmanaged and edited files after backing them up');
-  cli.option('--json', 'Machine-readable output for list, doctor, and dry-run');
+  cli.option('--json', 'Machine-readable output for init, list, doctor, and dry-run');
   cli.command('init', 'Bootstrap agent rules for this project');
   cli
     .command('list', 'Browse available fragments')

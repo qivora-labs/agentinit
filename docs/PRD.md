@@ -109,7 +109,7 @@ npx @agentinit/cli update
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up (§6.4). |
-| `--json` | Machine-readable output (for `list`, `doctor`, and `--dry-run`). |
+| `--json` | Machine-readable output (for `init`, `list`, `doctor`, and `--dry-run`). |
 
 **Exit codes:** `0` success · `1` error (including unsupported project) · `2` `doctor` found issues · `130` cancelled by the user.
 
