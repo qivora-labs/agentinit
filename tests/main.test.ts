@@ -92,9 +92,18 @@ describe('run', () => {
     expect(result.stderr).toContain(path.resolve('definitely-missing-agentinit-dir'));
   });
 
-  it.each(['init', 'doctor'])('stubs %s with exit code 1', async (command) => {
+  it('rejects init when input is not interactive', async () => {
     const dir = await tempDir();
-    const result = await runCli([command, '--cwd', dir]);
+    const result = await runCli(['init', '--cwd', dir]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Interactive input is required.');
+    expect(result.stderr).toContain('--yes');
+    expect(result.stderr).not.toContain('This is a bug');
+  });
+
+  it('stubs doctor with exit code 1', async () => {
+    const dir = await tempDir();
+    const result = await runCli(['doctor', '--cwd', dir]);
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('not implemented yet');
   });
@@ -102,7 +111,7 @@ describe('run', () => {
   it('routes a bare invocation to init', async () => {
     const result = await runCli([]);
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('not implemented yet');
+    expect(result.stderr).toContain('Interactive input is required.');
   });
 
   it('lists fragments when stdin is not a terminal', async () => {

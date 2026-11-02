@@ -14,14 +14,20 @@ import {
 } from './catalog.js';
 import type { PromptedSetup } from './choices.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
-import { formatConfidence, formatSummary } from './format.js';
+import { formatConfidence, formatRegistryNotice, formatSummary, formatWarning } from './format.js';
 import type { MultiSelectPrompt, PromptOption, Prompter } from './prompter.js';
 
 export interface SummaryExtras {
   readonly notices?: readonly RegistryNotice[];
   readonly warnings?: readonly DetectionWarning[];
-  /** `--agents` skips the agent prompt. */
+  /** `--agents` skips the agent prompt. A saved manifest list does the same. */
   readonly agents?: readonly AgentTarget[];
+  /**
+   * Replaces the full detection box. Re-runs pass only the delta, because the
+   * manifest already holds the previous choices (PRD §3.4).
+   */
+  readonly summary?: string;
+  readonly title?: string;
 }
 
 interface ChosenFragments {
@@ -46,13 +52,8 @@ export async function confirmDetected(
   extras?: SummaryExtras,
 ): Promise<PromptedSetup> {
   prompter.note(
-    formatSummary({
-      draft,
-      registry,
-      notices: extras?.notices ?? [],
-      warnings: extras?.warnings ?? [],
-    }),
-    'Detected project',
+    summaryNote(draft, registry, extras),
+    extras?.summary === undefined ? 'Detected project' : (extras.title ?? 'What changed'),
   );
 
   const options: readonly PromptOption<ConfigurationChoice>[] = [
@@ -169,6 +170,29 @@ function toSelection(
     libraries: chosen.libraries,
     origin,
   };
+}
+
+/**
+ * A custom summary replaces the full detection box. Notices and warnings still
+ * belong on that note, because a re-run otherwise hides an unsupported package
+ * or a legacy rule file (PRD §3.4).
+ */
+function summaryNote(draft: ProjectDraft, registry: Registry, extras: SummaryExtras | undefined): string {
+  if (extras?.summary === undefined) {
+    return formatSummary({
+      draft,
+      registry,
+      notices: extras?.notices ?? [],
+      warnings: extras?.warnings ?? [],
+    });
+  }
+
+  const lines = [
+    ...(extras.notices ?? []).map((notice) => formatRegistryNotice(notice, registry)),
+    ...(extras.warnings ?? []).map((warning) => formatWarning(warning)),
+  ];
+  if (lines.length === 0) return extras.summary;
+  return `${extras.summary}\n${lines.join('\n')}`;
 }
 
 function agentInput(

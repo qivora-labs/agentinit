@@ -160,6 +160,30 @@ describe('confirmDetected', () => {
     expect(choicePrompt(architecture).initialValue).toBe('flat');
   });
 
+  it('appends detection notices to a re-run summary', async () => {
+    const draft = sampleDraft();
+    const bundled = await bundledRegistry();
+    const { prompter, calls } = recordingPrompter([{ type: 'select', value: 'use' }]);
+
+    await confirmDetected(prompter, draft, bundled, {
+      summary: 'No package changes since the last run.',
+      title: 'What changed',
+      agents: ['cursor'],
+      notices: [
+        { kind: 'unsupported-version', package: 'tailwindcss', version: '3.4.0', fragmentId: 'tailwind' },
+      ],
+      warnings: [{ kind: 'legacy-agent-file', path: '.cursorrules' }],
+    });
+
+    const note = calls[0];
+    expect(note).toMatchObject({ method: 'note', title: 'What changed' });
+    if (note?.method !== 'note') throw new Error('expected a summary note');
+    expect(note.message).toContain('No package changes since the last run.');
+    expect(note.message).toContain('tailwindcss@3.4.0 detected — no matching rules yet.');
+    expect(note.message).toContain('.cursorrules still loads alongside the new rules and will not be modified.');
+    expect(note.message).not.toContain('Package manager:');
+  });
+
   it('preselects detected agents and lets --agents skip the prompt', async () => {
     const draft = sampleDraft({ suggestedAgents: ['claude'] });
     const detected = recordingPrompter([

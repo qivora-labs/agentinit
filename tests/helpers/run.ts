@@ -1,5 +1,6 @@
 import { Readable, Writable } from 'node:stream';
 import { run, type CommandIo } from '../../src/main.js';
+import type { Prompter } from '../../src/ui/prompter.js';
 
 export interface CapturedStream {
   stream: Writable;
@@ -39,7 +40,12 @@ export interface RunResult {
 
 export async function runCli(
   argv: string[],
-  options?: { readonly stdinTTY?: boolean; readonly stdoutTTY?: boolean },
+  options?: {
+    readonly stdinTTY?: boolean;
+    readonly stdoutTTY?: boolean;
+    readonly prompter?: Prompter;
+    readonly now?: Date;
+  },
 ): Promise<RunResult> {
   const stdout = captureStream(options?.stdoutTTY ?? false);
   const stderr = captureStream(false);
@@ -48,6 +54,9 @@ export async function runCli(
     stderr: stderr.stream,
     stdin: captureStdin(options?.stdinTTY ?? false),
   };
-  const code = await run(argv, io);
+  const code = await run(argv, io, {
+    ...(options?.prompter === undefined ? {} : { prompter: options.prompter }),
+    ...(options?.now === undefined ? {} : { now: options.now }),
+  });
   return { code, stdout: stdout.text(), stderr: stderr.text() };
 }

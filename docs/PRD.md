@@ -162,8 +162,8 @@ Triggered when `package.json` exists in the target directory.
 
 ### 3.4 Re-Running `init`
 `init` is idempotent and is the update path in v0.1.
-- When a manifest exists, its selections become the defaults. The CLI re-detects the project and shows only what changed (new or removed packages, version changes, layout changes).
-- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."*
+- When a manifest exists, its selections become the defaults. The CLI re-detects the project and lists framework and library ids that were added or removed. Layout is included when a greenfield manifest meets a new `package.json`. The manifest does not store package versions, so a version change is left out of that list. Unsupported-version notices and legacy-file warnings are included in the same summary.
+- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
 
 ### 3.5 Non-Interactive Defaults (`--yes`)
