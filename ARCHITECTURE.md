@@ -15,7 +15,8 @@ detect ──► resolve ──► plan ──► apply
 
 | Path | Responsibility | May touch disk | May prompt/print |
 | :--- | :--- | :---: | :---: |
-| `src/cli.ts` | Process entry: calls `run()`, sets exit code, handles `SIGINT` | — | — |
+| `src/cli.ts` | Process entry: calls `run()`, sets exit code, listens for `SIGINT` | — | — |
+| `src/interrupt.ts` | SIGINT flag. Defers exit while temp files exist so `apply` can delete them | — | — |
 | `src/main.ts` | Argument parsing (`cac`), `RunContext`, error → exit code mapping | `stat` for `--cwd` | via `ui/` |
 | `src/commands/` | One file per command; orchestration only | ✓ | via `ui/` |
 | `src/detect/` | Read the project: packages, tsconfig, layout, workspaces, agent files | ✓ (read-only) | — |
