@@ -44,3 +44,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - `tests/fixtures/crlf-line-endings/**` is `eol=crlf` in `.gitattributes`. Other fixtures stay LF.
 - SIGINT sets a flag and does not call `process.exit` while temp files exist. `apply` throws before rename, deletes the temps, and returns exit 130. The acceptance test arms that same flag through `shouldStop`. `tests/interrupt.test.ts` covers the exit-versus-defer decision.
 - CI on Ubuntu, macOS, and Windows is the existing matrix in `.github/workflows/ci.yml`. This session ran the suite on macOS only. The checkbox stays open until that pull request is green on all three.
+- PRD §8.2 lists every fixture and snapshots full trees for `next15-src`, `vite-react`, and `express-ts` only. The other fixtures are proved by the acceptance tests.
