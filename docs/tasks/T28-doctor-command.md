@@ -28,11 +28,11 @@ A read-only check that reports drift between the manifest, the project, and gene
 - Automatic fixing (`doctor --fix` is not planned for v0.1).
 
 ## Acceptance criteria
-- [ ] Freshly initialized fixture → exit `0`, "No issues found."
-- [ ] Each check has a test that triggers it and asserts kind, message, and fix.
-- [ ] Adding a supported package to `package.json` → exit `2`.
-- [ ] The project directory is byte-for-byte unchanged after `doctor` (tree hash before/after), including when no manifest exists.
-- [ ] `--json` output validates against a zod schema in the test.
+- [x] Freshly initialized fixture → exit `0`, "No issues found."
+- [x] Each check has a test that triggers it and asserts kind, message, and fix.
+- [x] Adding a supported package to `package.json` → exit `2`.
+- [x] The project directory is byte-for-byte unchanged after `doctor` (tree hash before/after), including when no manifest exists.
+- [x] `--json` output validates against a zod schema in the test.
 
 ## Verify
 ```bash
@@ -44,4 +44,10 @@ node dist/cli.js doctor --cwd /tmp/ai-demo; echo "exit=$?"
 `feat(cli): add read-only doctor command`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- No manifest is a single "Not initialized" issue (exit `2`) after `detectProject` accepts the directory. An unsupported project (JavaScript, monorepo root, non-empty folder without `package.json`) still exits `1` and writes nothing. Other checks wait for a saved selection, so a new package is not also reported as unselected before the first `init`.
+- The plan is built from the manifest selection. `--agents` is ignored. A greenfield manifest with no `package.json` stays greenfield, same as `init`. Package checks are skipped there, so a wizard selection is not flagged for packages that are not installed yet.
+- `computeChanges` classifies a removed owned block as `conflict-edited`. Doctor re-reads the markers and reports that case as `missing`. A hash mismatch on a block that is still present is `edited`.
+- `update`, `conflict-unmanaged`, and `delete-stale` are issues too (`outdated`, `unmanaged`, `stale`), so CI fails when a later `init` would write. A clean init does not produce them.
+- A detected framework or library id that is not in the manifest is `unselected`. A selected fragment's `detect.packages` entry that is absent is `package-removed`. A known version outside `appliesTo` is `unsupported-version`. An unknown version (`null`) is not. Marker-only fragments (shadcn) are not treated as a removed package when the marker file is gone. An empty framework list is not an issue (PRD §3.6).
+- The always-on fix is "Reduce always-on rules below 1,500 tokens." Re-running `init` does not shrink the core. The bundled registry stays under the budget, so that check is covered in `tests/doctor/checks.test.ts`.
+- `--json` writes `{ ok, issues }` to stdout. `ok` is true only when `issues` is empty. Exit `2` is unchanged in JSON mode. Human output groups issues by kind and prints `Fix:` on every issue.
