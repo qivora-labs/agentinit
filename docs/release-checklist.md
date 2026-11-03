@@ -22,11 +22,11 @@ After the release workflow lands on `main`, confirm the Release Action opens or 
    - [ ] `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and `.github/CODEOWNERS` are present.
 
 4. **Repository settings**
-   - [ ] Branch protection on `main`: required status checks, required pull request reviews.
+   - [ ] Branch protection on `main`: required status checks, required pull request reviews (from humans / CODEOWNERS). Do not count `github-actions[bot]` approvals toward the review requirement for code-change PRs.
    - [ ] Secret scanning and push protection enabled.
    - [ ] Dependabot alerts enabled.
    - [ ] Repository secret `NPM_TOKEN` set (classic or granular token with publish access to `@agentinit`).
-   - [ ] Actions → General → "Allow GitHub Actions to create and approve pull requests" enabled (needed for the Version Packages PR).
+   - [ ] Actions → General → "Allow GitHub Actions to create and approve pull requests" enabled so the Release workflow can open the Version Packages PR. This setting is repo-wide: never use Actions to approve code-change PRs; a human merges Version Packages.
 
 5. **Make the repository public**
    - [ ] Settings → General → Danger Zone → Change repository visibility → Public.

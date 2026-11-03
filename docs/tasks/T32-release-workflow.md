@@ -27,7 +27,7 @@ Automated, provenance-signed npm releases via changesets, plus a checklist for m
   1. All v0.1 tasks `done`; CI and smoke green; rule-effectiveness check (T33) passed.
   2. Secret scan of full history (`gitleaks detect`), no findings.
   3. `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CODEOWNERS` present.
-  4. Repository settings: branch protection on `main` (required checks, PR reviews), secret scanning + push protection, Dependabot alerts, repository secret `NPM_TOKEN`, and Actions → "Allow GitHub Actions to create and approve pull requests".
+  4. Repository settings: branch protection on `main` (required checks; human/CODEOWNERS reviews—not bot approvals for code PRs), secret scanning + push protection, Dependabot alerts, repository secret `NPM_TOKEN`, and Actions → "Allow GitHub Actions to create and approve pull requests" (repo-wide; only for opening Version Packages—humans merge; never bot-approve code PRs).
   5. Make the repository public.
   6. Merge the "Version Packages" PR → verify `@agentinit/cli@0.1.0` on npm and confirm the provenance badge (publish success alone is not enough).
   7. Test `npx @agentinit/cli@0.1.0 --version` from a clean machine.
