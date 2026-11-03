@@ -1,8 +1,10 @@
 # Launch Checklist — `@agentinit/cli@0.1.0`
 
-Manual steps for making the repository public and publishing the first release. Automated release setup lives in `.github/workflows/release.yml` (changesets "Version Packages" PR → publish with provenance via `NPM_TOKEN`).
+Manual steps for making the repository public and publishing the first release. Automated release setup lives in `.github/workflows/release.yml` (changesets "Version Packages" PR → publish with provenance via `NPM_TOKEN`). Owner review of this checklist is a launch gate (not part of merging the release-workflow PR).
 
 **Do not merge the "Version Packages" PR while the repository is private.** npm provenance requires a public repository; publishing from a private repo will fail or produce a package without a provenance attestation. Complete step 5 before step 6.
+
+After the release workflow lands on `main`, confirm the Release Action opens or updates a "Version Packages" PR proposing `@agentinit/cli@0.1.0` before continuing (step 6).
 
 ## Checklist
 
