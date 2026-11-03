@@ -16,7 +16,7 @@ sources:
   - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-8.html#type-only-imports-and-export
   - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator
   - https://www.typescriptlang.org/tsconfig/strict.html
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-03
 ---
 
 ## Boundary
@@ -24,7 +24,7 @@ These rules apply to every `.ts` and `.tsx` file. The project typechecks with `s
 
 ## Directives
 - **NEVER** use the `any` type. **ALWAYS** hold an unchecked value as `unknown` and narrow it before property access, a call, or assignment to a specific type.
-- **ALWAYS** write an explicit return type on an exported function. **PREFER** inference for a function that is not exported.
+- **ALWAYS** write an explicit return type on every exported function, including small helpers (`parse*`, `safeParse` wrappers, schema mappers, and React components). **PREFER** inference for a function that is not exported.
 - **NEVER** use the postfix `!` non-null assertion. Narrow `null` and `undefined` with a check.
 - **ALWAYS** check a config object literal with `satisfies` when the variable should keep its specific property types.
 - **PREFER** a discriminated union (a shared literal field such as `status`) over a boolean plus optional fields.
@@ -34,12 +34,16 @@ These rules apply to every `.ts` and `.tsx` file. The project typechecks with `s
 
 ## Contract
 ```ts
-// ✅ Good: unknown is narrowed, the union is exhaustive, config keeps its own types
+// ✅ Good: unknown is narrowed, exports name their return types, config keeps its own types
 import type { InvoiceId } from './ids';
 
 type Invoice =
   | { status: 'open'; id: InvoiceId; total: number }
   | { status: 'paid'; id: InvoiceId; total: number; paidOn: string };
+
+type ParseAmountResult =
+  | { success: true; data: number }
+  | { success: false; error: string };
 
 type RGB = [red: number, green: number, blue: number];
 type ThemeName = 'danger' | 'ok';
@@ -48,6 +52,11 @@ export const theme = {
   danger: [255, 0, 0],
   ok: '#00ff00',
 } satisfies Record<ThemeName, string | RGB>;
+
+export function parseAmount(input: unknown): ParseAmountResult {
+  if (typeof input !== 'number') return { success: false, error: 'Expected a number' };
+  return { success: true, data: input };
+}
 
 export function label(invoice: Invoice): string {
   switch (invoice.status) {
@@ -62,14 +71,9 @@ export function label(invoice: Invoice): string {
   }
 }
 
-export function amount(input: unknown): number {
-  if (typeof input !== 'number') throw new Error('Expected a number');
-  return input;
-}
-
-// ❌ Anti-pattern: any, a boolean flag, and a non-null assertion
+// ❌ Anti-pattern: any, a boolean flag, a non-null assertion, and a missing export return type
 type Loose = { paid: boolean; paidOn?: string };
-export function paidOn(invoice: Loose, input: any): string {
+export function paidOn(invoice: Loose, input: any) {
   return invoice.paidOn!.slice(0, input.total);
 }
 ```

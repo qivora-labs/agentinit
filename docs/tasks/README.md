@@ -122,7 +122,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T30](T30-package-smoke-test.md) | Packed-tarball smoke test | M6 | T27 | S | done |
 | [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | done |
 | [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | done |
-| [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | todo |
+| [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | done |
 
 ## Task File Template
 Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.
