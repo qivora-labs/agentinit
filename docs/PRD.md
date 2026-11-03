@@ -105,7 +105,7 @@ npx @agentinit/cli update
 | Flag | Behavior |
 | :--- | :--- |
 | `--yes`, `-y` | Never prompt; use the defaults in §3.5. Required when stdin is not a TTY. |
-| `--dry-run` | Print the planned file tree and diffs; write nothing. |
+| `--dry-run` | Print the planned file tree and diffs for files that already exist; write nothing. New files are listed, not diffed. |
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up (§6.4). |
@@ -113,7 +113,9 @@ npx @agentinit/cli update
 
 **Exit codes:** `0` success · `1` error (including unsupported project) · `2` `doctor` found issues · `130` cancelled by the user.
 
-**Terminal presentation.** On a Unicode TTY, `init`, `list`, and `doctor` open with a blank gap, then a gray tracked "Qivora Labs" kicker, then the Needle block wordmark: AGENT in the terminal foreground, INIT in cyan, then the tagline "rules for the agents in this repo". A terminal without Unicode prints `Qivora Labs` above `AGENT  INIT` in those same two colors. Status lines use icons, and the session closes with a bottom rule. Interactive `init` uses the existing Clack spinner while it reads the project and while it writes or previews rules, and skips the spinner when a conflict prompt is about to take the terminal. `--help` on a TTY prints the wordmark above the help text and does not print a closing rule.
+**Terminal presentation.** On a Unicode TTY, `init` always opens (first run and every re-run) with a blank gap, then a gray tracked "Qivora Labs" kicker, then the Needle block wordmark: AGENT in the terminal foreground, INIT in cyan, then the tagline "rules for the agents in this repo". A terminal without Unicode, or narrower than 60 columns, prints `Qivora Labs` above `AGENT  INIT` in those same two colors. `list` and `doctor` open with a one-line header instead (the product name in the terminal foreground, then the command name in gray), because they are run often. Status lines use icons, and the session closes with a bottom rule. Interactive `init` uses the existing Clack spinner while it reads the project and while it writes or previews rules, and skips the spinner when a conflict prompt is about to take the terminal. `--help` on a TTY prints the wordmark above the help text and does not print a closing rule.
+
+On a TTY, the `init` report groups written files by agent (count and folder per agent, shared files by name) instead of printing every path. The full file tree is printed by `--dry-run`, by the review step's "Preview changes" (§3.2 step 6, §3.3 step 6), and on a stream that is not a TTY. Text inside the Clack frame fits the terminal width: prompt hints are kept short and long lines wrap under the rail instead of past it.
 
 `--json`, `--version`, and a stream that is not a TTY stay plain: no wordmark, no icons, and no color. `--version` prints only the version. A closing line that only exists as chrome (such as "Rules written.") is omitted from pipes. `NO_COLOR` and `TERM=dumb` disable color. Generated files are never styled. The palette is cyan for INIT, the diamond, and info; AGENT uses the terminal foreground. Green is success, yellow is warnings, and red is errors. This uses `@clack/prompts` and `picocolors` only.
 
@@ -132,9 +134,11 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Forms & Validation:* React Hook Form + Zod
    - *Testing:* Vitest, Playwright
 4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal`
-5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot
-6. **Review & Write:** shows the file list and always-on token estimate, then writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
-7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`.
+5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot. Each option's hint names the folder it writes.
+6. **Review & Write:** before anything is written, a review card shows the file count per agent, the shared files, the always-on token estimate against its budget, and how many existing files will need a decision (§6.3). Options: *Write files* (default) · *Preview changes* (prints the dry-run output, then returns to the card) · *Change setup* (runs steps 1–5 again with the current answers preselected). Then it writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
+7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`. The generator command is highlighted as a command, not printed as a plain status line.
+
+The wizard opens with one line saying that no `package.json` was found and a new project is being set up. Each question shows its position (for example, "2 of 5"); the count drops by one when the library step is skipped or `--agents` skips the agent step.
 
 > Some framework generators refuse to run in a non-empty directory. The hint tells users to scaffold first when possible, or to scaffold into a subfolder and move files.
 
@@ -157,17 +161,19 @@ Triggered when `package.json` exists in the target directory.
    - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
 3. **Version Check:** a detected package whose version is outside every fragment's `appliesTo` range (e.g., Tailwind v3 when only a v4 fragment exists) is skipped with a notice: *"tailwindcss@3 detected — no matching rules yet."*
    - No supported framework detected (e.g., a CLI, library, or an unsupported framework) → continue with base rules (§3.6).
-4. **Summary Confirmation:** a formatted box showing the detected stack, versions, package manager, layout, and architecture (with confidence).
+4. **Summary Confirmation:** a formatted box showing the detected stack, package manager, layout, and architecture. Labels are aligned in one column and values in another. Each framework or library shows the version of the package it was detected from; other package versions are not listed. Architecture confidence is shown in words (*likely* at ≥ 0.7); the number is shown only below 0.7, next to the question it triggers.
    - *"Use this configuration, or customize?"*
    - Low-confidence architecture (< 0.7) prompts instead of guessing.
 5. **Agent Selection:** multi-select, pre-selecting agents whose config already exists (all four if none).
-6. **Conflict Resolution:** per existing unmanaged file (§6.3).
-7. **Write & Report:** writes files, prints the generated tree, the always-on token estimate, and next steps.
+6. **Review:** the same review card as §3.2 step 6. *Change setup* goes to the customize prompts, then agent selection.
+7. **Conflict Resolution:** per existing unmanaged file (§6.3).
+8. **Write & Report:** writes files, then prints the report (grouped by agent on a TTY, §3.1), the always-on token estimate against its budget, and next steps: review the changes with `git diff`, try a workflow such as `/new-feature`, and run `npx @agentinit/cli doctor` to check for drift. Next steps for an existing project are TTY-only chrome.
 
 ### 3.4 Re-Running `init`
 `init` is idempotent and is the update path in v0.1.
 - When a manifest exists, its selections become the defaults. The CLI re-detects the project and lists framework and library ids that were added or removed. Layout is included when a greenfield manifest meets a new `package.json`. The manifest does not store package versions, so a version change is left out of that list. Unsupported-version notices and legacy-file warnings are included in the same summary.
 - Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed.
+- Interactive re-run: when the saved selections still match detection and no file would change, the CLI says so first (*"Already up to date"* with the file and agent counts), then asks *Done* (default) · *Change setup*. It does not ask "Use this configuration, or customize?" in that case.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
 
 ### 3.5 Non-Interactive Defaults (`--yes`)
@@ -182,6 +188,8 @@ Every prompt has a defined non-interactive answer:
 | Use detected configuration | Yes |
 | Low-confidence architecture | `flat` (makes the fewest structural claims), with a notice |
 | Agent selection | Agents whose config already exists; all four if none |
+| Review before writing | Skipped; files are written directly |
+| Already up to date: Done or Change setup | Done |
 | Existing unmanaged shared file | Adopt (§6.3) |
 | Existing unmanaged non-shared file | Skip and report |
 | Managed content edited by hand | Skip and report |
@@ -545,7 +553,9 @@ For each existing file AgentInit wants to write that it doesn't already own:
 - **Backup & replace** — back up (§6.4), then write a fresh file. For a managed block, the file contains that block plus any skipped or unchanged blocks from the original.
 - **Skip** — leave the file untouched (the `--yes` default for non-shared files, including same-named workflows).
 
-Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules.
+Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules, once per run.
+
+The conflict prompt names the file by its path (a managed block is "the agentinit section of `CLAUDE.md`", not a block id) and shows only the diff hunks, without `Index:`, `===`, `---`, or `+++` header lines. On a TTY, added lines are green, removed lines red, and hunk headers gray. The product is written "agentinit" in every message.
 
 ### 6.4 Write Guarantees
 - All files are written to a temp path and renamed (atomic); Ctrl-C leaves no partial output.
@@ -562,7 +572,9 @@ Compares the manifest, the current project, and the files on disk. Never writes.
 - The always-on core is over budget.
 - Legacy rule files (`.cursorrules`, `.windsurfrules`) are still present.
 
-Each issue includes the command that fixes it (usually re-running `init`). `--json` emits a machine-readable report.
+Each issue includes the command that fixes it (usually re-running `init`). `--json` emits a machine-readable report. On a TTY, the report lists every check above with a pass or fail icon, including when there are no issues.
+
+**Flag errors.** An unknown `--agents` value or `--category` name suggests the closest valid value (for example, *Unknown agent "cursr". Did you mean "cursor"?*).
 
 ### 6.6 Lifecycle Commands *(v0.2)*
 - **`add <id...>` / `remove <id...>`:** update selections in the manifest and regenerate affected files. Unknown ids get fuzzy suggestions.
