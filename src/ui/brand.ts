@@ -4,6 +4,8 @@ export const PRODUCT_NAME = 'agentinit';
 
 export const TAGLINE = 'rules for the agents in this repo';
 
+export const COMPANY = 'Qivora Labs';
+
 export type CloseTone = 'neutral' | 'error';
 
 type Glyph = readonly string[];
@@ -26,6 +28,8 @@ const INIT: readonly Glyph[] = [
 
 const TRACKING = 2;
 const WORD_GAP = 4;
+/** Tracked capitals. The space inside the name becomes the word gap. */
+const KICKER = 'QIVORA LABS'.split('').join(' ');
 
 /**
  * Unicode terminals get the Needle block mark: AGENT in the terminal
@@ -47,7 +51,7 @@ function textBanner(theme: Theme): string {
   const start = theme.muted(theme.glyphs.barStart);
   const bar = theme.muted(theme.glyphs.bar);
   const name = `${theme.ink('AGENT')}  ${theme.accent('INIT')}`;
-  return `${start}  ${name}\n${bar}  ${theme.muted(TAGLINE)}`;
+  return `${theme.muted(COMPANY)}\n\n${start}  ${name}\n${bar}  ${theme.muted(TAGLINE)}`;
 }
 
 function needleBanner(theme: Theme): string {
@@ -60,6 +64,8 @@ function needleBanner(theme: Theme): string {
   const width = visibleWidth(AGENT) + WORD_GAP + visibleWidth(INIT);
   const ornament = `${theme.muted('────────')}${theme.accent('◆')}${theme.muted('────────')}`;
   return [
+    center(theme.muted(KICKER), KICKER.length, width),
+    '',
     ...rows,
     center(ornament, '────────◆────────'.length, width),
     center(theme.muted(TAGLINE), TAGLINE.length, width),

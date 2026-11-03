@@ -3,6 +3,8 @@ import { formatBanner, formatClose, TAGLINE } from '../../src/ui/brand.js';
 import { createTheme } from '../../src/ui/theme.js';
 
 const NEEDLE = [
+  '                 Q I V O R A   L A B S',
+  '',
   '  █     ████  █████  █   █  █████    █  █   █  █  █████',
   ' █ █   █      █      ██  █    █      █  ██  █  █    █  ',
   '█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  ',
@@ -21,7 +23,7 @@ describe('formatBanner', () => {
   });
 
   it('prints AGENT and INIT in text when Unicode is off', () => {
-    expect(formatBanner(createTheme(false, false))).toBe(`+  AGENT  INIT\n|  ${TAGLINE}`);
+    expect(formatBanner(createTheme(false, false))).toBe(`Qivora Labs\n\n+  AGENT  INIT\n|  ${TAGLINE}`);
   });
 
   it('paints AGENT in the foreground and INIT in cyan', () => {
@@ -29,6 +31,7 @@ describe('formatBanner', () => {
     const banner = formatBanner(createTheme(true, true, true));
     expect(stripColor(banner)).toBe(plain);
     expect(banner).toContain('\u001b[1m█████\u001b[22m    \u001b[36m█');
+    expect(banner).toContain('\u001b[90mQ I V O R A   L A B S');
     expect(banner).toContain('\u001b[36m◆');
     expect(banner).toContain(TAGLINE);
   });

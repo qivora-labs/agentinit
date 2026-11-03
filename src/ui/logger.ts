@@ -58,7 +58,8 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
   const open = (): void => {
     if (opened || !stdoutTty) return;
     opened = true;
-    io.stdout.write(`${formatBanner(stdoutTheme)}\n\n`);
+    // The leading gap keeps the mark clear of the command the user just entered.
+    io.stdout.write(`\n\n${formatBanner(stdoutTheme)}\n\n`);
   };
 
   const close = (message?: string, options?: CloseOptions): void => {

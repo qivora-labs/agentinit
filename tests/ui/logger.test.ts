@@ -79,7 +79,8 @@ describe('createLogger', () => {
     logger.open();
     logger.close('Rules written.');
     const banner = formatBanner(createTheme(true, true, false));
-    expect(stdout.text()).toBe(`${banner}\n\n└  Rules written.\n`);
+    expect(stdout.text()).toBe(`\n\n${banner}\n\n└  Rules written.\n`);
+    expect(stdout.text().startsWith('\n\n')).toBe(true);
     expect(stdout.text().split('rules for the agents in this repo')).toHaveLength(2);
   });
 
@@ -91,7 +92,7 @@ describe('createLogger', () => {
     });
     logger.open();
     logger.info('hello');
-    expect(stdout.text()).toBe('+  AGENT  INIT\n|  rules for the agents in this repo\n\n*  hello\n');
+    expect(stdout.text()).toBe('\n\nQivora Labs\n\n+  AGENT  INIT\n|  rules for the agents in this repo\n\n*  hello\n');
   });
 
   it('leaves json mode plain on a tty', () => {
