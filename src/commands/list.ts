@@ -6,6 +6,7 @@ import { FRAGMENT_CATEGORIES, loadRegistry, type Registry } from '../registry/lo
 import type { Fragment } from '../registry/parse.js';
 import type { FragmentCategory } from '../types.js';
 import type { Logger } from '../ui/logger.js';
+import { paintGroupedList } from '../ui/paint.js';
 
 export interface ListOptions {
   stdout: Writable;
@@ -34,7 +35,9 @@ export async function list(ctx: RunContext, logger: Logger, options: ListOptions
     return SUCCESS;
   }
 
-  logger.info(entries.length === 0 ? 'No fragments available.' : formatGrouped(entries));
+  const body = entries.length === 0 ? 'No fragments available.' : formatGrouped(entries);
+  logger.info(entries.length === 0 ? body : paintGroupedList(body, logger.theme));
+  logger.close();
   return SUCCESS;
 }
 

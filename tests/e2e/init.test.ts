@@ -104,6 +104,7 @@ describe('init', () => {
     expect(result.code).toBe(0);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.stdout).toContain('Always-on tokens:');
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
     const tree = await treeText(dir);
     await expect(tree).toMatchFileSnapshot('../__snapshots__/e2e/next15-src.txt');
   });
@@ -115,7 +116,31 @@ describe('init', () => {
     const again = await runCli(['init', '--yes', '--cwd', dir]);
     expect(again.code).toBe(0);
     expect(again.stdout).toContain('Already up to date.');
+    expect(again.stdout).not.toContain('┌');
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('prints the wordmark once on a terminal and keeps json plain', async () => {
+    const dir = await copyFixture('next15-src');
+    const tty = await runCli(['init', '--yes', '--cwd', dir], { stdoutTTY: true });
+    expect(tty.code).toBe(0);
+    const tagline = tty.stdout.indexOf('rules for the agents in this repo');
+    const tokens = tty.stdout.indexOf('Always-on tokens:');
+    expect(tagline).toBeGreaterThanOrEqual(0);
+    expect(tagline).toBeLessThan(tokens);
+    expect(tty.stdout.split('rules for the agents in this repo')).toHaveLength(2);
+    expect(tty.stdout.split('Rules written.')).toHaveLength(2);
+
+    const again = await runCli(['init', '--yes', '--cwd', dir], { stdoutTTY: true });
+    expect(again.stdout.split('Already up to date.')).toHaveLength(2);
+    expect(again.stdout).not.toContain('Rules written.');
+
+    const jsonDir = await copyFixture('next15-src');
+    const json = await runCli(['init', '--yes', '--json', '--cwd', jsonDir], { stdoutTTY: true });
+    expect(json.code).toBe(0);
+    expect(json.stdout.trimStart().startsWith('{')).toBe(true);
+    expect(json.stdout).not.toContain('rules for the agents in this repo');
+    expect(json.stderr).not.toContain('rules for the agents in this repo');
   });
 
   it('adds only the new fragment files when a supported package appears', async () => {

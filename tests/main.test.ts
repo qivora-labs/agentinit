@@ -25,6 +25,13 @@ describe('run', () => {
     expect(result.stderr).toBe('');
   });
 
+  it('prints a bare version on a terminal', async () => {
+    const result = await runCli(['--version'], { stdoutTTY: true });
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBe('0.0.0\n');
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
+  });
+
   it('accepts a process.argv-shaped array for --version', async () => {
     const result = await runCli([process.execPath, 'agentinit', '--version']);
     expect(result.code).toBe(0);
@@ -40,6 +47,15 @@ describe('run', () => {
     for (const flag of ['--yes', '-y', '--dry-run', '--agents', '--cwd', '--force', '--json']) {
       expect(result.stdout).toContain(flag);
     }
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
+  });
+
+  it('prints the wordmark above help on a terminal and does not close the frame', async () => {
+    const result = await runCli(['--help'], { stdoutTTY: true });
+    expect(result.code).toBe(0);
+    expect(result.stdout.split('rules for the agents in this repo')).toHaveLength(2);
+    expect(result.stdout).toContain('--yes');
+    expect(result.stdout).not.toContain('└');
   });
 
   it('rejects an unknown agent and lists the valid values', async () => {
@@ -101,6 +117,16 @@ describe('run', () => {
     expect(result.stderr).not.toContain('This is a bug');
   });
 
+  it('prints the wordmark and the interactive error once when stdout is a terminal', async () => {
+    const dir = await tempDir();
+    const result = await runCli(['init', '--cwd', dir], { stdoutTTY: true, stdinTTY: false });
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('rules for the agents in this repo');
+    expect(result.stderr.split('Interactive input is required.')).toHaveLength(2);
+    expect(result.stderr.split('Pass --yes')).toHaveLength(2);
+    expect(result.stdout).not.toContain('Interactive input is required.');
+  });
+
   it('reports an empty directory as not initialized', async () => {
     const dir = await tempDir();
     const result = await runCli(['doctor', '--cwd', dir]);
@@ -119,6 +145,7 @@ describe('run', () => {
     const result = await runCli(['list'], { stdinTTY: false, stdoutTTY: false });
     expect(result.code).toBe(0);
     expect(result.stderr).toBe('');
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
     const registry = await loadRegistry();
     if (registry.fragments.length === 0) {
       expect(result.stdout).toBe('No fragments available.\n');
@@ -127,6 +154,14 @@ describe('run', () => {
     for (const fragment of registry.fragments) {
       expect(result.stdout).toContain(fragment.meta.id);
     }
+  });
+
+  it('keeps json list output free of the wordmark on a terminal', async () => {
+    const result = await runCli(['list', '--json'], { stdoutTTY: true });
+    expect(result.code).toBe(0);
+    expect(result.stdout.trimStart().startsWith('[')).toBe(true);
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
+    expect(result.stderr).not.toContain('rules for the agents in this repo');
   });
 
   it('reports an unknown command without the bug line', async () => {

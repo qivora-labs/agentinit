@@ -5,7 +5,7 @@ import { findExistingAgentFiles } from '../detect/existing-agents.js';
 import { readPackageJson } from '../detect/packages.js';
 import { findGitRoot } from '../detect/workspace.js';
 import { AgentInitError } from '../errors.js';
-import { SUCCESS } from '../exit-codes.js';
+import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, type Change } from '../io/changes.js';
 import { readManifest, type Manifest } from '../io/manifest.js';
@@ -24,7 +24,8 @@ import {
 } from '../ui/format.js';
 import type { Logger } from '../ui/logger.js';
 import { greenfieldNextSteps } from '../ui/next-steps.js';
-import { createClackPrompter, type Prompter } from '../ui/prompter.js';
+import { paintFileTree } from '../ui/paint.js';
+import { createClackPrompter, type PromptSpinner, type Prompter } from '../ui/prompter.js';
 import { formatDiffs, formatFileTree, formatTokenLine, type ReportFile } from '../ui/report.js';
 import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
 import { confirmDetected } from '../ui/summary.js';
@@ -50,6 +51,8 @@ interface Setup {
 }
 
 const UP_TO_DATE = 'Already up to date.';
+const RULES_WRITTEN = 'Rules written.';
+const DRY_RUN_DONE = 'Dry run. Nothing written.';
 
 /**
  * detect → resolve → plan → apply.
@@ -59,7 +62,8 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   requireInteractiveOrYes(ctx);
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
   const prompts = prompterFor(options);
-  const { root, detection, manifest } = await settleProject(ctx, registry, prompts);
+  const spin = canSpin(ctx, options.stdout);
+  const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
   const setup = await chooseSetup(ctx, registry, detection, manifest, prompts);
   const profile = profileFor(root, detection, setup);
   const resolved = await resolveWithConflicts(
@@ -76,16 +80,26 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
 
   if (!hasWork(changes)) return reportUpToDate(ctx, logger, options, plan, notices);
 
-  const applied = await applyChanges(root, changes, {
-    now: options.now ?? new Date(),
-    manifest: manifestBody(profile, resolved),
-    yes: ctx.yes,
-    force: ctx.force,
-    dryRun: ctx.dryRun,
-    ...(!ctx.yes && !ctx.force ? { prompter: prompts() } : {}),
-    ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
-    ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
-  });
+  const writing = spin && !needsConflictPrompt(changes)
+    ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
+    : undefined;
+  let applied;
+  try {
+    applied = await applyChanges(root, changes, {
+      now: options.now ?? new Date(),
+      manifest: manifestBody(profile, resolved),
+      yes: ctx.yes,
+      force: ctx.force,
+      dryRun: ctx.dryRun,
+      ...(!ctx.yes && !ctx.force ? { prompter: prompts() } : {}),
+      ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
+      ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
+    });
+  } catch (error) {
+    stopSpin(writing, error, ctx.dryRun ? 'Could not preview the changes' : 'Could not write the rules');
+    throw error;
+  }
+  writing?.stop(ctx.dryRun ? 'Previewed the changes' : 'Wrote the rules');
 
   return reportApplied(ctx, logger, options, plan, applied.report, notices, nextSteps);
 }
@@ -99,6 +113,36 @@ function prompterFor(options: InitOptions): () => Prompter {
 }
 
 /**
+ * Clack's spinner writes to the real terminal, not the injected stream.
+ * A captured TTY in tests must not start it.
+ */
+function canSpin(ctx: RunContext, stdout: InitOptions['stdout']): boolean {
+  return ctx.isInteractive && !ctx.json && stdout === process.stdout;
+}
+
+function needsConflictPrompt(changes: readonly Change[]): boolean {
+  for (const change of changes) {
+    if (change.kind === 'conflict-unmanaged' || change.kind === 'conflict-edited') return true;
+  }
+  return false;
+}
+
+function startSpin(prompts: () => Prompter, message: string): PromptSpinner {
+  const spinner = prompts().spinner();
+  spinner.start(message);
+  return spinner;
+}
+
+function stopSpin(spinner: PromptSpinner | undefined, error: unknown, failure: string): void {
+  if (spinner === undefined) return;
+  if (error instanceof AgentInitError && error.exitCode === CANCELLED) {
+    spinner.cancel('Interrupted.');
+    return;
+  }
+  spinner.error(failure);
+}
+
+/**
  * A greenfield manifest still has no `package.json` after the first write.
  * Generated files are not ignorable, so `detectProject` would reject the
  * directory. Stay in greenfield until a scaffold adds `package.json`.
@@ -107,10 +151,12 @@ async function settleProject(
   ctx: RunContext,
   registry: Registry,
   prompts: () => Prompter,
+  spin: boolean,
 ): Promise<{ root: string; detection: DetectionResult; manifest: Manifest | null }> {
   let root = ctx.cwd;
-  let manifest = await readManifest(root);
-  let detection = detectForInit(root, registry, manifest);
+  const first = await readProject(root, registry, prompts, spin);
+  let manifest = first.manifest;
+  let detection = first.detection;
 
   if (
     ctx.isInteractive &&
@@ -122,12 +168,31 @@ async function settleProject(
     const choice = await confirmGitRoot(prompts(), { cwd: root, gitRoot: detection.gitRoot });
     if (choice === 'use-git-root') {
       root = detection.gitRoot;
-      manifest = await readManifest(root);
-      detection = detectForInit(root, registry, manifest);
+      const next = await readProject(root, registry, prompts, spin);
+      manifest = next.manifest;
+      detection = next.detection;
     }
   }
 
   return { root, detection, manifest };
+}
+
+async function readProject(
+  root: string,
+  registry: Registry,
+  prompts: () => Prompter,
+  spin: boolean,
+): Promise<{ detection: DetectionResult; manifest: Manifest | null }> {
+  const reading = spin ? startSpin(prompts, 'Reading the project') : undefined;
+  try {
+    const manifest = await readManifest(root);
+    const detection = detectForInit(root, registry, manifest);
+    reading?.stop('Read the project');
+    return { detection, manifest };
+  } catch (error) {
+    stopSpin(reading, error, 'Could not read the project');
+    throw error;
+  }
 }
 
 function detectForInit(root: string, registry: Registry, manifest: Manifest | null): DetectionResult {
@@ -326,8 +391,8 @@ function reportUpToDate(
     writeStdout(options, `${JSON.stringify(reportPayload(ctx, plan, [], notices, []), null, 2)}\n`);
     return SUCCESS;
   }
-  logger.info(UP_TO_DATE);
   for (const notice of notices) logger.warn(notice);
+  logger.close(UP_TO_DATE);
   return SUCCESS;
 }
 
@@ -347,7 +412,7 @@ function reportApplied(
   }
 
   const tree = formatFileTree(files);
-  if (tree.length > 0) logger.info(tree);
+  if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
   const over = tokenBudget(plan.warnings);
   const tokens = formatTokenLine(plan.alwaysOnTokens, over);
   if (over === undefined) logger.info(tokens);
@@ -357,7 +422,8 @@ function reportApplied(
     if (diffs.length > 0) logger.info(diffs);
   }
   for (const notice of notices) logger.warn(notice);
-  for (const step of nextSteps) logger.info(step);
+  for (const step of nextSteps) logger.step(step);
+  logger.close(ctx.dryRun ? DRY_RUN_DONE : RULES_WRITTEN, { ttyOnly: true });
   return SUCCESS;
 }
 

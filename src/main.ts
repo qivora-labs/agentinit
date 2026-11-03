@@ -9,7 +9,8 @@ import type { Prompter } from './ui/prompter.js';
 import { AGENT_TARGETS, createRunContext, parseAgents, type RunContext } from './context.js';
 import { AgentInitError } from './errors.js';
 import { ERROR, SUCCESS } from './exit-codes.js';
-import { createLogger, type Logger } from './ui/logger.js';
+import { createLogger, type Logger, type LoggerChrome } from './ui/logger.js';
+import { colorEnabled, supportsUnicode } from './ui/theme.js';
 // Inlined by tsdown. Reading package.json from disk would miss the packed binary.
 import pkg from '../package.json' with { type: 'json' };
 
@@ -40,12 +41,17 @@ export interface RunOptions {
 
 export async function run(argv: string[], io: CommandIo = defaultIo, options: RunOptions = {}): Promise<number> {
   let json = false;
+  let framed = false;
   try {
     const cli = createCli();
     const parsed = cli.parse(toCacArgv(argv), { run: false });
     json = parsed.options.json === true;
+    const chrome = terminalChrome();
 
     if (parsed.options.help === true) {
+      const logger = createLogger(io, false, chrome);
+      logger.open();
+      framed = logger.presented;
       printHelp(cli, io.stdout);
       return SUCCESS;
     }
@@ -61,7 +67,10 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
     const ctx = await buildContext(parsed.options, io);
     json = ctx.json;
     const commandName = cli.matchedCommand?.name ?? 'init';
-    return await dispatch(commandName, ctx, createLogger(io, ctx.json), {
+    const logger = createLogger(io, ctx.json, chrome);
+    logger.open();
+    framed = logger.presented;
+    return await dispatch(commandName, ctx, logger, {
       stdout: io.stdout,
       category: commandName === 'list' ? readCategoryFlag(parsed.options.category) : undefined,
       prompter: options.prompter,
@@ -70,7 +79,7 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
       onAtomicWrite: options.onAtomicWrite,
     });
   } catch (error) {
-    return reportError(error, io, json);
+    return reportError(error, io, json, framed);
   }
 }
 
@@ -255,21 +264,36 @@ function printHelp(cli: CAC, stdout: Writable): void {
   }
 }
 
-function reportError(error: unknown, io: CommandIo, json: boolean): number {
-  const logger = createLogger(io, json);
+function terminalChrome(): LoggerChrome {
+  return {
+    unicode: supportsUnicode(process.env, process.platform),
+    color: colorEnabled(process.env),
+  };
+}
+
+function reportError(error: unknown, io: CommandIo, json: boolean, framed: boolean): number {
+  const logger = createLogger(io, json, terminalChrome());
   if (error instanceof AgentInitError) {
-    logger.error(error.message);
+    writeError(logger, framed, error.message);
     if (error.hint !== undefined) logger.error(error.hint);
     return error.exitCode;
   }
 
   const message = error instanceof Error ? error.message : 'Unexpected failure';
-  logger.error(message);
+  writeError(logger, framed, message);
   logger.error(BUG_REPORT_LINE);
   if (process.env.DEBUG === 'agentinit' && error instanceof Error && error.stack !== undefined) {
     io.stderr.write(`${error.stack}\n`);
   }
   return ERROR;
+}
+
+function writeError(logger: Logger, framed: boolean, message: string): void {
+  if (framed) {
+    logger.close(message, { stream: 'stderr', tone: 'error' });
+    return;
+  }
+  logger.error(message);
 }
 
 function nodeErrorCode(error: unknown): string | undefined {

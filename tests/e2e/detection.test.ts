@@ -23,6 +23,9 @@ describe('detection', () => {
     const result = await runCli(['init', '--cwd', dir], { stdinTTY: true, stdoutTTY: true });
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("JavaScript projects aren't supported yet");
+    expect(result.stderr.split("JavaScript projects aren't supported yet")).toHaveLength(2);
+    expect(result.stdout).toContain('rules for the agents in this repo');
+    expect(result.stdout).not.toContain("JavaScript projects aren't supported yet");
     expect(await listFiles(dir)).toEqual(before);
   });
 

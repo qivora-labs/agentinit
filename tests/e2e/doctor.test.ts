@@ -135,6 +135,14 @@ describe('doctor', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('prints the wordmark once around a clean report on a terminal', async () => {
+    const dir = await initYes('next15-src');
+    const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    expect(result.code).toBe(0);
+    expect(result.stdout.split('No issues found.')).toHaveLength(2);
+    expect(result.stdout.split('rules for the agents in this repo')).toHaveLength(2);
+  });
+
   it('ignores --agents and keeps the manifest selection', async () => {
     const dir = await initYes('next15-src');
     const result = await runCli(['doctor', '--agents', 'cursor', '--cwd', dir]);
