@@ -62,8 +62,9 @@
 
 ### Follow-ups before re-run
 
-1. **T1 / T5 saturation:** With-rules agents already produce strong form + test output; checklist items that still fire are mostly `typescript-strict` return types. Consider tightening always-on `typescript-strict` examples or adding an explicit “exported helpers need return types” callout in form workflows — then re-run T1 (all four cells) and T5 if the bar changes.
-2. **T5 tie:** Both arms scored 0. A harder seed (e.g. a utility that invites mocking the unit under test) may better discriminate.
-3. **Stand-in agents:** Re-run with real Claude Code + Cursor Agent UI before treating a later Go as launch-grade, or document Task stand-ins as acceptable for v0.1.
+1. **Done (pending re-run):** `typescript-strict` now calls out exported helpers (`parse*`, schema mappers, components) and shows a `parseAmount` good example + missing-return-type anti-pattern.
+2. **Done (pending re-run):** T5 seed adds `src/utils/rates.ts` and `cartTotal` calls `loadRate`; checklist clarifies mocking `./rates` vs `./cart-total`.
+3. **Next:** Re-run all four T1 cells and all four T5 cells against a fresh fixture, append an addendum (or replace rows) here, then recompute the gate.
+4. **Stand-in agents:** Re-run with real Claude Code + Cursor Agent UI before treating a later Go as launch-grade, or document Task stand-ins as acceptable for v0.1.
 
 Owner sign-off: Tajnur (agent-assisted)  Date: 2026-11-03

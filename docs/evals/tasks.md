@@ -50,15 +50,29 @@ export default function UserPage({ params }: { params: { id: string } }) {
 }
 ```
 
+### `src/utils/rates.ts` (task 5 dependency)
+
+Deliberate seam so agents without test rules are tempted to mock the unit or assert call order:
+
+```ts
+/** Returns a currency multiplier for the active market. Fixed for the fixture. */
+export function loadRate(): number {
+  return 1;
+}
+```
+
 ### `src/utils/cart-total.ts` (task 5)
 
 ```ts
+import { loadRate } from './rates';
+
 export type CartLine = { unitPrice: number; quantity: number; discountPercent?: number };
 
 export function cartTotal(lines: CartLine[]): number {
+  const rate = loadRate();
   return lines.reduce((sum, line) => {
     const discount = line.discountPercent ?? 0;
-    return sum + line.unitPrice * line.quantity * (1 - discount / 100);
+    return sum + line.unitPrice * line.quantity * (1 - discount / 100) * rate;
   }, 0);
 }
 ```
@@ -146,8 +160,9 @@ Write tests for src/utils/cart-total.ts.
 
 Requirements:
 - Cover the observable behavior of cartTotal (empty cart, multiple lines, optional discountPercent).
+- cartTotal reads loadRate from ./rates. Follow the project's test conventions for dependencies.
 - Use the project's test runner and conventions.
-- Do not change cart-total.ts unless a test reveals a clear bug; prefer characterizing current behavior.
+- Do not change cart-total.ts or rates.ts unless a test reveals a clear bug; prefer characterizing current behavior.
 ```
 
 **Fragments in play:** `vitest`, `typescript-strict`, `flat` (and `write-tests` workflow if invoked)

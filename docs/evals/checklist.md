@@ -66,13 +66,15 @@ Fragment ids in parentheses are the source of the directive.
 
 | # | Violation | Source |
 | :--- | :--- | :--- |
-| 5.1 | Test name describes an internal call rather than an observable result | `vitest` |
-| 5.2 | Asserts call order / mock call shape instead of a return value, thrown error, or caller-provided callback | `vitest` |
-| 5.3 | Mocks the module under test (`cart-total`) | `vitest` |
+| 5.1 | Test name describes an internal call rather than an observable result (e.g. `calls loadRate`) | `vitest` |
+| 5.2 | Asserts call order / mock call shape of `loadRate` (or similar) instead of a return value, thrown error, or caller-provided callback | `vitest` |
+| 5.3 | Mocks the module under test (`cart-total` / `./cart-total`) | `vitest` |
 | 5.4 | `vi.mock` not at top level, or `vi` not imported from `vitest` when mocks are used | `vitest` |
 | 5.5 | No `describe` grouping named for the unit when multiple tests exist | `vitest` |
 | 5.6 | Uses the `any` type in test or helper files the agent wrote | `typescript-strict` |
-| 5.7 | Changes `cart-total.ts` behavior without a clear bug report (characterization preferred) | `write-tests` / `refactor` intent |
+| 5.7 | Changes `cart-total.ts` or `rates.ts` behavior without a clear bug report (characterization preferred) | `write-tests` / `refactor` intent |
+
+Note: Mocking `./rates` at top level is allowed when the assertion is still an observable `cartTotal` result. Mocking `./cart-total` is not.
 
 ---
 
