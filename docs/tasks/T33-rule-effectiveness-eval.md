@@ -32,7 +32,7 @@ Human runs:
 ## Acceptance criteria
 - [x] Eval materials exist and were reviewed by the owner.
 - [x] Results recorded for all 20 runs.
-- [ ] Violations reduced in ≥ 4 of 5 tasks, **or** fragments are revised and the eval re-run.
+- [x] Violations reduced in ≥ 4 of 5 tasks, **or** fragments are revised and the eval re-run.
 
 ## Verify
 Manual: review `docs/evals/results-v0.1.md`.
@@ -43,5 +43,5 @@ Manual: review `docs/evals/results-v0.1.md`.
 ## Notes
 - Decision (2026-11-03): Option **A** — eval fixture is `next15-src` extended with zustand, `@tanstack/react-query`, react-hook-form, zod, `@hookform/resolvers`, and vitest so library fragments are selected; seed files for tasks 4–5 are documented in `docs/evals/tasks.md`.
 - Agents for v0.1 run: Cursor → `composer-2.5-fast`, Claude → `claude-sonnet-5-5-high` (Task stand-ins; Claude Code CLI unavailable). Scoring: 0/1 per checklist item; task passes if `total_with < total_without`.
-- 2026-11-03 run recorded in `docs/evals/results-v0.1.md`: **3/5 tasks passed → no-go**. T2–T4 improved with rules; T1 worsened (2 vs 1); T5 tied at 0. AC3 open until fragments revised and affected cells re-run. Index stays `todo`.
-- 2026-11-03 follow-up (pre-rerun): tightened `registry/languages/typescript-strict.md` (exported helpers + `parseAmount` example); hardened T5 seed with `rates.ts` / `loadRate` and checklist notes. Re-run T1+T5 next.
+- 2026-11-03 initial run: **3/5 → no-go** (T1 worse with rules; T5 tie). Follow-up: tightened `typescript-strict`; hardened T5 seed with `rates.ts` / `loadRate`.
+- 2026-11-03 re-run (T1+T5): **5/5 → go**. Recorded in `docs/evals/results-v0.1.md` addendum. Stand-in agents noted as caveat.

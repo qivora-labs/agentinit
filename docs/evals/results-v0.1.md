@@ -43,7 +43,7 @@
 | 19 | Claude | T5-write-tests | with | 0 | — | Clean Vitest suite |
 | 20 | Claude | T5-write-tests | without | 0 | — | Clean Vitest suite |
 
-## Per-task summary
+## Per-task summary (initial run)
 
 | Task | total_with | total_without | Pass? |
 | :--- | ---: | ---: | :--- |
@@ -53,18 +53,40 @@
 | T4-refactor-rsc | 0 | 1 | yes |
 | T5-write-tests | 0 | 0 | no (tie) |
 
-**Tasks passed:** 3 / 5
+**Tasks passed (initial):** 3 / 5 → no-go; see addendum.
+
+## Addendum — T1 + T5 re-run (2026-11-03)
+
+After `fix(registry): tighten typescript-strict…` (`18bdb96`) and `docs(evals): harden T5 seed…` (`e5be72d`). Workdirs under `/tmp/agentinit-eval-v01-rerun/`. Same agent models as Meta.
+
+| Run | Agent | Task | Rules | Violations | Hit items | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| R1 | Cursor | T1-form-server-action | with | 0 | — | RHF+Zod; `parseNewsletterSignup` has explicit return type |
+| R2 | Cursor | T1-form-server-action | without | 1 | 1.5 | Native form + server `safeParse`; `NewsletterPage` missing return type |
+| R3 | Claude | T1-form-server-action | with | 0 | — | RHF+Zod; `parseNewsletter` typed |
+| R4 | Claude | T1-form-server-action | without | 0 | — | `useActionState` + Zod; exports typed |
+| R5 | Cursor | T5-write-tests | with | 0 | — | Mocks `./rates`; asserts only `cartTotal` results |
+| R6 | Cursor | T5-write-tests | without | 1 | 5.2 | Mocks `./rates` but asserts `loadRateMock` call counts |
+| R7 | Claude | T5-write-tests | with | 0 | — | Mocks `./rates`; observable assertions only |
+| R8 | Claude | T5-write-tests | without | 2 | 5.1, 5.2 | Test named `loads the rate once…` + `toHaveBeenCalledTimes` |
+
+### Per-task summary (final)
+
+| Task | total_with | total_without | Pass? | Source |
+| :--- | ---: | ---: | :--- | :--- |
+| T1-form-server-action | 0 | 1 | yes | re-run |
+| T2-ui-store | 0 | 1 | yes | initial |
+| T3-data-hook | 1 | 4 | yes | initial |
+| T4-refactor-rsc | 0 | 1 | yes | initial |
+| T5-write-tests | 0 | 3 | yes | re-run |
+
+**Tasks passed:** 5 / 5
 
 ## Decision
 
-- [ ] **Go** — violations reduced in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
-- [x] **No-go** — fewer than 4 tasks passed; revise fragments and re-run affected cells before release.
+- [x] **Go** — violations reduced in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
+- [ ] **No-go** — fewer than 4 tasks passed; revise fragments and re-run affected cells before release.
 
-### Follow-ups before re-run
-
-1. **Done (pending re-run):** `typescript-strict` now calls out exported helpers (`parse*`, schema mappers, components) and shows a `parseAmount` good example + missing-return-type anti-pattern.
-2. **Done (pending re-run):** T5 seed adds `src/utils/rates.ts` and `cartTotal` calls `loadRate`; checklist clarifies mocking `./rates` vs `./cart-total`.
-3. **Next:** Re-run all four T1 cells and all four T5 cells against a fresh fixture, append an addendum (or replace rows) here, then recompute the gate.
-4. **Stand-in agents:** Re-run with real Claude Code + Cursor Agent UI before treating a later Go as launch-grade, or document Task stand-ins as acceptable for v0.1.
+Caveat: Cursor/Claude cells used Task stand-ins (`composer-2.5-fast`, `claude-sonnet-5-5-high`), not Cursor Agent UI / Claude Code CLI. Accept for v0.1 or spot-check on real products before launch.
 
 Owner sign-off: Tajnur (agent-assisted)  Date: 2026-11-03
