@@ -33,14 +33,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
-
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v2
         with:
           # pnpm release = build + changeset publish (provenance via publishConfig).
+          # Build only here on publish runs — avoid a second pnpm build before the action.
           # v2 configures GitHub auth via github-token (not a GITHUB_TOKEN env var).
           github-token: ${{ secrets.GITHUB_TOKEN }}
           publish-script: pnpm release
