@@ -8,6 +8,7 @@ import {
   collectDoctorIssues,
   doctorReport,
   formatDoctorReport,
+  NO_ISSUES,
   type CheckedFragment,
   type DoctorIssue,
   type DriftChange,
@@ -28,6 +29,7 @@ import {
 } from '../registry/resolve.js';
 import type { ProjectProfile } from '../types.js';
 import type { Logger } from '../ui/logger.js';
+import { paintDoctorReport } from '../ui/paint.js';
 
 export interface DoctorOptions {
   readonly stdout?: Writable;
@@ -50,7 +52,11 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
 
   const report = doctorReport(issues);
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);
-  else logger.info(formatDoctorReport(issues));
+  else if (report.ok) logger.close(NO_ISSUES);
+  else {
+    logger.info(paintDoctorReport(formatDoctorReport(issues), logger.theme));
+    logger.close();
+  }
   return report.ok ? SUCCESS : DOCTOR_ISSUES;
 }
 

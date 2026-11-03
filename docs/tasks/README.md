@@ -65,6 +65,11 @@ graph LR
   T27 & T28 --> T31
   T02 & T30 & T31 --> T32
   T29 --> T33
+  T27 --> T34 & T36
+  T34 --> T35
+  T34 & T36 --> T37
+  T35 --> T38 & T39
+  T34 & T35 & T36 & T37 & T38 & T39 --> T40
 ```
 
 **Parallel waves** (tasks in the same wave can run in separate sessions at the same time):
@@ -80,6 +85,10 @@ graph LR
 | 7 | T27, T28 |
 | 8 | T29, T30, T31 |
 | 9 | T32, T33 |
+| 10 | T34, T36 |
+| 11 | T35, T37 |
+| 12 | T38, T39 |
+| 13 | T40 |
 
 Running tasks in parallel is optional. When working solo, follow the ID order; it respects every dependency.
 
@@ -123,6 +132,15 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | done |
 | [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | done |
 | [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | done |
+| [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | todo |
+| [T35](T35-review-before-write.md) | Review before write | M7 | T34 | L | todo |
+| [T36](T36-detection-card.md) | Detection summary card | M7 | T27 | S | todo |
+| [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | todo |
+| [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | todo |
+| [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | todo |
+| [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | todo |
+
+**M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
 
 ## Task File Template
 Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.
