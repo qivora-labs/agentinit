@@ -17,6 +17,8 @@ export interface Theme {
   readonly unicode: boolean;
   readonly glyphs: ThemeGlyphs;
   readonly accent: (text: string) => string;
+  /** Terminal foreground, heavier. Stays readable on a light background. */
+  readonly ink: (text: string) => string;
   readonly boldAccent: (text: string) => string;
   readonly muted: (text: string) => string;
   readonly dim: (text: string) => string;
@@ -75,6 +77,7 @@ export function createTheme(tty: boolean, unicode: boolean, color = tty): Theme 
     unicode,
     glyphs: unicode ? UNICODE_GLYPHS : ASCII_GLYPHS,
     accent: colors.cyan,
+    ink: colors.bold,
     boldAccent: (text) => colors.bold(colors.cyan(text)),
     muted: colors.gray,
     dim: colors.dim,

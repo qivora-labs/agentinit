@@ -1,27 +1,52 @@
 import { describe, expect, it } from 'vitest';
-import { formatBanner, formatClose } from '../../src/ui/brand.js';
+import { formatBanner, formatClose, TAGLINE } from '../../src/ui/brand.js';
 import { createTheme } from '../../src/ui/theme.js';
 
-const TAGLINE = 'rules for the agents in this repo';
+const NEEDLE = [
+  '  █     ████  █████  █   █  █████    █  █   █  █  █████',
+  ' █ █   █      █      ██  █    █      █  ██  █  █    █  ',
+  '█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  ',
+  '█   █  █   █  █      █  ██    █      █  █  ██  █    █  ',
+  '█   █   ████  █████  █   █    █      █  █   █  █    █  ',
+  '                   ────────◆────────',
+  `           ${TAGLINE}`,
+].join('\n');
 
 describe('formatBanner', () => {
-  it('prints the name and tagline with no color and no ASCII art', () => {
+  it('draws the Needle mark with AGENT and INIT separated', () => {
     const banner = formatBanner(createTheme(false, true));
-    expect(banner).toBe(`┌  agentinit\n│  ${TAGLINE}`);
+    expect(banner).toBe(NEEDLE);
     expect(banner).not.toContain('\u001b[');
+    expect(banner.split('█████    █')).toHaveLength(2);
   });
 
-  it('uses ASCII bars when Unicode is off', () => {
-    expect(formatBanner(createTheme(false, false))).toBe(`+  agentinit\n|  ${TAGLINE}`);
+  it('prints AGENT and INIT in text when Unicode is off', () => {
+    expect(formatBanner(createTheme(false, false))).toBe(`+  AGENT  INIT\n|  ${TAGLINE}`);
   });
 
-  it('colors the name when the terminal allows it', () => {
+  it('paints AGENT in the foreground and INIT in cyan', () => {
+    const plain = formatBanner(createTheme(true, true, false));
     const banner = formatBanner(createTheme(true, true, true));
-    expect(banner).toContain('agentinit');
+    expect(stripColor(banner)).toBe(plain);
+    expect(banner).toContain('\u001b[1m█████\u001b[22m    \u001b[36m█');
+    expect(banner).toContain('\u001b[36m◆');
     expect(banner).toContain(TAGLINE);
-    expect(banner).toContain('\u001b[');
   });
 });
+
+function stripColor(text: string): string {
+  let plain = '';
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char !== '\u001b') {
+      plain += char ?? '';
+      continue;
+    }
+    const end = text.indexOf('m', index);
+    index = end === -1 ? text.length : end;
+  }
+  return plain;
+}
 
 describe('formatClose', () => {
   it('closes with the message once', () => {

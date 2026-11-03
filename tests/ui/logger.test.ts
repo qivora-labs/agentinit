@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { formatBanner } from '../../src/ui/brand.js';
 import { createLogger } from '../../src/ui/logger.js';
+import { createTheme } from '../../src/ui/theme.js';
 import { captureStream } from '../helpers/run.js';
 
 describe('createLogger', () => {
@@ -76,9 +78,9 @@ describe('createLogger', () => {
     logger.open();
     logger.open();
     logger.close('Rules written.');
-    expect(stdout.text()).toBe(
-      ['┌  agentinit', '│  rules for the agents in this repo', '', '└  Rules written.', ''].join('\n'),
-    );
+    const banner = formatBanner(createTheme(true, true, false));
+    expect(stdout.text()).toBe(`${banner}\n\n└  Rules written.\n`);
+    expect(stdout.text().split('rules for the agents in this repo')).toHaveLength(2);
   });
 
   it('uses ASCII bars when Unicode is off', () => {
@@ -89,7 +91,7 @@ describe('createLogger', () => {
     });
     logger.open();
     logger.info('hello');
-    expect(stdout.text()).toBe('+  agentinit\n|  rules for the agents in this repo\n\n*  hello\n');
+    expect(stdout.text()).toBe('+  AGENT  INIT\n|  rules for the agents in this repo\n\n*  hello\n');
   });
 
   it('leaves json mode plain on a tty', () => {
