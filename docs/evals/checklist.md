@@ -30,7 +30,7 @@ Fragment ids in parentheses are the source of the directive.
 | 2.4 | Store actions are defined outside the `create` call (or the store mixes unrelated concerns) | `zustand` |
 | 2.5 | Uses the `any` type | `typescript-strict` |
 | 2.6 | Exported function missing an explicit return type | `typescript-strict` |
-| 2.7 | Store or hook file placed outside `src/stores/`, `*.store.ts(x)`, `src/hooks/`, or a feature folder consistent with flat layout | `flat`, `zustand` globs |
+| 2.7 | New store or UI files are not placed under the flat layout (`src/components/`, `src/hooks/`, `src/utils/`, `src/types/`, or a `src/features/<feature>/` folder) when they should be | `flat` |
 
 ---
 
@@ -44,7 +44,7 @@ Fragment ids in parentheses are the source of the directive.
 | 3.4 | `useSuspenseQuery` used without a `<Suspense>` boundary, or passed `enabled` / `placeholderData` / `throwOnError` | `tanstack-query` |
 | 3.5 | Uses the `any` type | `typescript-strict` |
 | 3.6 | Exported function missing an explicit return type | `typescript-strict` |
-| 3.7 | Hook placed outside `src/hooks/`, `src/queries/`, or a feature folder | `flat`, `tanstack-query` globs |
+| 3.7 | New hook, query, or demo files are not placed under the flat layout (`src/components/`, `src/hooks/`, `src/utils/`, `src/types/`, or a `src/features/<feature>/` folder) when they should be | `flat` |
 
 ---
 
@@ -80,6 +80,7 @@ Note: Mocking `./rates` at top level is allowed when the assertion is still an o
 
 ## Shared notes
 
+- Zustand globs (`stores/**`, `*.store.ts`, `*.store.tsx`) and TanStack Query globs (`hooks/**`, `queries/**`) only decide where those library rules load. They are not placement requirements. `src/stores/` and `src/queries/` are outside the flat layout, so they count for **2.7** / **3.7**.
 - If the agent skips a library entirely (e.g. no Zod on task 1), still score the items that apply to what it wrote; missing validation when a Server Action accepts input is **1.2** / **1.4**.
 - Formatting-only edits do not create violations.
 - When unsure between 0 and 1, mark **1** and explain in notes so the owner can downgrade.

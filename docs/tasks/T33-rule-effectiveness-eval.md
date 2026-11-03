@@ -44,4 +44,4 @@ Manual: review `docs/evals/results-v0.1.md`.
 - Decision (2026-11-03): Option **A** — eval fixture is `next15-src` extended with zustand, `@tanstack/react-query`, react-hook-form, zod, `@hookform/resolvers`, and vitest so library fragments are selected; seed files for tasks 4–5 are documented in `docs/evals/tasks.md`.
 - Agents for v0.1 run: Cursor → `composer-2.5-fast`, Claude → `claude-sonnet-5-5-high` (Task stand-ins; Claude Code CLI unavailable). Scoring: 0/1 per checklist item; task passes if `total_with < total_without`.
 - 2026-11-03 initial run: **3/5 → no-go** (T1 worse with rules; T5 tie). Follow-up: tightened `typescript-strict`; hardened T5 seed with `rates.ts` / `loadRate`.
-- 2026-11-03 re-run (T1+T5): **5/5 → go**. Recorded in `docs/evals/results-v0.1.md` addendum. Stand-in agents noted as caveat.
+- 2026-11-03 re-run (T1+T5): **5/5 → go**, at CLI commit `de4db2f` after a fresh `init`. T1 followed the `typescript-strict` edit; T5 followed an instrument change (`rates.ts`), not a vitest edit. Owner accepted the Task stand-ins as the v0.1 pair. Recorded in `docs/evals/results-v0.1.md`.

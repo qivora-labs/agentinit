@@ -4,12 +4,13 @@
 
 | Field | Value |
 | :--- | :--- |
-| CLI version / commit | `49f7f7a` (`docs: add rule-effectiveness eval materials`) |
+| CLI commit (initial 20) | `49f7f7a` (`docs: add rule-effectiveness eval materials`) |
+| CLI commit (T1+T5 re-run) | `de4db2f` (includes `18bdb96`, the `typescript-strict` return-type tightening) |
 | Eval date | 2026-11-03 |
-| Cursor model | `composer-2.5-fast` (Cursor Task generalPurpose stand-in for Composer/Agent) |
-| Claude model | `claude-sonnet-5-5-high` (Cursor Task stand-in; Claude Code CLI not installed on the eval host) |
-| Fixture notes | Extended `next15-src` per README (zustand, `@tanstack/react-query`, RHF, zod, `@hookform/resolvers`, vitest + seed files). Workdirs under `/tmp/agentinit-eval-v01/`. |
-| Owner | Tajnur (run executed by agent on owner’s behalf) |
+| Cursor model | `composer-2.5-fast` (Cursor Task `generalPurpose`) |
+| Claude model | `claude-sonnet-5-5-high` (Cursor Task `generalPurpose`; Claude Code was not installed) |
+| Fixture notes | Extended `next15-src` per README (zustand, `@tanstack/react-query`, RHF, zod, `@hookform/resolvers`, vitest + seed files). Initial workdirs under `/tmp/agentinit-eval-v01/`. |
+| Owner | Tajnur |
 
 ### Methodology notes
 
@@ -27,7 +28,7 @@
 | 3 | Claude | T1-form-server-action | with | 1 | 1.5 | Same as Cursor with; `parseNewsletter` missing return type |
 | 4 | Claude | T1-form-server-action | without | 1 | 1.5 | `useActionState` + Zod in action; `NewsletterPage` / `NewsletterForm` missing return types |
 | 5 | Cursor | T2-ui-store | with | 0 | — | Feature store + single-field selectors |
-| 6 | Cursor | T2-ui-store | without | 0 | — | `src/stores/` + single-field selectors |
+| 6 | Cursor | T2-ui-store | without | 1 | 2.7 | `src/stores/` is outside the flat layout; single-field selectors. Rescored when 2.7 was aligned with `flat` |
 | 7 | Claude | T2-ui-store | with | 0 | — | Feature store + single-field selectors |
 | 8 | Claude | T2-ui-store | without | 1 | 2.6 | Clean store; `SidebarToggle` missing exported return type |
 | 9 | Cursor | T3-data-hook | with | 0 | — | `postKeys` + `queryOptions` + `useSuspenseQuery` under Suspense |
@@ -48,7 +49,7 @@
 | Task | total_with | total_without | Pass? |
 | :--- | ---: | ---: | :--- |
 | T1-form-server-action | 2 | 1 | no (with higher) |
-| T2-ui-store | 0 | 1 | yes |
+| T2-ui-store | 0 | 2 | yes |
 | T3-data-hook | 1 | 4 | yes |
 | T4-refactor-rsc | 0 | 1 | yes |
 | T5-write-tests | 0 | 0 | no (tie) |
@@ -57,7 +58,9 @@
 
 ## Addendum — T1 + T5 re-run (2026-11-03)
 
-After `fix(registry): tighten typescript-strict…` (`18bdb96`) and `docs(evals): harden T5 seed…` (`e5be72d`). Workdirs under `/tmp/agentinit-eval-v01-rerun/`. Same agent models as Meta.
+Baselines were rebuilt at `de4db2f`. That commit contains `18bdb96`. From the repo: `pnpm build`, then `node dist/cli.js init --yes` on a fresh extended fixture. The with-rules `AGENTS.md` included the tightened return-type directive (`parse*`, `safeParse` wrappers, schema mappers, and React components). The without-rules baseline had the generated agent files removed.
+
+T1’s follow-up is that fragment change. T5’s follow-up is an instrument change: `src/utils/rates.ts` (`loadRate`) plus a prompt that names the dependency. The vitest fragment was not edited. The original T5 seed had no dependency, so checklist items 5.1 and 5.2 could not occur. Workdirs under `/tmp/agentinit-eval-v01-rerun/`. Same models as Meta.
 
 | Run | Agent | Task | Rules | Violations | Hit items | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -75,7 +78,7 @@ After `fix(registry): tighten typescript-strict…` (`18bdb96`) and `docs(evals)
 | Task | total_with | total_without | Pass? | Source |
 | :--- | ---: | ---: | :--- | :--- |
 | T1-form-server-action | 0 | 1 | yes | re-run |
-| T2-ui-store | 0 | 1 | yes | initial |
+| T2-ui-store | 0 | 2 | yes | initial |
 | T3-data-hook | 1 | 4 | yes | initial |
 | T4-refactor-rsc | 0 | 1 | yes | initial |
 | T5-write-tests | 0 | 3 | yes | re-run |
@@ -85,8 +88,8 @@ After `fix(registry): tighten typescript-strict…` (`18bdb96`) and `docs(evals)
 ## Decision
 
 - [x] **Go** — violations reduced in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
-- [ ] **No-go** — fewer than 4 tasks passed; revise fragments and re-run affected cells before release.
+- [ ] **No-go** — fewer than 4 tasks passed; revise the failing fragments, or the seed when a checklist item cannot occur, and re-run the affected cells before release.
 
-Caveat: Cursor/Claude cells used Task stand-ins (`composer-2.5-fast`, `claude-sonnet-5-5-high`), not Cursor Agent UI / Claude Code CLI. Accept for v0.1 or spot-check on real products before launch.
+v0.1 uses the Task stand-ins in Meta (`composer-2.5-fast` for Cursor, `claude-sonnet-5-5-high` for Claude). Later minors keep that pair. Claude Code was not installed on the eval host.
 
-Owner sign-off: Tajnur (agent-assisted)  Date: 2026-11-03
+Owner sign-off: Tajnur — accepted the v0.1 stand-in pair and the recorded scores. Date: 2026-11-03

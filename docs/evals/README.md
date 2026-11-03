@@ -2,18 +2,18 @@
 
 Manual check from PRD §8.3 / §11. Before each minor release, run the five fixed tasks in [tasks.md](./tasks.md) in **two agents**, **with** and **without** generated rules, on an extended copy of `tests/fixtures/next15-src`. Ship only if rules reduce violations in **at least 4 of 5** tasks.
 
-An agent can prepare these materials. **A human runs every session and scores the diffs.** Automation is out of scope until v0.4+.
+An agent can prepare these materials. **A human reviews the results and signs go/no-go.** Automation is out of scope until v0.4+.
 
 ## Agents
 
-Use these two for v0.1 (same pair every release so results stay comparable):
+Use the same two runners for every release so results stay comparable. Record the model id in the results file and keep it fixed for every run of that release.
 
-| Agent | Product |
-| :--- | :--- |
-| Cursor | Cursor Agent (Composer / Agent mode) |
-| Claude | Claude Code |
+v0.1 used Cursor Task stand-ins. Claude Code was not installed on the eval host. The owner accepted those runs and their scores for this release ([results-v0.1.md](./results-v0.1.md)). Later minors keep this pair.
 
-Record the exact model id used for each agent in [results-v0.1.md](./results-v0.1.md). Keep that model fixed for all 20 runs of a release.
+| Agent | v0.1 runner | Model |
+| :--- | :--- | :--- |
+| Cursor | Cursor Task (`generalPurpose`) | `composer-2.5-fast` |
+| Claude | Cursor Task (`generalPurpose`) | `claude-sonnet-5-5-high` |
 
 ## Fixture setup
 
@@ -62,7 +62,7 @@ Each run starts from a **fresh copy** of the matching baseline (never reuse a di
 ## Procedure (one run)
 
 1. Copy the correct baseline into a new empty directory.
-2. Open a **fresh** agent session (new chat / new Claude Code session). Do not carry prior eval context.
+2. Open a **fresh** session in the runner from the Agents table. Do not carry prior eval context.
 3. Point the agent at that directory as the project root.
 4. Paste **only** the task prompt from [tasks.md](./tasks.md). No extra instructions, no “follow the rules”, no hints about violations.
 5. Let the agent finish (or stop after a clear first deliverable if it loops). Do not steer mid-run.
@@ -90,7 +90,7 @@ The task **passes** if `total_with < total_without`. Ties and increases fail tha
 
 ### Release gate
 
-**Go** if ≥ 4 of 5 tasks pass. Otherwise **no-go**: revise the failing fragments, re-run the affected tasks (all four cells), and record a new results file or an addendum section.
+**Go** if ≥ 4 of 5 tasks pass. Otherwise **no-go**: revise the failing fragments, re-run the affected tasks (all four cells), and record a new results file or an addendum. When a checklist item cannot occur on the current seed, revise that seed and its task prompt together — the same prompt on both baselines — and name the instrument change in the addendum. A tie on a task the seed cannot provoke is an instrument gap. It is not, by itself, a fragment failure.
 
 ## Recording results
 

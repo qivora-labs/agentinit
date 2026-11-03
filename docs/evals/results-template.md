@@ -57,6 +57,6 @@ One row per run. `violations` is the sum of checklist items marked 1. Put item i
 ## Decision
 
 - [ ] **Go** — violations reduced in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
-- [ ] **No-go** — fewer than 4 tasks passed; revise fragments and re-run affected cells before release.
+- [ ] **No-go** — fewer than 4 tasks passed; revise the failing fragments, or the seed when a checklist item cannot occur, and re-run the affected cells before release.
 
 Owner sign-off: ______________________  Date: __________
