@@ -36,6 +36,39 @@ pnpm add -D vitest@^3
 
 In `package.json`, set `"test": "vitest run"` under `scripts` (keep existing scripts).
 
+Extend `tsconfig.json` so seed `.tsx` files and the `@/` import resolve (stock fixture only sets `strict`):
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"]
+}
+```
+
+Add a minimal `vitest.config.ts` at the workdir root (task 5 seeds are plain `.ts`; this keeps `pnpm test` runnable without JSX transform surprises):
+
+```ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+  },
+});
+```
+
 Add the seed files from [tasks.md](./tasks.md) (required for tasks 4 and 5). Then generate rules:
 
 ```bash
@@ -55,7 +88,7 @@ Copy the finished tree to two baselines and keep them immutable:
 | Baseline | Contents |
 | :--- | :--- |
 | `with-rules` | Full tree after `init` (rules, workflows, manifest). |
-| `without-rules` | Same `package.json`, source, and seed files; **delete** `.agentinit/`, `AGENTS.md`, `ARCHITECTURE.md`, and every agent file tree (`.cursor/`, `.claude/`, `.windsurf/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`). |
+| `without-rules` | Same `package.json`, source, and seed files; **delete** `.agentinit/`, `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, and every agent file tree (`.cursor/`, `.claude/`, `.windsurf/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`). |
 
 Each run starts from a **fresh copy** of the matching baseline (never reuse a dirty workdir).
 

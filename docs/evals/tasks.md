@@ -45,8 +45,13 @@ export function UserPanel({ userId }: { userId: string }) {
 ```tsx
 import { UserPanel } from '@/components/user-panel';
 
-export default function UserPage({ params }: { params: { id: string } }) {
-  return <UserPanel userId={params.id} />;
+export default async function UserPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <UserPanel userId={id} />;
 }
 ```
 
