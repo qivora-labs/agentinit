@@ -30,8 +30,8 @@ Human runs:
 - Automating the eval (v0.4+).
 
 ## Acceptance criteria
-- [ ] Eval materials exist and were reviewed by the owner.
-- [ ] Results recorded for all 20 runs.
+- [x] Eval materials exist and were reviewed by the owner.
+- [x] Results recorded for all 20 runs.
 - [ ] Violations reduced in ≥ 4 of 5 tasks, **or** fragments are revised and the eval re-run.
 
 ## Verify
@@ -41,6 +41,6 @@ Manual: review `docs/evals/results-v0.1.md`.
 `docs: add rule-effectiveness eval materials` (and later `docs: record v0.1 eval results`)
 
 ## Notes
-- Decision (2026-11-03): Option **A** — eval fixture is `next15-src` extended with zustand, `@tanstack/react-query`, react-hook-form, zod, `@hookform/resolvers`, and vitest so library fragments are selected; seed files for tasks 4–5 are documented in `docs/evals/tasks.md`. Materials-only PR; human still runs the 20 sessions and fills `docs/evals/results-v0.1.md` from the template.
-- Agents fixed for v0.1 comparability: Cursor and Claude Code. Scoring: 0/1 per checklist item; task passes if `total_with < total_without` across both agents.
-- Materials are in `docs/evals/` for owner review (AC1). AC1–AC3 and index status stay open until review + human scoring; then commit `docs: record v0.1 eval results` and mark T33 `done`.
+- Decision (2026-11-03): Option **A** — eval fixture is `next15-src` extended with zustand, `@tanstack/react-query`, react-hook-form, zod, `@hookform/resolvers`, and vitest so library fragments are selected; seed files for tasks 4–5 are documented in `docs/evals/tasks.md`.
+- Agents for v0.1 run: Cursor → `composer-2.5-fast`, Claude → `claude-sonnet-5-5-high` (Task stand-ins; Claude Code CLI unavailable). Scoring: 0/1 per checklist item; task passes if `total_with < total_without`.
+- 2026-11-03 run recorded in `docs/evals/results-v0.1.md`: **3/5 tasks passed → no-go**. T2–T4 improved with rules; T1 worsened (2 vs 1); T5 tied at 0. AC3 open until fragments revised and affected cells re-run. Index stays `todo`.
