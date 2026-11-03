@@ -41,4 +41,6 @@ Manual: review `docs/evals/results-v0.1.md`.
 `docs: add rule-effectiveness eval materials` (and later `docs: record v0.1 eval results`)
 
 ## Notes
-_Record decisions and discovered gaps here._
+- Decision (2026-11-03): Option **A** — eval fixture is `next15-src` extended with zustand, `@tanstack/react-query`, react-hook-form, zod, `@hookform/resolvers`, and vitest so library fragments are selected; seed files for tasks 4–5 are documented in `docs/evals/tasks.md`. Materials-only PR; human still runs the 20 sessions and fills `docs/evals/results-v0.1.md` from the template.
+- Agents fixed for v0.1 comparability: Cursor and Claude Code. Scoring: 0/1 per checklist item; task passes if `total_with < total_without` across both agents.
+- Materials are in `docs/evals/` for owner review (AC1). AC1–AC3 and index status stay open until review + human scoring; then commit `docs: record v0.1 eval results` and mark T33 `done`.
