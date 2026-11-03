@@ -54,6 +54,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Doctor
+        run: node dist/cli.js doctor
+
       - name: Check package
         run: pnpm check:package
 

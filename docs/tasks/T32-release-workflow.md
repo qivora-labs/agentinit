@@ -37,9 +37,9 @@ Automated, provenance-signed npm releases via changesets, plus a checklist for m
 - Making the repo public or publishing (manual, by the owner, following the checklist).
 
 ## Acceptance criteria
-- [ ] `release.yml` is valid (`actionlint`) and, on `main`, opens a "Version Packages" PR proposing `0.1.0`.
-- [ ] The workflow does **not** publish while the repository is private (document this in the checklist; don't merge the version PR before step 5).
-- [ ] Dogfooding: generated files committed, hand-written content unchanged outside managed blocks, and CI `doctor` step passes.
+- [x] `release.yml` is valid (`actionlint`) and, on `main`, opens a "Version Packages" PR proposing `0.1.0`.
+- [x] The workflow does **not** publish while the repository is private (document this in the checklist; don't merge the version PR before step 5).
+- [x] Dogfooding: generated files committed, hand-written content unchanged outside managed blocks, and CI `doctor` step passes.
 - [ ] Checklist reviewed by the owner.
 
 ## Verify
@@ -51,4 +51,9 @@ pnpm changeset status
 `ci: add changesets release workflow and launch checklist`
 
 ## Notes
-_Record decisions and discovered gaps here._
+- `changesets/action@v2` (paired with `@changesets/cli` v3) uses `publish-script`, not the v1 `publish` input. Official v2 README documents `publish-script`.
+- Release job pins the same action majors as CI (`checkout@v7`, `pnpm/action-setup@v6`, `setup-node@v7`) and Node 22. Both `NPM_TOKEN` and `NODE_AUTH_TOKEN` are set from `secrets.NPM_TOKEN` so setup-node's registry `.npmrc` and the action agree.
+- `pnpm changeset status` reports a `minor` bump for `@agentinit/cli` (from `0.0.0` → `0.1.0`) via existing minors plus `.changeset/initial-release.md`.
+- Dogfood (`init --yes`): base rules only (no framework); agents cursor + claude; library vitest; architecture `flat`. Hand-written text in `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, and existing `.cursor/` / `.claude/` workflow files stayed outside managed blocks. `doctor` reports no issues.
+- Follow-up (registry content): the `flat` architecture fragment still steers toward `src/components/`, `src/hooks/`, etc., which reads poorly for this CLI repo. Consider a `node-library` / non-web architecture path (PRD §0.3 mentions `node-library`).
+- Owner still needs to review `docs/release-checklist.md` before launch (acceptance criterion left open).
