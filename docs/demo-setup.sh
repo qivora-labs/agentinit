@@ -9,6 +9,19 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEMO="$(mktemp -d "${TMPDIR:-/tmp}/agentinit-demo.XXXXXX")"
 cp -R "$ROOT/tests/fixtures/next15-src/." "$DEMO/"
 
+# First-run demo: drop any leftover generated files (never commit these into
+# the fixture; strip them here so a dirty checkout still records cleanly).
+rm -rf \
+  "$DEMO/.agentinit" \
+  "$DEMO/.claude" \
+  "$DEMO/.cursor" \
+  "$DEMO/.github" \
+  "$DEMO/.windsurf"
+rm -f \
+  "$DEMO/AGENTS.md" \
+  "$DEMO/ARCHITECTURE.md" \
+  "$DEMO/CLAUDE.md"
+
 mkdir -p "$DEMO/.bin"
 ln -sfn "$ROOT/dist/cli.js" "$DEMO/.bin/agentinit"
 
@@ -27,5 +40,7 @@ EOF
 chmod +x "$DEMO/.bin/npx"
 
 export PATH="$DEMO/.bin:$PATH"
+# Short prompt matching VHS's default WaitPattern (/>$/); hide the temp path.
+export PS1='> '
 cd "$DEMO"
 clear
