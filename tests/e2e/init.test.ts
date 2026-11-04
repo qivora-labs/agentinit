@@ -330,6 +330,27 @@ describe('init', () => {
     expect(claude?.diff).toContain('+++');
   });
 
+  it('dry-run closing line omits skipped files from the change count', async () => {
+    const dir = await copyFixture('existing-workflow-file');
+    const json = await runCli(['init', '--yes', '--dry-run', '--json', '--cwd', dir]);
+    expect(json.code).toBe(0);
+    const parsed = JSON.parse(json.stdout) as {
+      files: readonly { action: string }[];
+    };
+    expect(parsed.files.some((file) => file.action === 'skipped')).toBe(true);
+    const wouldChange = parsed.files.filter(
+      (file) => file.action !== 'unchanged' && file.action !== 'skipped',
+    ).length;
+
+    const preview = await runCli(['init', '--yes', '--dry-run', '--cwd', dir], {
+      stdoutTTY: true,
+    });
+    expect(preview.code).toBe(0);
+    expect(preview.stdout).toContain(
+      `Dry run · ${String(wouldChange)} files would change. Nothing written.`,
+    );
+  });
+
   it('prints the init report as json on a real run', async () => {
     const dir = await copyFixture('next15-src');
     const result = await runCli(['init', '--yes', '--json', '--cwd', dir]);

@@ -17,7 +17,7 @@ Make diffs readable: colored, without header noise, only where something already
 1. **Diff formatter** (`src/ui/diff.ts`, pure): `formatDiff(unified, theme) → string`.
    - Drop `Index:`, `===`, `---`, and `+++` lines and trailing blank lines.
    - Paint `+` lines green, `-` lines red, `@@` lines gray. Context lines stay plain.
-   - Cap a single diff at 40 lines on a TTY, then print `… N more lines (run with --dry-run to see all)`. `--dry-run` itself shows the full diff.
+   - Cap a single diff at 40 lines on a TTY, then print `… N more lines`. `--dry-run` itself shows the full diff (`full: true`).
 2. **Prompter**: add `prompter.diff(unified, title)` to the `Prompter` interface. The Clack adapter formats with `formatDiff` and shows it in a note. The fake prompter records it. `src/io/apply.ts` calls `prompter.diff` instead of `prompter.note`, so `io/` still imports only the prompter interface.
 3. **Conflict wording** (`src/io/apply.ts` `ask`):
    - A managed block reads `the agentinit section of CLAUDE.md`. A whole file reads its path.
@@ -59,7 +59,7 @@ cp -r tests/fixtures/existing-claude-md /tmp/ai-t39 && node dist/cli.js init --c
 
 ## Notes
 - `formatDiff` takes optional `{ full: true }` so dry-run never truncates; conflict prompts cap at 40 on a TTY.
-- Dry-run closing line (`Dry run · N files would change…`) stays TTY-only chrome, matching the previous close behavior.
+- Dry-run closing line (`Dry run · N files would change…`) stays TTY-only chrome, matching the previous close behavior. `skipped` files are omitted from N.
 - Apply prompt vs `--yes` adopt paths are byte-identical (regression in `tests/io/apply.test.ts`).
 - Header drop matches `--- path` / `+++ path` only, so hunk lines like a removed markdown HR (`----`) stay.
 - `recordingPrompter` records `diff` calls; `createFakePrompter.diff` is a no-op like `note`.

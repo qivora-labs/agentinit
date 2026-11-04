@@ -84,7 +84,7 @@ const WROTE_THE_RULES = 'Wrote the rules';
 export async function init(ctx: RunContext, logger: Logger, options: InitOptions = {}): Promise<number> {
   requireInteractiveOrYes(ctx);
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
-  const prompts = prompterFor(options);
+  const prompts = prompterFor(options, logger.theme);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
 
@@ -471,10 +471,11 @@ async function changeSetup(
   return { ...changed, notices: current.notices };
 }
 
-function prompterFor(options: InitOptions): () => Prompter {
+function prompterFor(options: InitOptions, theme: Theme): () => Prompter {
   let current = options.prompter;
   return () => {
-    current ??= createClackPrompter();
+    // Match logger.theme (injected stdout), not process.stdout alone.
+    current ??= createClackPrompter(theme);
     return current;
   };
 }
@@ -871,7 +872,7 @@ function printTtyReport(
 }
 
 function dryRunDone(files: readonly ReportFile[]): string {
-  const count = files.filter((file) => file.action !== 'unchanged').length;
+  const count = files.filter((file) => file.action !== 'unchanged' && file.action !== 'skipped').length;
   return `Dry run · ${String(count)} files would change. Nothing written.`;
 }
 

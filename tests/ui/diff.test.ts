@@ -62,7 +62,7 @@ describe('formatDiff', () => {
     const formatted = formatDiff(unified, tty);
     const lines = formatted.split('\n');
     expect(lines.length).toBe(41);
-    expect(lines[40]).toMatch(/^… \d+ more lines \(run with --dry-run to see all\)$/u);
+    expect(lines[40]).toMatch(/^… \d+ more lines$/u);
   });
 
   it('shows the full diff when full is set', () => {

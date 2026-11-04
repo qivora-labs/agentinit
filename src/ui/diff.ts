@@ -27,7 +27,7 @@ export function formatDiff(
   const painted = visible.map((line) => paintLine(line, theme));
   if (capped) {
     const remaining = kept.length - DIFF_CAP;
-    painted.push(`… ${String(remaining)} more lines (run with --dry-run to see all)`);
+    painted.push(`… ${String(remaining)} more lines`);
   }
   return painted.join('\n');
 }
