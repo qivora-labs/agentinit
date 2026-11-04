@@ -146,6 +146,15 @@ describe('init', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('emits JSON after Done on an interactive up-to-date re-run with --json', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const again = await runCli(['init', '--json', '--cwd', dir], interactive([{ type: 'select', value: 'done' }]));
+    expect(again.code).toBe(0);
+    const parsed: unknown = JSON.parse(again.stdout);
+    expect(parsed).toMatchObject({ dryRun: false, upToDate: true });
+  });
+
   it('reaches the review card after Change setup from an up-to-date prompt', async () => {
     const dir = await copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir])).code).toBe(0);

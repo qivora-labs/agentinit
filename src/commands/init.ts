@@ -185,6 +185,10 @@ async function handleUpToDateShortcut(input: {
 
   const choice = await confirmUpToDate(prompts());
   if (choice === 'done') {
+    // Interactive path already printed the up-to-date line; only JSON still needs a payload.
+    if (ctx.json) {
+      return reportUpToDate(ctx, logger, options, prepared.plan, allNotices());
+    }
     logger.close();
     return SUCCESS;
   }
