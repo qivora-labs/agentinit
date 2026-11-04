@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import * as z from 'zod';
 import { compareText } from '../../src/compare-text.js';
 import { removeBlock } from '../../src/io/managed-block.js';
+import { stripAnsi } from '../../src/ui/align.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
 import { runCli } from '../helpers/run.js';
 
@@ -139,31 +140,34 @@ describe('doctor', () => {
   it('prints a one-line header and six passing checks on a terminal', async () => {
     const dir = await initYes('next15-src');
     const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    const stdout = stripAnsi(result.stdout);
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain('agentinit doctor');
-    expect(result.stdout).not.toContain('rules for the agents in this repo');
-    expect(result.stdout).toContain('manifest');
-    expect(result.stdout).toContain('managed files');
-    expect(result.stdout).toContain('detected packages');
-    expect(result.stdout).toContain('package versions');
-    expect(result.stdout).toContain('token budget');
-    expect(result.stdout).toContain('legacy files');
-    expect(result.stdout.split('No issues found.')).toHaveLength(2);
+    // Color paints the name and command separately; match the visible header.
+    expect(stdout).toContain('agentinit doctor');
+    expect(stdout).not.toContain('rules for the agents in this repo');
+    expect(stdout).toContain('manifest');
+    expect(stdout).toContain('managed files');
+    expect(stdout).toContain('detected packages');
+    expect(stdout).toContain('package versions');
+    expect(stdout).toContain('token budget');
+    expect(stdout).toContain('legacy files');
+    expect(stdout.split('No issues found.')).toHaveLength(2);
   });
 
   it('shows a failing check with its issue and fix on a terminal', async () => {
     const dir = await copyFixture('next15-src');
     const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    const stdout = stripAnsi(result.stdout);
     expect(result.code).toBe(2);
-    expect(result.stdout).toContain('agentinit doctor');
-    expect(result.stdout).toContain('manifest');
-    expect(result.stdout).toContain('Not initialized');
-    expect(result.stdout).toContain(`Fix: ${FIX}`);
-    expect(result.stdout).toContain('1 issue found.');
+    expect(stdout).toContain('agentinit doctor');
+    expect(stdout).toContain('manifest');
+    expect(stdout).toContain('Not initialized');
+    expect(stdout).toContain(`Fix: ${FIX}`);
+    expect(stdout).toContain('1 issue found.');
     // Later checks never ran without a manifest — do not paint them as passes.
-    expect(result.stdout).not.toContain('managed files');
-    expect(result.stdout).not.toContain('detected packages');
-    expect(result.stdout).not.toContain('rules for the agents in this repo');
+    expect(stdout).not.toContain('managed files');
+    expect(stdout).not.toContain('detected packages');
+    expect(stdout).not.toContain('rules for the agents in this repo');
   });
 
   it('ignores --agents and keeps the manifest selection', async () => {
