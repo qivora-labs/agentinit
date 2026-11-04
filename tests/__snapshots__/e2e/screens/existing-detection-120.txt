@@ -1,0 +1,27 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+◇  Detected next15-src ───────────────────────────────╮
+│                                                     │
+│  Framework     Next.js App Router  next 16.3        │
+│  Language      TypeScript · strict  typescript 5.9  │
+│  Architecture  Flat / Minimal  likely               │
+│  Tooling       pnpm · src/                          │
+│                                                     │
+├─────────────────────────────────────────────────────╯
+│
+◆  Use this configuration, or customize?
+│  ● Use this configuration
+│  ○ Customize
+│  ↑/↓ to navigate • Enter: confirm
+└

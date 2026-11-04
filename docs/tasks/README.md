@@ -138,7 +138,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | done |
 | [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | done |
 | [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
-| [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | todo |
+| [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
 

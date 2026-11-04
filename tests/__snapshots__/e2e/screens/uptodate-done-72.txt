@@ -1,0 +1,17 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+◆  Already up to date · 24 files for 4 agents
+│
+◇  What next?
+│  Done
+└

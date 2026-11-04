@@ -1,3 +1,5 @@
+import { visibleWidth } from './align.js';
+
 /**
  * Clack prints these strings. A package name, path, or fragment title that
  * contains ESC or another C0/C1 control can rewrite the prompt, so display
@@ -9,6 +11,24 @@
 
 export function sanitizeDisplayText(value: string): string {
   return sanitize(value, false);
+}
+
+/**
+ * Wrap `text` so each output line fits in `width` columns. The rail `prefix`
+ * is repeated on every line, including continuations. Word boundaries are
+ * preferred; a single token longer than the content width is hard-broken.
+ * CSI color codes do not count toward width and stay attached to their text.
+ */
+export function fitToWidth(text: string, width: number, prefix: string): string {
+  if (text.length === 0) return text;
+  const contentWidth = Math.max(1, width - visibleWidth(prefix));
+  const lines: string[] = [];
+  for (const line of text.split('\n')) {
+    for (const segment of wrapLine(line, contentWidth)) {
+      lines.push(`${prefix}${segment}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 /** Summary notes keep formatter newlines. Every other control is still removed. */
@@ -76,4 +96,111 @@ function completeStringSequence(value: string, start: number): number | undefine
     if (code === 0x1b) return undefined;
   }
   return undefined;
+}
+
+interface Token {
+  readonly raw: string;
+  readonly visible: number;
+  readonly breakAfter: boolean;
+}
+
+function wrapLine(line: string, max: number): string[] {
+  if (visibleWidth(line) <= max) return [line];
+  const tokens = tokenize(line);
+  const segments: string[] = [];
+  let current = '';
+  let currentWidth = 0;
+
+  const flush = (): void => {
+    if (current.length === 0) return;
+    // Drop the space that marked the wrap point; keep it only mid-line.
+    segments.push(current.replace(/ +$/u, ''));
+    current = '';
+    currentWidth = 0;
+  };
+
+  for (const token of tokens) {
+    if (token.visible === 0) {
+      current += token.raw;
+      continue;
+    }
+    if (currentWidth > 0 && currentWidth + token.visible > max) {
+      flush();
+      // Leading spaces on a continuation are padding, not content.
+      if (token.breakAfter && token.raw.trim().length === 0) continue;
+    }
+    if (token.visible > max) {
+      flush();
+      for (const part of hardBreak(token.raw, max)) {
+        segments.push(part);
+      }
+      continue;
+    }
+    current += token.raw;
+    currentWidth += token.visible;
+    if (token.breakAfter && currentWidth === max) flush();
+  }
+  flush();
+  return segments.length === 0 ? [''] : segments;
+}
+
+/** Split into words (space-terminated) and ANSI runs that have no width. */
+function tokenize(line: string): Token[] {
+  const tokens: Token[] = [];
+  let index = 0;
+  let word = '';
+  let wordVisible = 0;
+
+  const pushWord = (breakAfter: boolean): void => {
+    if (word.length === 0) return;
+    tokens.push({ raw: word, visible: wordVisible, breakAfter });
+    word = '';
+    wordVisible = 0;
+  };
+
+  while (index < line.length) {
+    const code = line.charCodeAt(index);
+    if (code === 0x1b || code === 0x9b) {
+      const end = completeEscapeEnd(line, index) ?? index + 1;
+      pushWord(false);
+      tokens.push({ raw: line.slice(index, end), visible: 0, breakAfter: false });
+      index = end;
+      continue;
+    }
+    const char = line[index] ?? '';
+    word += char;
+    wordVisible += 1;
+    index += 1;
+    if (char === ' ') {
+      pushWord(true);
+    }
+  }
+  pushWord(false);
+  return tokens;
+}
+
+function hardBreak(raw: string, max: number): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let width = 0;
+  let index = 0;
+  while (index < raw.length) {
+    const code = raw.charCodeAt(index);
+    if (code === 0x1b || code === 0x9b) {
+      const end = completeEscapeEnd(raw, index) ?? index + 1;
+      current += raw.slice(index, end);
+      index = end;
+      continue;
+    }
+    if (width === max) {
+      parts.push(current);
+      current = '';
+      width = 0;
+    }
+    current += raw[index] ?? '';
+    width += 1;
+    index += 1;
+  }
+  if (current.length > 0) parts.push(current);
+  return parts;
 }

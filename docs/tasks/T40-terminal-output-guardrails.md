@@ -34,12 +34,12 @@ Lock in the polished terminal experience with tests that drive the real CLI in a
 - Copy fixtures to temp dirs; never run `init` in `tests/fixtures/`.
 
 ## Acceptance criteria
-- [ ] `fitToWidth` unit tests cover word wrap, long words, color codes, and the rail prefix.
-- [ ] Screen snapshots exist for every flow in scope at 72 and 120 columns.
-- [ ] No line exceeds the terminal width in any snapshot.
-- [ ] Every framed line starts with a rail glyph.
-- [ ] Below 60 columns, the text banner is used.
-- [ ] CI runs the screen tests on Ubuntu and macOS.
+- [x] `fitToWidth` unit tests cover word wrap, long words, color codes, and the rail prefix.
+- [x] Screen snapshots exist for every flow in scope at 72 and 120 columns.
+- [x] No line exceeds the terminal width in any snapshot.
+- [x] Every framed line starts with a rail glyph.
+- [x] Below 60 columns, the text banner is used.
+- [x] CI runs the screen tests on Ubuntu and macOS.
 
 ## Verify
 ```bash
@@ -50,3 +50,12 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `test(ui): snapshot rendered terminal screens and fit output to width`
 
 ## Notes
+- Chose `node-pty` + `@xterm/headless` as devDependencies (user approved). Linux CI builds
+  the native addon via `pnpm.onlyBuiltDependencies`; the harness chmods `spawn-helper`
+  when prebuilds lose the executable bit.
+- Screen tests skip on Windows (`describe.skipIf`). CI still runs the full suite there;
+  those cases are no-ops.
+- Doctor checklist issue details are intentionally indented under icon rows (T37), not
+  rail-prefixed. The rail assert allows leading-whitespace continuations for that case.
+  Putting doctor checks under `underRail` would be a T37 follow-up if desired.
+- `pnpm test:screens` builds then runs only the pty suite.

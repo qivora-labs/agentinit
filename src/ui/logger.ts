@@ -5,6 +5,8 @@ import { createTheme, type Theme } from './theme.js';
 export interface Logger {
   readonly presented: boolean;
   readonly theme: Theme;
+  /** Terminal width for wrapping under the rail. Defaults to 80. */
+  readonly columns: number;
   info: (message: string) => void;
   success: (message: string) => void;
   warn: (message: string) => void;
@@ -39,6 +41,8 @@ export interface LoggerChrome {
   readonly unicode?: boolean;
   /** When false, a TTY stays monochrome (`NO_COLOR`, `TERM=dumb`). */
   readonly color?: boolean;
+  /** `process.stdout.columns`, or 80 when unknown. */
+  readonly columns?: number;
 }
 
 type Level = 'info' | 'success' | 'warn' | 'error' | 'step';
@@ -46,6 +50,7 @@ type Level = 'info' | 'success' | 'warn' | 'error' | 'step';
 export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChrome = {}): Logger {
   const unicode = chrome.unicode ?? true;
   const allowColor = chrome.color ?? true;
+  const columns = chrome.columns ?? 80;
   const stdoutTty = !json && isTerminal(io.stdout);
   const stderrTty = !json && isTerminal(io.stderr);
   const stdoutTheme = createTheme(stdoutTty, unicode, stdoutTty && allowColor);
@@ -63,11 +68,11 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
     if (opened || !stdoutTty) return;
     opened = true;
     // The leading gap keeps the mark clear of the command the user just entered.
-    const chrome =
+    const frame =
       command === 'list' || command === 'doctor'
         ? formatHeader(stdoutTheme, command)
-        : formatBanner(stdoutTheme);
-    io.stdout.write(`\n\n${chrome}\n\n`);
+        : formatBanner(stdoutTheme, columns);
+    io.stdout.write(`\n\n${frame}\n\n`);
   };
 
   const close = (message?: string, options?: CloseOptions): void => {
@@ -93,6 +98,7 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
   return {
     presented: stdoutTty,
     theme: stdoutTheme,
+    columns,
     info: (message) => { write('info', message); },
     success: (message) => { write('success', message); },
     warn: (message) => { write('warn', message); },

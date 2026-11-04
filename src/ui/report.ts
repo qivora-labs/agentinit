@@ -3,9 +3,15 @@ import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import { alignColumns, visibleWidth } from './align.js';
 import { AGENT_EXTRA_FOLDERS, AGENT_FOLDERS, AGENT_LABELS, AGENT_ROOT_MARKERS } from './agents.js';
+import { NARROW_COLUMNS } from './brand.js';
 import { formatDiff } from './diff.js';
 import { paintAction } from './paint.js';
 import type { Theme } from './theme.js';
+
+export interface ReportLayout {
+  /** Terminal columns; below {@link NARROW_COLUMNS} the folder column is dropped. */
+  readonly columns?: number;
+}
 
 export interface ReportFile {
   readonly path: string;
@@ -114,9 +120,13 @@ export interface AgentReportParts {
 export function formatAgentReport(
   entries: readonly ReportEntry[],
   theme: Theme,
-  options: { readonly dryRun?: boolean } = {},
+  options: { readonly dryRun?: boolean; readonly columns?: number } = {},
 ): string {
-  const parts = agentReportParts(entries, theme);
+  const parts = agentReportParts(
+    entries,
+    theme,
+    options.columns === undefined ? {} : { columns: options.columns },
+  );
   const verb = options.dryRun === true ? 'Would write' : 'Wrote';
   const heading = `${verb} ${formatCount(parts.fileTotal)} ${plural(parts.fileTotal, 'file', 'files')} for ${formatCount(parts.agentTotal)} ${plural(parts.agentTotal, 'agent', 'agents')}`;
   if (parts.rows.length === 0) return heading;
@@ -127,11 +137,16 @@ export function formatAgentReport(
  * Per-agent rows without the "Wrote N files" heading. The review card uses
  * these under its own title.
  */
-export function agentReportParts(entries: readonly ReportEntry[], theme: Theme): AgentReportParts {
+export function agentReportParts(
+  entries: readonly ReportEntry[],
+  theme: Theme,
+  layout: ReportLayout = {},
+): AgentReportParts {
   const changed = entries.filter((entry) => entry.action !== 'unchanged');
   const byAgent = new Map<AgentTarget, ReportEntry[]>();
   const shared: ReportEntry[] = [];
   const removed: ReportEntry[] = [];
+  const showFolders = (layout.columns ?? 80) >= NARROW_COLUMNS;
 
   for (const entry of changed) {
     if (entry.target === 'shared') {
@@ -151,11 +166,9 @@ export function agentReportParts(entries: readonly ReportEntry[], theme: Theme):
   for (const agent of AGENT_TARGETS) {
     const files = byAgent.get(agent);
     if (files === undefined || files.length === 0) continue;
-    agentRows.push([
-      AGENT_LABELS[agent],
-      fileCountLabel(files.length, countActions(files), theme),
-      AGENT_FOLDERS[agent],
-    ]);
+    const row = [AGENT_LABELS[agent], fileCountLabel(files.length, countActions(files), theme)];
+    if (showFolders) row.push(AGENT_FOLDERS[agent]);
+    agentRows.push(row);
   }
 
   // Shared names must not widen the agent "N files" column, so agents align
@@ -171,7 +184,7 @@ export function agentReportParts(entries: readonly ReportEntry[], theme: Theme):
   const lines: string[] = [];
   if (agentRows.length > 0) {
     const body = alignColumns(
-      agentRows.map((row) => [row[1] ?? '', row[2] ?? '']),
+      agentRows.map((row) => (showFolders ? [row[1] ?? '', row[2] ?? ''] : [row[1] ?? ''])),
       gap,
     );
     for (let index = 0; index < agentRows.length; index += 1) {

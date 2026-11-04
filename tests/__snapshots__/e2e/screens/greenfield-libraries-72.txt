@@ -1,0 +1,35 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+●  No package.json found. Setting up a new project.
+│
+◇  1/5 Which framework are you using?
+│  Web frontend · React + Vite
+│
+◇  2/5 How strict should TypeScript be?
+│  TypeScript Strict
+│
+◆  3/5 Which libraries should we include?
+│   State & Data
+│    ◻ Zustand (Small stores, stable selectors, useShallow)
+│    ◻ TanStack Query
+│   Styling & UI
+│    ◻ Tailwind CSS
+│    ◻ shadcn/ui
+│   Forms & Validation
+│    ◻ React Hook Form + Zod
+│   Testing
+│    ◻ Vitest
+│    ◻ Playwright
+│  ↑/↓ to navigate • Space: select • Enter: confirm
+└

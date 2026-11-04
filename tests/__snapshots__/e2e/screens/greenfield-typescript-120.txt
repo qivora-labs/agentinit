@@ -1,0 +1,23 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+●  No package.json found. Setting up a new project.
+│
+◇  1/5 Which framework are you using?
+│  Web frontend · React + Vite
+│
+◆  2/5 How strict should TypeScript be?
+│  ● TypeScript Strict (recommended · No any; explicit exports;…)
+│  ○ TypeScript
+│  ↑/↓ to navigate • Enter: confirm
+└

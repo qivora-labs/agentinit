@@ -48,6 +48,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:screens": "pnpm build && vitest run tests/e2e/screens.test.ts",
     "test:watch": "vitest",
     "check:package": "publint",
     "registry:check": "tsx scripts/check-registry.ts",
@@ -71,12 +72,20 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.0",
     "@types/semver": "^7.8.0",
+    "@xterm/headless": "^6.0.0",
     "eslint": "^10.13.0",
+    "node-pty": "^1.1.0",
     "publint": "^0.3.25",
     "tsdown": "^0.23.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.2",
     "vitest": "^5.0.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "node-pty",
+      "esbuild"
+    ]
   }
 }

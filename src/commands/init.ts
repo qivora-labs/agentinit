@@ -394,6 +394,7 @@ async function runReviewLoop(input: {
       changes: prepared.changes,
       theme: logger.theme,
       tokenLimit: ALWAYS_ON_TOKEN_LIMIT,
+      columns: logger.columns,
     });
 
     if (choice === 'write') return { kind: 'write', setup, prepared };
@@ -843,7 +844,7 @@ function printTtyReport(
     if (tree.length > 0) blocks.push(paintFileTree(tree, theme));
   } else {
     const entries = reportEntries(report, plan);
-    blocks.push(formatAgentReport(entries, theme));
+    blocks.push(formatAgentReport(entries, theme, { columns: logger.columns }));
   }
 
   const over = tokenBudget(plan.warnings);
@@ -867,7 +868,7 @@ function printTtyReport(
     if (steps.length > 0) blocks.push(formatNextSteps(steps, theme));
   }
 
-  logger.info(underRail(blocks.join('\n'), theme));
+  logger.info(underRail(blocks.join('\n'), theme, logger.columns));
   logger.close(ctx.dryRun ? dryRunDone(files) : DONE, { ttyOnly: true });
 }
 

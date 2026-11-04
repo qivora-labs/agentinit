@@ -1,0 +1,60 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+◇  Detected existing-claude-md ───────────────────────╮
+│                                                     │
+│  Framework     Next.js App Router  next 16.3        │
+│  Language      TypeScript · strict  typescript 5.9  │
+│  Architecture  Flat / Minimal  likely               │
+│  Tooling       pnpm · src/                          │
+│                                                     │
+├─────────────────────────────────────────────────────╯
+│
+◇  Use this configuration, or customize?
+│  Use this configuration
+│
+◇  Ready to write 8 files ────────────────────────────────────────╮
+│                                                                 │
+│  Claude Code  6 files  .claude/                                 │
+│  Shared       AGENTS.md  ARCHITECTURE.md                        │
+│  Context cost  ~830 tokens loaded in every chat (budget 1,500)  │
+│  1 existing file needs your decision                            │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────╯
+│
+◇  What next?
+│  Write files
+│
+◇  CLAUDE.md ───────────────────────────────╮
+│                                           │
+│  @@ -2,4 +2,10 @@                         │
+│                                           │
+│   This paragraph is mine.                 │
+│                                           │
+│   Do not touch it.                        │
+│  +                                        │
+│  +<!-- agentinit:begin id=claude -->      │
+│  +@AGENTS.md                              │
+│  +                                        │
+│  +Scoped rules live in `.claude/rules/`.  │
+│  +<!-- agentinit:end id=claude -->        │
+│                                           │
+├───────────────────────────────────────────╯
+│
+◆  the agentinit section of CLAUDE.md already exists and 
+│  agentinit doesn't manage it yet. What should we do?
+│  ● Adopt (Keep your content and add the managed block)
+│  ○ Backup & replace
+│  ○ Skip
+│  ↑/↓ to navigate • Enter: confirm
+└

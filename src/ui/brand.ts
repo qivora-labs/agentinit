@@ -1,3 +1,4 @@
+import { fitToWidth } from './display-text.js';
 import type { Theme } from './theme.js';
 
 export const PRODUCT_NAME = 'agentinit';
@@ -5,6 +6,9 @@ export const PRODUCT_NAME = 'agentinit';
 export const TAGLINE = 'rules for the agents in this repo';
 
 export const COMPANY = 'Qivora Labs';
+
+/** Below this width the Needle mark and report folder column do not fit. */
+export const NARROW_COLUMNS = 60;
 
 export type CloseTone = 'neutral' | 'error';
 
@@ -33,10 +37,10 @@ const KICKER = 'QIVORA LABS'.split('').join(' ');
 
 /**
  * Unicode terminals get the Needle block mark: AGENT in the terminal
- * foreground, INIT in cyan. Anything else gets the same two words in text.
+ * foreground, INIT in cyan. Narrow or non-Unicode terminals get the text form.
  */
-export function formatBanner(theme: Theme): string {
-  if (!theme.unicode) return textBanner(theme);
+export function formatBanner(theme: Theme, columns = 80): string {
+  if (!theme.unicode || columns < NARROW_COLUMNS) return textBanner(theme);
   return needleBanner(theme);
 }
 
@@ -60,12 +64,13 @@ export function formatClose(theme: Theme, message: string, tone: CloseTone = 'ne
 
 /**
  * Puts a multi-line block under the Clack rail so tree branches and report
- * rows do not sit at column 0 beside the frame.
+ * rows do not sit at column 0 beside the frame. Long lines wrap under the
+ * rail instead of past it.
  */
-export function underRail(text: string, theme: Theme): string {
+export function underRail(text: string, theme: Theme, columns = 80): string {
   if (text.length === 0) return text;
   const prefix = `${theme.muted(theme.glyphs.bar)}  `;
-  return text.split('\n').map((line) => `${prefix}${line}`).join('\n');
+  return fitToWidth(text, columns, prefix);
 }
 
 function textBanner(theme: Theme): string {

@@ -1,0 +1,56 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+◇  Detected next15-src ───────────────────────────────╮
+│                                                     │
+│  Framework     Next.js App Router  next 16.3        │
+│  Language      TypeScript · strict  typescript 5.9  │
+│  Architecture  Flat / Minimal  likely               │
+│  Tooling       pnpm · src/                          │
+│                                                     │
+├─────────────────────────────────────────────────────╯
+│
+◇  Use this configuration, or customize?
+│  Use this configuration
+│
+◇  Which agents should we generate rules for?
+│  AGENTS.md is always written.
+│  Cursor, Claude Code, Windsurf, GitHub Copilot
+│
+◇  Ready to write 24 files ───────────────────────────────────────╮
+│                                                                 │
+│  Cursor          5 files  .cursor/                              │
+│  Claude Code     6 files  .claude/                              │
+│  Windsurf        5 files  .windsurf/                            │
+│  GitHub Copilot  6 files  .github/                              │
+│  Shared          AGENTS.md  ARCHITECTURE.md                     │
+│  Context cost  ~830 tokens loaded in every chat (budget 1,500)  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────╯
+│
+◇  What next?
+│  Write files
+│
+◇  Wrote the rules
+│  Wrote 24 files for 4 agents
+│  Cursor          5 files  .cursor/
+│  Claude Code     6 files  .claude/
+│  Windsurf        5 files  .windsurf/
+│  GitHub Copilot  6 files  .github/
+│  Shared          AGENTS.md  ARCHITECTURE.md
+│  Context cost  ~830 tokens loaded in every chat (budget 1,500)
+│  Next steps
+│  1.  Review the changes  git diff
+│  2.  Try a workflow      /new-feature
+│  3.  Check for drift     npx @agentinit/cli doctor
+└  Done.
