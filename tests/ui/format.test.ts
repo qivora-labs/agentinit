@@ -111,6 +111,7 @@ describe('formatSummaryTitle', () => {
     [null, 'Detected project'],
     ['', 'Detected project'],
     ['  ', 'Detected project'],
+    ['\u001b[31m', 'Detected project'],
   ] as const)('formats %j as %s', (name, title) => {
     expect(formatSummaryTitle(name)).toBe(title);
   });

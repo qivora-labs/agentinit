@@ -25,8 +25,10 @@ export interface SummaryText {
 }
 
 export function formatSummaryTitle(name: string | null): string {
-  if (name === null || name.trim() === '') return 'Detected project';
-  return `Detected ${sanitizeDisplayText(name)}`;
+  if (name === null) return 'Detected project';
+  const safe = sanitizeDisplayText(name).trim();
+  if (safe === '') return 'Detected project';
+  return `Detected ${safe}`;
 }
 
 export function formatSummary(input: SummaryText): string {

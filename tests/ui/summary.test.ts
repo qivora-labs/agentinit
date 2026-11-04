@@ -122,7 +122,7 @@ describe('confirmDetected', () => {
     );
   });
 
-  it('shows Framework: none detected for a project without a framework', async () => {
+  it('shows none detected for a project without a framework', async () => {
     const draft = sampleDraft({
       frameworks: [],
       libraries: ['vitest'],
