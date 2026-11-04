@@ -104,6 +104,9 @@ describe('init', () => {
     expect(result.code).toBe(0);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.stdout).toContain('Always-on tokens:');
+    expect(result.stdout).not.toContain('Context cost');
+    expect(result.stdout).not.toContain('Next steps');
+    expect(result.stdout).not.toContain('Review the changes');
     expect(result.stdout).not.toContain('rules for the agents in this repo');
     const tree = await treeText(dir);
     await expect(tree).toMatchFileSnapshot('../__snapshots__/e2e/next15-src.txt');

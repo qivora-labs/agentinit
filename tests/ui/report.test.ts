@@ -130,6 +130,24 @@ describe('formatAgentReport', () => {
     );
   });
 
+  it('lists orphan deletes under Removed without counting them as agents', () => {
+    const report = formatAgentReport(
+      [
+        { path: 'legacy-notes.md', action: 'deleted', target: 'removed' },
+        { path: 'old-rules.md', action: 'deleted', target: 'removed' },
+        { path: 'AGENTS.md', action: 'created', target: 'shared' },
+      ],
+      plain,
+    );
+    expect(report).toBe(
+      [
+        'Wrote 3 files for 0 agents',
+        'Shared   AGENTS.md',
+        'Removed  2 files · 2 deleted',
+      ].join('\n'),
+    );
+  });
+
   it('keeps the next15-src style report within 12 lines with next steps and Done', async () => {
     const report = formatAgentReport(
       [
@@ -164,7 +182,7 @@ describe('formatAgentReport', () => {
     );
     const body = [report, token, steps, 'Done.'].join('\n');
     expect(body.split('\n').length).toBeLessThanOrEqual(12);
-    await expect(body).toMatchFileSnapshot('../__snapshots__/ui/init-report-tty.txt');
+    await expect(`${body}\n`).toMatchFileSnapshot('../__snapshots__/ui/init-report-tty.txt');
   });
 });
 
