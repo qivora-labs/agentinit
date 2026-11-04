@@ -156,8 +156,21 @@ export function doctorReport(issues: readonly DoctorIssue[]): DoctorReport {
 /**
  * Six checks from PRD §6.5. Issues are grouped under the check they fail;
  * a check with no matching issue is a pass.
+ * Without a manifest, later checks never ran — list only the failed manifest row.
  */
 export function doctorChecklist(issues: readonly DoctorIssue[]): DoctorCheck[] {
+  const notInitialized = issues.filter((issue) => issue.kind === 'not-initialized');
+  if (notInitialized.length > 0) {
+    return [
+      {
+        id: 'manifest',
+        label: CHECK_LABEL.manifest,
+        ok: false,
+        issues: notInitialized,
+      },
+    ];
+  }
+
   const byCheck = new Map<DoctorCheckId, DoctorIssue[]>();
   for (const id of DOCTOR_CHECK_IDS) byCheck.set(id, []);
   for (const issue of issues) {

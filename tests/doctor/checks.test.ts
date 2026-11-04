@@ -253,6 +253,17 @@ describe('doctorChecklist', () => {
     ]);
   });
 
+  it('lists only the failed manifest check when not initialized', () => {
+    expect(doctorChecklist([notInitializedIssue()])).toEqual([
+      {
+        id: 'manifest',
+        label: 'manifest',
+        ok: false,
+        issues: [notInitializedIssue()],
+      },
+    ]);
+  });
+
   it('attaches failing issues under the matching check', () => {
     const missing = {
       kind: 'missing' as const,
@@ -260,16 +271,12 @@ describe('doctorChecklist', () => {
       message: 'AGENTS.md is missing.',
       fix: FIX,
     };
-    const checks = doctorChecklist([notInitializedIssue(), missing]);
-    expect(checks.find((check) => check.id === 'manifest')).toMatchObject({
-      ok: false,
-      issues: [notInitializedIssue()],
-    });
+    const checks = doctorChecklist([missing]);
     expect(checks.find((check) => check.id === 'managed-files')).toMatchObject({
       ok: false,
       issues: [missing],
     });
-    expect(checks.filter((check) => check.ok)).toHaveLength(4);
+    expect(checks.filter((check) => check.ok)).toHaveLength(5);
   });
 });
 

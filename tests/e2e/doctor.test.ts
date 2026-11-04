@@ -160,6 +160,9 @@ describe('doctor', () => {
     expect(result.stdout).toContain('Not initialized');
     expect(result.stdout).toContain(`Fix: ${FIX}`);
     expect(result.stdout).toContain('1 issue found.');
+    // Later checks never ran without a manifest — do not paint them as passes.
+    expect(result.stdout).not.toContain('managed files');
+    expect(result.stdout).not.toContain('detected packages');
     expect(result.stdout).not.toContain('rules for the agents in this repo');
   });
 
