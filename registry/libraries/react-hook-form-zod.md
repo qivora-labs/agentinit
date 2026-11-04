@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: One Zod schema for field types, resolver errors, and server parsing.
+hint: One Zod schema for fields, errors, server
 scope: auto
 globs:
   - "{{src}}**/forms/**/*.ts"

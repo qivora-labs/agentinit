@@ -138,7 +138,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
 6. **Review & Write:** before anything is written, a review card shows the file count per agent, the shared files, the always-on token estimate against its budget, and how many existing files will need a decision (§6.3). Options: *Write files* (default) · *Preview changes* (prints the dry-run output, then returns to the card) · *Change setup* (runs steps 1–5 again with the current answers preselected). Then it writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
 7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`. The generator command is highlighted as a command, not printed as a plain status line.
 
-The wizard opens with one line saying that no `package.json` was found and a new project is being set up. Each question shows its position (for example, "2 of 5"); the count drops by one when the library step is skipped or `--agents` skips the agent step.
+The wizard opens with one line saying that no `package.json` was found and a new project is being set up. Each question shows its position (for example, "2/5"); the count drops by one when the library step is skipped or `--agents` skips the agent step.
 
 > Some framework generators refuse to run in a non-empty directory. The hint tells users to scaffold first when possible, or to scaffold into a subfolder and move files.
 
@@ -352,6 +352,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 | `version` | ✓ | Fragment content version (semver) |
 | `order` | ✓ | Sort order in shared files (10 arch, 20 lang, 30 framework, 40 library) |
 | `description` | ✓ | One line; shown in pickers and used for description-based activation |
+| `hint` | | Short picker hint (≤ 48 characters). Display-only; never copied into generated files. When omitted, the picker truncates `description` |
 | `scope` | ✓ (rules) | `always` · `glob` · `auto` · `manual` (§5.3) |
 | `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}`; **no commas** |
 | `detect.packages` | | Package names that trigger auto-selection; **all** listed packages must be present |

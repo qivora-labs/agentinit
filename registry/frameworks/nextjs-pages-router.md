@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: Pages Router data fetching, API routes, and coexistence with the App Router.
+hint: Pages data fetching, API routes, coexistence
 scope: glob
 globs:
   - "{{src}}pages/**/*.ts"

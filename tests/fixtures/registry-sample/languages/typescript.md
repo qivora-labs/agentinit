@@ -5,6 +5,7 @@ category: language
 version: 1.0.0
 order: 20
 description: TypeScript without strict compiler options.
+hint: Sample picker hint.
 scope: always
 sources:
   - https://www.typescriptlang.org/docs/

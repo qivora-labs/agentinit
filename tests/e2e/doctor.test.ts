@@ -52,7 +52,7 @@ const doctorReportSchema = z
 const VITE_ANSWERS: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
-  { type: 'multiselect', value: [] },
+  { type: 'groupMultiselect', value: [] },
   { type: 'select', value: 'feature-based' },
   { type: 'multiselect', value: ['cursor'] },
   { type: 'select', value: 'write' },

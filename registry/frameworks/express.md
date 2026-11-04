@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: Express 5 async errors, boundary validation, and modular routers.
+hint: Async errors, validation, modular routers
 scope: auto
 globs:
   - "{{src}}routes/**/*.ts"

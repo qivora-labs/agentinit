@@ -5,6 +5,7 @@ category: architecture
 version: 1.0.0
 order: 10
 description: Domain, application, infrastructure, and presentation, with dependencies pointing inward.
+hint: Domain→app→infra→UI; deps point inward
 scope: always
 sources:
   - https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html

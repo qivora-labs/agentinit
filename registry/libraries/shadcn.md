@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Project-owned UI primitives, extended with variants instead of rewrites.
+hint: Owned UI primitives; extend with variants
 scope: auto
 globs:
   - "{{src}}components/ui/**/*.ts"

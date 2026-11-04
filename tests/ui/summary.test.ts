@@ -23,7 +23,10 @@ async function bundledRegistry(): Promise<Registry> {
   return registry;
 }
 
-function choiceCalls(calls: readonly RecordedCall[], method: 'select' | 'multiselect'): RecordedCall[] {
+function choiceCalls(
+  calls: readonly RecordedCall[],
+  method: 'select' | 'multiselect' | 'groupMultiselect',
+): RecordedCall[] {
   return calls.filter((call) => call.method === method);
 }
 
@@ -64,19 +67,25 @@ describe('confirmDetected', () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'customize' },
       { type: 'select', value: 'typescript' },
-      { type: 'multiselect', value: ['express'] },
-      { type: 'multiselect', value: ['playwright'] },
+      { type: 'groupMultiselect', value: ['express'] },
+      { type: 'groupMultiselect', value: ['playwright'] },
       { type: 'select', value: 'flat' },
       { type: 'multiselect', value: ['claude'] },
     ]);
 
     const result = await confirmDetected(prompter, draft, await bundledRegistry(), { theme });
     const frameworks = calls.find(
-      (call) => call.method === 'multiselect' && choicePrompt(call).message.includes('frameworks'),
+      (call) =>
+        call.method === 'groupMultiselect' && choicePrompt(call).message.includes('frameworks'),
     );
     const libraries = calls.find(
-      (call) => call.method === 'multiselect' && choicePrompt(call).message.includes('libraries'),
+      (call) =>
+        call.method === 'groupMultiselect' && choicePrompt(call).message.includes('libraries'),
     );
+    const language = choiceCalls(calls, 'select').find((call) =>
+      choicePrompt(call).message.includes('TypeScript'),
+    );
+    const agents = choiceCalls(calls, 'multiselect')[0];
 
     expect(result.selection).toEqual({
       language: 'typescript',
@@ -91,12 +100,16 @@ describe('confirmDetected', () => {
       },
     });
     expect(result.agents).toEqual(['claude']);
+    expect(choicePrompt(language).message).toBe('1/5 How strict should TypeScript be?');
     expect(choicePrompt(frameworks).required).toBe(false);
     expect(choicePrompt(libraries).required).toBe(false);
     expect(choicePrompt(libraries).options.map((option) => option.value)).toEqual([
       'vitest',
       'playwright',
     ]);
+    expect(choicePrompt(agents).message).toBe(
+      '5/5 Which agents should we generate rules for?\nAGENTS.md is always written.',
+    );
   });
 
   it('asks for architecture when confidence is low even if the user accepts the rest', async () => {
@@ -118,7 +131,7 @@ describe('confirmDetected', () => {
     expect(result.selection.origin['feature-based']).toBeUndefined();
     expect(choicePrompt(architecture).initialValue).toBe('flat');
     expect(choicePrompt(architecture).message).toBe(
-      'Architecture confidence is 0.5, below 0.7. Which architecture should we use?',
+      'Not sure about the architecture (0.5). Which one should we use?',
     );
   });
 
@@ -153,8 +166,8 @@ describe('confirmDetected', () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'customize' },
       { type: 'select', value: 'typescript-strict' },
-      { type: 'multiselect', value: ['nextjs-app-router'] },
-      { type: 'multiselect', value: ['vitest'] },
+      { type: 'groupMultiselect', value: ['nextjs-app-router'] },
+      { type: 'groupMultiselect', value: ['vitest'] },
       { type: 'select', value: 'flat' },
       { type: 'multiselect', value: ['cursor'] },
     ]);
@@ -164,7 +177,7 @@ describe('confirmDetected', () => {
 
     expect(result.selection.architecture).toBe('flat');
     expect(choiceCalls(calls, 'select')).toHaveLength(3);
-    expect(choicePrompt(architecture).message).toBe('Which architecture should we follow?');
+    expect(choicePrompt(architecture).message).toBe('4/5 Which architecture should we follow?');
     expect(choicePrompt(architecture).initialValue).toBe('flat');
   });
 
@@ -238,8 +251,8 @@ describe('changeExistingSetup', () => {
     const draft = sampleDraft({ libraries: ['vitest', 'zustand'] });
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'typescript' },
-      { type: 'multiselect', value: ['nextjs-app-router'] },
-      { type: 'multiselect', value: ['vitest'] },
+      { type: 'groupMultiselect', value: ['nextjs-app-router'] },
+      { type: 'groupMultiselect', value: ['vitest'] },
       { type: 'select', value: 'layered' },
       { type: 'multiselect', value: ['claude'] },
     ]);
@@ -257,8 +270,11 @@ describe('changeExistingSetup', () => {
 
     expect(calls.some((call) => call.method === 'note')).toBe(false);
     expect(choicePrompt(choiceCalls(calls, 'select')[0]).initialValue).toBe('typescript-strict');
-    expect(choicePrompt(choiceCalls(calls, 'multiselect')[1]).initialValues).toEqual(['vitest', 'zustand']);
-    expect(choicePrompt(choiceCalls(calls, 'multiselect')[2]).initialValues).toEqual(['cursor']);
+    expect(choicePrompt(choiceCalls(calls, 'groupMultiselect')[1]).initialValues).toEqual([
+      'vitest',
+      'zustand',
+    ]);
+    expect(choicePrompt(choiceCalls(calls, 'multiselect')[0]).initialValues).toEqual(['cursor']);
     expect(result.selection.libraries).toEqual(['vitest']);
     expect(result.agents).toEqual(['claude']);
   });

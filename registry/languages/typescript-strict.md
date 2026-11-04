@@ -5,6 +5,7 @@ category: language
 version: 1.0.0
 order: 20
 description: No any, explicit exported return types, and exhaustive unions on every TypeScript file.
+hint: No any; explicit exports; exhaustive unions
 scope: always
 sources:
   - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any

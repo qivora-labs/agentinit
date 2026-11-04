@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Query key factories, queryOptions, mutation invalidation, and Suspense.
+hint: Query keys, queryOptions, invalidation
 scope: auto
 globs:
   - "{{src}}**/hooks/**/*.ts"

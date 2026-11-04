@@ -32,12 +32,12 @@ Make every question quick to scan: real group headers, short hints that fit on o
 - Keep the PRD §3.2 group order.
 
 ## Acceptance criteria
-- [ ] The library multiselect shows each group name once, as a header (pty capture in the PR description).
-- [ ] No hint exceeds 48 visible characters; `registry:check` enforces it.
-- [ ] Greenfield shows `1/5` … `5/5`; with `--agents` it shows `1/4` … `4/4`; with no compatible library it skips that number.
-- [ ] Agent options show their folder hints.
-- [ ] Generated-file snapshots are unchanged.
-- [ ] Fake-prompter tests cover `groupMultiselect`, including cancel → exit `130`.
+- [x] The library multiselect shows each group name once, as a header (pty capture in the PR description).
+- [x] No hint exceeds 48 visible characters; `registry:check` enforces it.
+- [x] Greenfield shows `1/5` … `5/5`; with `--agents` it shows `1/4` … `4/4`; with no compatible library it skips that number.
+- [x] Agent options show their folder hints.
+- [x] Generated-file snapshots are unchanged.
+- [x] Fake-prompter tests cover `groupMultiselect`, including cancel → exit `130`.
 
 ## Verify
 ```bash
@@ -49,3 +49,7 @@ mkdir -p /tmp/ai-t38 && node dist/cli.js init --dry-run --cwd /tmp/ai-t38
 `feat(ui): add group headers, short hints, and step counts to prompts`
 
 ## Notes
+- Step totals use `n/total` (task AC), not the PRD’s “2 of 5” example wording.
+- Before the framework/frameworks answer, the library step is counted when any offered framework or an agnostic library would unlock options; after the answer the total is recomputed exactly.
+- `hint` lives on rule fragments only for `registry:check` warnings; workflows are unchecked. Display truncates via `pickerHint` when `hint` is absent.
+- Gray step prefixes and AGENTS.md underlines are painted in the Clack adapter after sanitize, so fragment text cannot inject styles.

@@ -5,6 +5,7 @@ category: architecture
 version: 1.0.0
 order: 10
 description: Group a small project by file type, and start a feature folder for the next domain.
+hint: Group by type; add a feature folder as you grow
 scope: always
 sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md

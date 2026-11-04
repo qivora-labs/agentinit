@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AGENT_TARGETS } from '../../src/context.js';
 import { CANCELLED } from '../../src/exit-codes.js';
 import { AgentInitError } from '../../src/errors.js';
-import { resolvedAgents, selectAgents } from '../../src/ui/agents.js';
+import { AGENT_HINTS, resolvedAgents, selectAgents } from '../../src/ui/agents.js';
 import { choicePrompt, recordingPrompter } from './recording-prompter.js';
 
 describe('resolvedAgents', () => {
@@ -21,7 +21,7 @@ describe('resolvedAgents', () => {
 });
 
 describe('selectAgents', () => {
-  it('preselects all four and shows the PRD labels', async () => {
+  it('preselects all four and shows folder hints plus the AGENTS.md note', async () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'multiselect', value: [...AGENT_TARGETS] },
     ]);
@@ -30,12 +30,31 @@ describe('selectAgents', () => {
     expect(selected).toEqual([...AGENT_TARGETS]);
     expect(prompt.required).toBe(false);
     expect(prompt.initialValues).toEqual([...AGENT_TARGETS]);
+    expect(prompt.message).toBe(
+      'Which agents should we generate rules for?\nAGENTS.md is always written.',
+    );
     expect(prompt.options.map((option) => option.label)).toEqual([
       'Cursor',
       'Claude Code',
       'Windsurf',
       'GitHub Copilot',
     ]);
+    expect(prompt.options.map((option) => option.hint)).toEqual([
+      AGENT_HINTS.cursor,
+      AGENT_HINTS.claude,
+      AGENT_HINTS.windsurf,
+      AGENT_HINTS.copilot,
+    ]);
+  });
+
+  it('prefixes a step count when provided', async () => {
+    const { prompter, calls } = recordingPrompter([
+      { type: 'multiselect', value: [...AGENT_TARGETS] },
+    ]);
+    await selectAgents(prompter, { preselected: [] }, { step: 5, total: 5 });
+    expect(choicePrompt(calls[0]).message).toBe(
+      '5/5 Which agents should we generate rules for?\nAGENTS.md is always written.',
+    );
   });
 
   it('preselects only the detected agents', async () => {

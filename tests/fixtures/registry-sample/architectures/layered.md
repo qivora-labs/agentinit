@@ -5,6 +5,7 @@ category: architecture
 version: 1.0.0
 order: 10
 description: One direction of dependencies.
+hint: Sample picker hint.
 scope: always
 sources:
   - https://example.com/docs/layered

@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Accessible components from a local registry.
+hint: Sample picker hint.
 scope: glob
 globs:
   - "{{src}}components/ui/**/*.ts"

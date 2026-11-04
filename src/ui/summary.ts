@@ -22,6 +22,7 @@ import {
   formatWarning,
 } from './format.js';
 import type { MultiSelectPrompt, PromptOption, Prompter } from './prompter.js';
+import { countSetupSteps, withStep } from './steps.js';
 import type { Theme } from './theme.js';
 
 export interface SummaryExtras {
@@ -45,6 +46,9 @@ interface ChosenFragments {
   readonly libraries: readonly string[];
   /** Set when the low-confidence prompt replaced the inferred architecture. */
   readonly architectureManual: boolean;
+  /** Agent prompt position after customize; omitted when `--agents` skips it. */
+  readonly agentStep?: number;
+  readonly agentTotal?: number;
 }
 
 type ConfigurationChoice = 'use' | 'customize';
@@ -94,11 +98,16 @@ export async function confirmDetected(
     initialValue: 'use',
   });
 
+  const askAgents = extras.agents === undefined;
   const chosen = choice === 'customize'
-    ? await customize(prompter, draft, registry, detectedInitial(draft))
+    ? await customize(prompter, draft, registry, detectedInitial(draft), askAgents)
     : await acceptDetected(prompter, draft, registry);
 
-  const agents = await selectAgents(prompter, agentInput(draft, extras.agents));
+  const agents = await selectAgents(
+    prompter,
+    agentInput(draft, extras.agents),
+    agentStepInfo(chosen),
+  );
   return { selection: toSelection(draft, chosen, choice), agents };
 }
 
@@ -113,15 +122,23 @@ export async function changeExistingSetup(
   current: PromptedSetup,
   extras?: { readonly agents?: readonly AgentTarget[] },
 ): Promise<PromptedSetup> {
-  const chosen = await customize(prompter, draft, registry, {
-    language: current.selection.language,
-    architecture: current.selection.architecture,
-    frameworks: current.selection.frameworks,
-    libraries: current.selection.libraries,
-  });
+  const askAgents = extras?.agents === undefined;
+  const chosen = await customize(
+    prompter,
+    draft,
+    registry,
+    {
+      language: current.selection.language,
+      architecture: current.selection.architecture,
+      frameworks: current.selection.frameworks,
+      libraries: current.selection.libraries,
+    },
+    askAgents,
+  );
   const agents = await selectAgents(
     prompter,
     agentInput(draft, extras?.agents, current.agents),
+    agentStepInfo(chosen),
   );
   return { selection: toSelection(draft, chosen, 'customize'), agents };
 }
@@ -174,28 +191,45 @@ async function customize(
   draft: ProjectDraft,
   registry: Registry,
   initial: CustomizeInitial,
+  askAgents: boolean,
 ): Promise<ChosenFragments> {
   const languages = languageOptions(registry);
+  const frameworkChoices = frameworkOptions(registry, false);
+  // Before frameworks are chosen, count a library step when any listed
+  // framework (or an agnostic library) would unlock one.
+  let total = countSetupSteps({
+    libraries: mayOfferLibraries(registry, frameworkChoices),
+    agents: askAgents,
+  });
+  let step = 1;
+
   const language = await prompter.select(
     withInitial(
-      { message: 'How strict should TypeScript be?', options: languages },
+      {
+        message: withStep(step, total, 'How strict should TypeScript be?'),
+        options: languages,
+      },
       preferredOption(languages, [initial.language, 'typescript-strict']),
     ),
   );
+  step += 1;
 
-  const frameworkChoices = frameworkOptions(registry, false);
-  const frameworks = await multiselectOrEmpty(prompter, {
-    message: 'Which frameworks should we include?',
+  const frameworks = await groupMultiselectOrEmpty(prompter, {
+    message: withStep(step, total, 'Which frameworks should we include?'),
     options: frameworkChoices,
     initialValues: valuesInOptions(frameworkChoices, initial.frameworks),
   });
+  step += 1;
 
   const libraryChoices = libraryOptions(registry, frameworks);
-  const libraries = await multiselectOrEmpty(prompter, {
-    message: 'Which libraries should we include?',
+  total = countSetupSteps({ libraries: libraryChoices.length > 0, agents: askAgents });
+
+  const libraries = await groupMultiselectOrEmpty(prompter, {
+    message: withStep(step, total, 'Which libraries should we include?'),
     options: libraryChoices,
     initialValues: valuesInOptions(libraryChoices, initial.libraries),
   });
+  if (libraryChoices.length > 0) step += 1;
 
   const architectures = architectureOptions(registry);
   const preferred = draft.architecture.confidence < LOW_ARCHITECTURE_CONFIDENCE
@@ -203,12 +237,45 @@ async function customize(
     : [initial.architecture, 'feature-based'];
   const architecture = await prompter.select(
     withInitial(
-      { message: 'Which architecture should we follow?', options: architectures },
+      {
+        message: withStep(step, total, 'Which architecture should we follow?'),
+        options: architectures,
+      },
       preferredOption(architectures, preferred),
     ),
   );
+  step += 1;
 
-  return { language, architecture, frameworks, libraries, architectureManual: false };
+  if (!askAgents) {
+    return { language, architecture, frameworks, libraries, architectureManual: false };
+  }
+  return {
+    language,
+    architecture,
+    frameworks,
+    libraries,
+    architectureManual: false,
+    agentStep: step,
+    agentTotal: total,
+  };
+}
+
+function mayOfferLibraries(
+  registry: Registry,
+  frameworkChoices: readonly { readonly value: string }[],
+): boolean {
+  if (libraryOptions(registry, []).length > 0) return true;
+  return libraryOptions(
+    registry,
+    frameworkChoices.map((option) => option.value),
+  ).length > 0;
+}
+
+function agentStepInfo(
+  chosen: ChosenFragments,
+): { readonly step: number; readonly total: number } | undefined {
+  if (chosen.agentStep === undefined || chosen.agentTotal === undefined) return undefined;
+  return { step: chosen.agentStep, total: chosen.agentTotal };
 }
 
 function toSelection(
@@ -276,15 +343,14 @@ function agentInput(
 
 function architectureQuestion(draft: ProjectDraft): string {
   const confidence = formatConfidence(draft.architecture.confidence);
-  const limit = formatConfidence(LOW_ARCHITECTURE_CONFIDENCE);
-  return `Architecture confidence is ${confidence}, below ${limit}. Which architecture should we use?`;
+  return `Not sure about the architecture (${confidence}). Which one should we use?`;
 }
 
-async function multiselectOrEmpty(
+async function groupMultiselectOrEmpty(
   prompter: Prompter,
   prompt: MultiSelectPrompt<string>,
 ): Promise<string[]> {
   if (prompt.options.length === 0) return [];
   // Clack defaults `required` to true and rejects the empty selection this step allows.
-  return prompter.multiselect({ ...prompt, required: false });
+  return prompter.groupMultiselect({ ...prompt, required: false });
 }

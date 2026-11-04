@@ -106,6 +106,8 @@ const commonFields = {
   version: semverVersionSchema,
   order: z.int({ error: 'must be an integer' }),
   description: singleLineSchema,
+  /** Short picker hint; display-only and never copied into generated files. */
+  hint: singleLineSchema.optional(),
   sources: z
     .array(z.url({ error: 'must be a URL' }))
     .min(1, { error: 'at least one source is required' }),

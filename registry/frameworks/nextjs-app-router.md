@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: Server Components by default, validated Server Actions, and Next.js 16 caching.
+hint: RSC by default, Server Actions, Next cache
 scope: glob
 globs:
   - "{{src}}app/**/*.ts"

@@ -5,6 +5,7 @@ category: architecture
 version: 1.0.0
 order: 10
 description: Feature folders with a public index, and shared code that does not depend on a feature.
+hint: Feature folders; shared never imports a feature
 scope: always
 sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md

@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: Fastify 5 plugins, JSON schema validation, hooks, and decorators.
+hint: Plugins, JSON schema, hooks, decorators
 scope: auto
 globs:
   - "{{src}}routes/**/*.ts"

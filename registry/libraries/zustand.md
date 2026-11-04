@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Small client stores, stable selectors, and useShallow.
+hint: Small stores, stable selectors, useShallow
 scope: auto
 globs:
   - "{{src}}**/stores/**/*.ts"

@@ -5,6 +5,7 @@ category: language
 version: 1.0.0
 order: 20
 description: Avoid any, infer internal types, and narrow unknown at the boundary of every TypeScript file.
+hint: Avoid any; narrow unknown at boundaries
 scope: always
 sources:
   - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any
