@@ -8,6 +8,7 @@ import {
   frameworkOptions,
   languageOptions,
   libraryOptions,
+  mayOfferLibraries,
   OTHER_TYPESCRIPT_PROJECT,
   preferredOption,
   valuesInOptions,
@@ -117,18 +118,6 @@ export async function runGreenfieldWizard(
     selection: manualSelection({ language, architecture, frameworks, libraries }),
     agents,
   };
-}
-
-/** True when at least one listed framework (or no framework) unlocks a library. */
-function mayOfferLibraries(
-  registry: Registry,
-  frameworksOffered: readonly { readonly value: string }[],
-): boolean {
-  if (libraryOptions(registry, []).length > 0) return true;
-  const ids = frameworksOffered
-    .map((option) => option.value)
-    .filter((id) => id !== OTHER_TYPESCRIPT_PROJECT);
-  return libraryOptions(registry, ids).length > 0;
 }
 
 function agentInput(options: GreenfieldOptions | undefined): AgentPromptInput {

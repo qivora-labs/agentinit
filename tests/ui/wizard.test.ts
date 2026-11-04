@@ -65,7 +65,10 @@ describe('runGreenfieldWizard', () => {
     });
     expect(result.agents).toEqual(['cursor', 'claude']);
 
-    expect(calls.some((call) => call.method === 'info')).toBe(true);
+    expect(calls.find((call) => call.method === 'info')).toEqual({
+      method: 'info',
+      message: 'No package.json found. Setting up a new project.',
+    });
     const selects = calls.filter((call) => call.method === 'select');
     const groups = calls.filter((call) => call.method === 'groupMultiselect');
     const multis = calls.filter((call) => call.method === 'multiselect');

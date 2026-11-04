@@ -5,6 +5,7 @@ import {
   frameworkOptions,
   languageOptions,
   libraryOptions,
+  mayOfferLibraries,
   OTHER_TYPESCRIPT_LABEL,
   OTHER_TYPESCRIPT_PROJECT,
 } from '../../src/ui/catalog.js';
@@ -104,6 +105,26 @@ describe('libraryOptions', () => {
       'vitest',
       'playwright',
     ]);
+  });
+});
+
+describe('mayOfferLibraries', () => {
+  it('is true when an agnostic library exists, even with only the Other sentinel', () => {
+    const registry = registryOf([ruleFragment('vitest', 'library')]);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(true);
+  });
+
+  it('ignores the Other sentinel and counts only real framework ids', () => {
+    const registry = registryOf([
+      ruleFragment('zustand', 'library', 'compatibleWith:\n  - react-vite\n'),
+    ]);
+    expect(
+      mayOfferLibraries(registry, [
+        { value: 'react-vite' },
+        { value: OTHER_TYPESCRIPT_PROJECT },
+      ]),
+    ).toBe(true);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(false);
   });
 });
 

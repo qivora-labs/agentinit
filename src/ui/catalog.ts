@@ -58,6 +58,21 @@ export function libraryOptions(registry: Registry, frameworkIds: readonly string
   return groupedOptionsFrom(allowed, LIBRARY_GROUPS);
 }
 
+/**
+ * True when at least one listed framework (or an agnostic library) would unlock
+ * a library step. Ignores the greenfield "Other TypeScript project" sentinel.
+ */
+export function mayOfferLibraries(
+  registry: Registry,
+  frameworksOffered: readonly { readonly value: string }[],
+): boolean {
+  if (libraryOptions(registry, []).length > 0) return true;
+  const ids = frameworksOffered
+    .map((option) => option.value)
+    .filter((id) => id !== OTHER_TYPESCRIPT_PROJECT);
+  return libraryOptions(registry, ids).length > 0;
+}
+
 export function languageOptions(registry: Registry): PromptOption<string>[] {
   return orderedOptions(registry, 'language', LANGUAGE_ORDER, (id, fragment) => {
     const base = fragmentHint(fragment);

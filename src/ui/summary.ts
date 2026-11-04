@@ -8,6 +8,7 @@ import {
   frameworkOptions,
   languageOptions,
   libraryOptions,
+  mayOfferLibraries,
   preferredOption,
   valuesInOptions,
   withInitial,
@@ -258,17 +259,6 @@ async function customize(
     agentStep: step,
     agentTotal: total,
   };
-}
-
-function mayOfferLibraries(
-  registry: Registry,
-  frameworkChoices: readonly { readonly value: string }[],
-): boolean {
-  if (libraryOptions(registry, []).length > 0) return true;
-  return libraryOptions(
-    registry,
-    frameworkChoices.map((option) => option.value),
-  ).length > 0;
 }
 
 function agentStepInfo(
