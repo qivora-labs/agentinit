@@ -37,8 +37,9 @@ function dropHeaders(lines: readonly string[]): string[] {
   for (const line of lines) {
     if (line.startsWith('Index:')) continue;
     if (/^=+$/u.test(line)) continue;
-    if (line.startsWith('---')) continue;
-    if (line.startsWith('+++')) continue;
+    // Header only (`--- path` / `+++ path`). Hunk lines like `----` (removed `---`) stay.
+    if (line.startsWith('--- ')) continue;
+    if (line.startsWith('+++ ')) continue;
     out.push(line);
   }
   return out;

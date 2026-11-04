@@ -26,10 +26,25 @@ describe('formatDiff', () => {
     expect(formatted).toBe(['@@ -1,2 +1,3 @@', ' keep', '-old', '+new', '+extra'].join('\n'));
     expect(formatted).not.toMatch(/^Index:/mu);
     expect(formatted).not.toMatch(/^===/mu);
-    expect(formatted).not.toMatch(/^---/mu);
-    expect(formatted).not.toMatch(/^\+\+\+/mu);
+    expect(formatted).not.toMatch(/^--- /mu);
+    expect(formatted).not.toMatch(/^\+\+\+ /mu);
     expect(formatted.endsWith('\n')).toBe(false);
     await expect(`${formatted}\n`).toMatchFileSnapshot('../__snapshots__/ui/conflict-diff.txt');
+  });
+
+  it('keeps hunk lines that only look like headers (removed markdown HR)', () => {
+    const unified = [
+      'Index: notes.md',
+      '===================================================================',
+      '--- notes.md',
+      '+++ notes.md',
+      '@@ -1,2 +1,2 @@',
+      ' keep',
+      '----',
+      '+still here',
+    ].join('\n');
+    const formatted = formatDiff(unified, plain);
+    expect(formatted.split('\n')).toEqual(['@@ -1,2 +1,2 @@', ' keep', '----', '+still here']);
   });
 
   it('paints + green, - red, and @@ gray on a TTY', () => {
