@@ -17,6 +17,23 @@ export const AGENT_FOLDERS = {
   copilot: '.github/',
 } as const satisfies Record<AgentTarget, string>;
 
+/**
+ * Exact root markers that belong to an agent when the plan no longer lists
+ * them (stale deletes). Keep in sync with `PRESELECT` in `existing-agents.ts`.
+ */
+export const AGENT_ROOT_MARKERS: ReadonlyMap<string, AgentTarget> = new Map([
+  ['CLAUDE.md', 'claude'],
+  ['.cursorrules', 'cursor'],
+  ['.windsurfrules', 'windsurf'],
+]);
+
+/**
+ * Extra directory prefixes beyond `AGENT_FOLDERS` (Windsurf's Devin Desktop
+ * layout). Same sync note as `AGENT_ROOT_MARKERS`.
+ */
+export const AGENT_EXTRA_FOLDERS: Readonly<Partial<Record<AgentTarget, readonly string[]>>> = {
+  windsurf: ['.devin/'],
+};
 export interface AgentPromptInput {
   /** Empty means none of the four has config yet, so all four start selected (PRD §3.5). */
   readonly preselected: readonly AgentTarget[];

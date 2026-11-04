@@ -130,6 +130,24 @@ describe('formatAgentReport', () => {
     );
   });
 
+  it('keeps deleted Claude root and folder files on one Claude Code row', () => {
+    const report = formatAgentReport(
+      [
+        { path: 'CLAUDE.md', action: 'deleted', target: 'claude' },
+        { path: '.claude/rules/a.md', action: 'deleted', target: 'claude' },
+        { path: '.cursor/rules/a.mdc', action: 'created', target: 'cursor' },
+      ],
+      plain,
+    );
+    expect(report).toBe(
+      [
+        'Wrote 3 files for 2 agents',
+        'Cursor       1 file               .cursor/',
+        'Claude Code  2 files · 2 deleted  .claude/',
+      ].join('\n'),
+    );
+  });
+
   it('lists orphan deletes under Removed without counting them as agents', () => {
     const report = formatAgentReport(
       [
@@ -192,8 +210,16 @@ describe('resolveReportTarget', () => {
     expect(resolveReportTarget('AGENTS.md', map)).toBe('shared');
   });
 
-  it('falls back to the agent folder prefix for deleted paths', () => {
-    expect(resolveReportTarget('.cursor/rules/gone.mdc', new Map())).toBe('cursor');
-    expect(resolveReportTarget('orphan.md', new Map())).toBe('removed');
+  it.each([
+    ['.cursor/rules/gone.mdc', 'cursor'],
+    ['CLAUDE.md', 'claude'],
+    ['.claude/rules/gone.md', 'claude'],
+    ['.cursorrules', 'cursor'],
+    ['.windsurfrules', 'windsurf'],
+    ['.devin/settings.json', 'windsurf'],
+    ['.devin', 'windsurf'],
+    ['orphan.md', 'removed'],
+  ] as const)('falls back for deleted %s → %s', (path, target) => {
+    expect(resolveReportTarget(path, new Map())).toBe(target);
   });
 });

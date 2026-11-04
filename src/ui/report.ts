@@ -2,7 +2,7 @@ import { compareText } from '../compare-text.js';
 import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import { alignColumns, visibleWidth } from './align.js';
-import { AGENT_FOLDERS, AGENT_LABELS } from './agents.js';
+import { AGENT_EXTRA_FOLDERS, AGENT_FOLDERS, AGENT_LABELS, AGENT_ROOT_MARKERS } from './agents.js';
 import type { Theme } from './theme.js';
 
 export interface ReportFile {
@@ -180,7 +180,7 @@ function padEndVisible(text: string, width: number): string {
 
 /**
  * Resolve a report path's target from the plan. Deleted paths are not in the
- * plan, so fall back to the agent folder prefix, then `removed`.
+ * plan, so fall back to root markers, then agent folder prefixes, then `removed`.
  */
 export function resolveReportTarget(
   path: string,
@@ -188,14 +188,23 @@ export function resolveReportTarget(
 ): AgentTarget | 'shared' | 'removed' {
   const fromPlan = targetsByPath.get(path);
   if (fromPlan !== undefined) return fromPlan;
+  const fromRoot = AGENT_ROOT_MARKERS.get(path);
+  if (fromRoot !== undefined) return fromRoot;
   for (const agent of AGENT_TARGETS) {
-    if (path === AGENT_FOLDERS[agent].slice(0, -1) || path.startsWith(AGENT_FOLDERS[agent])) {
-      return agent;
+    if (matchesAgentFolder(path, AGENT_FOLDERS[agent])) return agent;
+    const extras = AGENT_EXTRA_FOLDERS[agent];
+    if (extras === undefined) continue;
+    for (const folder of extras) {
+      if (matchesAgentFolder(path, folder)) return agent;
     }
   }
   return 'removed';
 }
 
+/** `folder` is a trailing-slash prefix; also match the bare directory name. */
+function matchesAgentFolder(path: string, folder: string): boolean {
+  return path === folder.slice(0, -1) || path.startsWith(folder);
+}
 function countActions(entries: readonly ReportEntry[]): ActionCounts {
   const counts: ActionCounts = new Map();
   for (const entry of entries) {
