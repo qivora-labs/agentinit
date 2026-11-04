@@ -132,7 +132,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | done |
 | [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | done |
 | [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | done |
-| [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | todo |
+| [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | done |
 | [T35](T35-review-before-write.md) | Review before write | M7 | T34 | L | todo |
 | [T36](T36-detection-card.md) | Detection summary card | M7 | T27 | S | todo |
 | [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | todo |

@@ -2,11 +2,19 @@ import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import type { Prompter } from './prompter.js';
 
-const AGENT_LABELS = {
+export const AGENT_LABELS = {
   cursor: 'Cursor',
   claude: 'Claude Code',
   windsurf: 'Windsurf',
   copilot: 'GitHub Copilot',
+} as const satisfies Record<AgentTarget, string>;
+
+/** Folder each agent owns. Used by the init report and path-prefix grouping. */
+export const AGENT_FOLDERS = {
+  cursor: '.cursor/',
+  claude: '.claude/',
+  windsurf: '.windsurf/',
+  copilot: '.github/',
 } as const satisfies Record<AgentTarget, string>;
 
 export interface AgentPromptInput {

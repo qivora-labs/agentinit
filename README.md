@@ -36,7 +36,24 @@ Requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`.
 
 ## Example output
 
-From `npx @agentinit/cli init --yes` on the `next15-src` fixture (Next.js App Router + TypeScript strict):
+On a terminal, `npx @agentinit/cli init --yes` on the `next15-src` fixture (Next.js App Router + TypeScript strict) ends with a short per-agent report:
+
+```text
+Wrote 24 files for 4 agents
+Cursor          5 files  .cursor/
+Claude Code     6 files  .claude/
+Windsurf        5 files  .windsurf/
+GitHub Copilot  6 files  .github/
+Shared          AGENTS.md  ARCHITECTURE.md
+Context cost  ~830 tokens loaded in every chat (budget 1,500)
+Next steps
+1.  Review the changes  git diff
+2.  Try a workflow      /new-feature
+3.  Check for drift     npx @agentinit/cli doctor
+Done.
+```
+
+Piped or CI output keeps the full file tree:
 
 ```text
 ├── .claude
@@ -79,7 +96,7 @@ From `npx @agentinit/cli init --yes` on the `next15-src` fixture (Next.js App Ro
 ├── AGENTS.md (created)
 ├── ARCHITECTURE.md (created)
 └── CLAUDE.md (created)
-Always-on tokens: 758
+Always-on tokens: 830
 ```
 
 Always-on content lives once in `AGENTS.md` (budget: 1,500 tokens). Scoped rules and workflows go only to each agent's native files. A committed `.agentinit/manifest.json` records what was written.

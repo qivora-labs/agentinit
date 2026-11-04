@@ -10,10 +10,12 @@ import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, type Change } from '../io/changes.js';
 import { readManifest, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
+import { ALWAYS_ON_TOKEN_LIMIT } from '../plan/tokens.js';
 import type { Plan, PlanWarning } from '../plan/types.js';
 import { loadRegistry, type Registry } from '../registry/load.js';
 import type { ProjectFacts, ResolvedSelection, Selection } from '../registry/resolve.js';
 import type { AgentTarget, Language, ProjectProfile } from '../types.js';
+import { underRail } from '../ui/brand.js';
 import { confirmGitRoot } from '../ui/git-root.js';
 import { isNonInteractiveSetup, nonInteractiveSelection } from '../ui/defaults.js';
 import {
@@ -23,10 +25,23 @@ import {
   type LowConfidenceNotice,
 } from '../ui/format.js';
 import type { Logger } from '../ui/logger.js';
-import { greenfieldNextSteps } from '../ui/next-steps.js';
+import {
+  existingNextSteps,
+  formatGreenfieldNextSteps,
+  formatNextSteps,
+  greenfieldNextSteps,
+} from '../ui/next-steps.js';
 import { paintFileTree } from '../ui/paint.js';
 import { createClackPrompter, type PromptSpinner, type Prompter } from '../ui/prompter.js';
-import { formatDiffs, formatFileTree, formatTokenLine, type ReportFile } from '../ui/report.js';
+import {
+  formatAgentReport,
+  formatDiffs,
+  formatFileTree,
+  formatTokenLine,
+  resolveReportTarget,
+  type ReportEntry,
+  type ReportFile,
+} from '../ui/report.js';
 import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
 import { confirmDetected } from '../ui/summary.js';
 import { runGreenfieldWizard, type GreenfieldInitial } from '../ui/wizard.js';
@@ -52,6 +67,7 @@ interface Setup {
 
 const UP_TO_DATE = 'Already up to date.';
 const RULES_WRITTEN = 'Rules written.';
+const DONE = 'Done.';
 const DRY_RUN_DONE = 'Dry run. Nothing written.';
 
 /**
@@ -76,7 +92,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const plan = buildPlan(profile, resolved);
   const changes = await computeChanges(root, plan, manifest);
   const notices = noticeLines(registry, detection, resolved, setup.notices);
-  const nextSteps = profile.mode === 'greenfield' ? greenfieldNextSteps(profile.frameworks) : [];
+  const greenfieldSteps = profile.mode === 'greenfield' ? greenfieldNextSteps(profile.frameworks) : [];
 
   if (!hasWork(changes)) return reportUpToDate(ctx, logger, options, plan, notices);
 
@@ -101,7 +117,18 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   }
   writing?.stop(ctx.dryRun ? 'Previewed the changes' : 'Wrote the rules');
 
-  return reportApplied(ctx, logger, options, plan, applied.report, notices, nextSteps);
+  return reportApplied(ctx, logger, options, {
+    plan,
+    report: applied.report,
+    notices,
+    greenfieldSteps,
+    agents: profile.agents,
+    workflows: resolved.workflows.map((workflow) => ({
+      id: workflow.meta.id,
+      order: workflow.meta.order,
+    })),
+    mode: profile.mode,
+  });
 }
 
 function prompterFor(options: InitOptions): () => Prompter {
@@ -396,18 +423,34 @@ function reportUpToDate(
   return SUCCESS;
 }
 
+interface AppliedReportInput {
+  readonly plan: Plan;
+  readonly report: readonly ApplyReportEntry[];
+  readonly notices: readonly string[];
+  readonly greenfieldSteps: readonly string[];
+  readonly agents: readonly AgentTarget[];
+  readonly workflows: readonly { readonly id: string; readonly order: number }[];
+  readonly mode: ProjectProfile['mode'];
+}
+
 function reportApplied(
   ctx: RunContext,
   logger: Logger,
   options: InitOptions,
-  plan: Plan,
-  report: readonly ApplyReportEntry[],
-  notices: readonly string[],
-  nextSteps: readonly string[],
+  input: AppliedReportInput,
 ): number {
+  const { plan, report, notices, greenfieldSteps, agents, workflows, mode } = input;
   const files = report.map(reportFile);
   if (ctx.json) {
-    writeStdout(options, `${JSON.stringify(reportPayload(ctx, plan, files, notices, nextSteps), null, 2)}\n`);
+    writeStdout(
+      options,
+      `${JSON.stringify(reportPayload(ctx, plan, files, notices, greenfieldSteps), null, 2)}\n`,
+    );
+    return SUCCESS;
+  }
+
+  if (logger.theme.tty) {
+    printTtyReport(ctx, logger, plan, report, notices, greenfieldSteps, agents, workflows, mode);
     return SUCCESS;
   }
 
@@ -422,9 +465,68 @@ function reportApplied(
     if (diffs.length > 0) logger.info(diffs);
   }
   for (const notice of notices) logger.warn(notice);
-  for (const step of nextSteps) logger.step(step);
+  for (const step of greenfieldSteps) logger.step(step);
   logger.close(ctx.dryRun ? DRY_RUN_DONE : RULES_WRITTEN, { ttyOnly: true });
   return SUCCESS;
+}
+
+function printTtyReport(
+  ctx: RunContext,
+  logger: Logger,
+  plan: Plan,
+  report: readonly ApplyReportEntry[],
+  notices: readonly string[],
+  greenfieldSteps: readonly string[],
+  agents: readonly AgentTarget[],
+  workflows: readonly { readonly id: string; readonly order: number }[],
+  mode: ProjectProfile['mode'],
+): void {
+  const theme = logger.theme;
+  const files = report.map(reportFile);
+  const blocks: string[] = [];
+
+  // Dry-run and preview keep the full tree; a normal write uses the grouped report.
+  if (ctx.dryRun) {
+    const tree = formatFileTree(files);
+    if (tree.length > 0) blocks.push(paintFileTree(tree, theme));
+  } else {
+    const entries = reportEntries(report, plan);
+    blocks.push(formatAgentReport(entries, theme));
+  }
+
+  const over = tokenBudget(plan.warnings);
+  const tokens = formatTokenLine(plan.alwaysOnTokens, over, {
+    theme,
+    limit: ALWAYS_ON_TOKEN_LIMIT,
+  });
+  blocks.push(tokens);
+
+  if (ctx.dryRun) {
+    const diffs = formatDiffs(files);
+    if (diffs.length > 0) blocks.push(diffs);
+  }
+
+  for (const notice of notices) blocks.push(theme.warn(notice));
+
+  if (mode === 'greenfield' && greenfieldSteps.length > 0) {
+    blocks.push(formatGreenfieldNextSteps(greenfieldSteps, theme));
+  } else if (mode === 'existing') {
+    const steps = existingNextSteps(agents, workflows);
+    if (steps.length > 0) blocks.push(formatNextSteps(steps, theme));
+  }
+
+  logger.info(underRail(blocks.join('\n'), theme));
+  logger.close(ctx.dryRun ? DRY_RUN_DONE : DONE, { ttyOnly: true });
+}
+
+function reportEntries(report: readonly ApplyReportEntry[], plan: Plan): ReportEntry[] {
+  const targetsByPath = new Map<string, AgentTarget | 'shared'>();
+  for (const op of plan.ops) targetsByPath.set(op.path, op.target);
+  return report.map((entry) => ({
+    path: entry.path,
+    action: entry.action,
+    target: resolveReportTarget(entry.path, targetsByPath),
+  }));
 }
 
 function reportFile(entry: ApplyReportEntry): ReportFile {

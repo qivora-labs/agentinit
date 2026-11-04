@@ -47,6 +47,16 @@ export function formatClose(theme: Theme, message: string, tone: CloseTone = 'ne
   return `${bar}  ${text}`;
 }
 
+/**
+ * Puts a multi-line block under the Clack rail so tree branches and report
+ * rows do not sit at column 0 beside the frame.
+ */
+export function underRail(text: string, theme: Theme): string {
+  if (text.length === 0) return text;
+  const prefix = `${theme.muted(theme.glyphs.bar)}  `;
+  return text.split('\n').map((line) => `${prefix}${line}`).join('\n');
+}
+
 function textBanner(theme: Theme): string {
   const start = theme.muted(theme.glyphs.barStart);
   const bar = theme.muted(theme.glyphs.bar);

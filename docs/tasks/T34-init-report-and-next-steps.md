@@ -41,14 +41,14 @@ Make the end of `init` the best screen in the session: a short per-agent summary
 - The closing line is chrome. Pipes keep `Rules written.` omitted, as today.
 
 ## Acceptance criteria
-- [ ] TTY report for `next15-src` with all four agents is ≤ 12 lines, from the heading to `Done.` (snapshot).
-- [ ] Rows appear in `AGENT_TARGETS` order and only for agents with changed files.
-- [ ] `--agents cursor` followed by `--agents claude` groups the deleted Cursor files correctly.
-- [ ] Mixed actions (created, updated, adopted, skipped) show the breakdown text and colors.
-- [ ] Non-TTY `init --yes` output is byte-for-byte unchanged (existing e2e tests still pass without snapshot updates).
-- [ ] `--json` output is unchanged.
-- [ ] Existing-project next steps appear on a TTY and not on a pipe. Greenfield next steps appear on both.
-- [ ] Over-budget token line uses the warning tone and names the budget.
+- [x] TTY report for `next15-src` with all four agents is ≤ 12 lines, from the heading to `Done.` (snapshot).
+- [x] Rows appear in `AGENT_TARGETS` order and only for agents with changed files.
+- [x] `--agents cursor` followed by `--agents claude` groups the deleted Cursor files correctly.
+- [x] Mixed actions (created, updated, adopted, skipped) show the breakdown text and colors.
+- [x] Non-TTY `init --yes` output is byte-for-byte unchanged (existing e2e tests still pass without snapshot updates).
+- [x] `--json` output is unchanged.
+- [x] Existing-project next steps appear on a TTY and not on a pipe. Greenfield next steps appear on both.
+- [x] Over-budget token line uses the warning tone and names the budget.
 
 ## Verify
 ```bash
@@ -61,3 +61,7 @@ node dist/cli.js init --yes --cwd /tmp/ai-t34 | cat   # pipe output keeps the tr
 `feat(ui): group the init report by agent and add next steps`
 
 ## Notes
+- T36 had not landed, so `src/ui/align.ts` (`visibleWidth`, `alignColumns`, `stripAnsi`) was added here for T36 to reuse.
+- Shared/Removed rows match the agent label column only; their detail text does not widen the agent "N files" column.
+- Closing chrome on a TTY is `Done.`; pipes still omit the chrome line (unchanged from `Rules written.` with `ttyOnly`).
+- `existingNextSteps` takes `agents` for the call-site API even though the three steps do not use it yet.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBanner, formatClose, TAGLINE } from '../../src/ui/brand.js';
+import { formatBanner, formatClose, underRail, TAGLINE } from '../../src/ui/brand.js';
 import { createTheme } from '../../src/ui/theme.js';
 
 const NEEDLE = [
@@ -62,5 +62,12 @@ describe('formatClose', () => {
     expect(line).toContain('Not a directory');
     expect(line.split('Not a directory')).toHaveLength(2);
     expect(line).toContain('\u001b[31m');
+  });
+});
+
+describe('underRail', () => {
+  it('prefixes every line with the Clack bar', () => {
+    const theme = createTheme(false, true);
+    expect(underRail('├── a\n└── b', theme)).toBe('│  ├── a\n│  └── b');
   });
 });
