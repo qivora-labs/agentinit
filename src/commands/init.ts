@@ -75,7 +75,7 @@ interface Setup {
 const UP_TO_DATE = 'Already up to date.';
 const RULES_WRITTEN = 'Rules written.';
 const DONE = 'Done.';
-const DRY_RUN_DONE = 'Dry run. Nothing written.';
+const WROTE_THE_RULES = 'Wrote the rules';
 
 /**
  * detect → resolve → plan → apply.
@@ -84,7 +84,7 @@ const DRY_RUN_DONE = 'Dry run. Nothing written.';
 export async function init(ctx: RunContext, logger: Logger, options: InitOptions = {}): Promise<number> {
   requireInteractiveOrYes(ctx);
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
-  const prompts = prompterFor(options);
+  const prompts = prompterFor(options, logger.theme);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
 
@@ -251,7 +251,8 @@ async function applyPreparedWrite(input: {
 }): Promise<number> {
   const { ctx, logger, options, root, prepared, notices, greenfieldSteps, prompts, spin } = input;
   const { profile, resolved, plan, changes } = prepared;
-  const writing = spin && !needsConflictPrompt(changes)
+  const hadConflicts = needsConflictPrompt(changes);
+  const writing = spin && !hadConflicts
     ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
     : undefined;
   let applied;
@@ -270,7 +271,12 @@ async function applyPreparedWrite(input: {
     stopSpin(writing, error, ctx.dryRun ? 'Could not preview the changes' : 'Could not write the rules');
     throw error;
   }
-  writing?.stop(ctx.dryRun ? 'Previewed the changes' : 'Wrote the rules');
+  if (writing !== undefined) {
+    writing.stop(ctx.dryRun ? 'Previewed the changes' : WROTE_THE_RULES);
+  } else if (hadConflicts && !ctx.dryRun && ctx.isInteractive && logger.presented) {
+    // No spinner (conflicts own the terminal, or tests capture stdout); match the success line.
+    logger.success(WROTE_THE_RULES);
+  }
 
   return reportApplied(ctx, logger, options, {
     plan,
@@ -429,7 +435,7 @@ async function previewChanges(
   }));
   const tree = formatFileTree(files);
   if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
-  const diffs = formatDiffs(files);
+  const diffs = formatDiffs(files, logger.theme);
   if (diffs.length > 0) logger.info(diffs);
 }
 
@@ -465,10 +471,11 @@ async function changeSetup(
   return { ...changed, notices: current.notices };
 }
 
-function prompterFor(options: InitOptions): () => Prompter {
+function prompterFor(options: InitOptions, theme: Theme): () => Prompter {
   let current = options.prompter;
   return () => {
-    current ??= createClackPrompter();
+    // Match logger.theme (injected stdout), not process.stdout alone.
+    current ??= createClackPrompter(theme);
     return current;
   };
 }
@@ -806,12 +813,12 @@ function reportApplied(
   if (over === undefined) logger.info(tokens);
   else logger.warn(tokens);
   if (ctx.dryRun) {
-    const diffs = formatDiffs(files);
+    const diffs = formatDiffs(files, logger.theme);
     if (diffs.length > 0) logger.info(diffs);
   }
   for (const notice of notices) logger.warn(notice);
   for (const step of greenfieldSteps) logger.step(step);
-  logger.close(ctx.dryRun ? DRY_RUN_DONE : RULES_WRITTEN, { ttyOnly: true });
+  logger.close(ctx.dryRun ? dryRunDone(files) : RULES_WRITTEN, { ttyOnly: true });
   return SUCCESS;
 }
 
@@ -847,7 +854,7 @@ function printTtyReport(
   blocks.push(tokens);
 
   if (ctx.dryRun) {
-    const diffs = formatDiffs(files);
+    const diffs = formatDiffs(files, theme);
     if (diffs.length > 0) blocks.push(diffs);
   }
 
@@ -861,7 +868,12 @@ function printTtyReport(
   }
 
   logger.info(underRail(blocks.join('\n'), theme));
-  logger.close(ctx.dryRun ? DRY_RUN_DONE : DONE, { ttyOnly: true });
+  logger.close(ctx.dryRun ? dryRunDone(files) : DONE, { ttyOnly: true });
+}
+
+function dryRunDone(files: readonly ReportFile[]): string {
+  const count = files.filter((file) => file.action !== 'unchanged' && file.action !== 'skipped').length;
+  return `Dry run · ${String(count)} files would change. Nothing written.`;
 }
 
 function reportEntries(report: readonly ApplyReportEntry[], plan: Plan): ReportEntry[] {

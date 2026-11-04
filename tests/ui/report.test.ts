@@ -29,13 +29,26 @@ describe('formatFileTree', () => {
 });
 
 describe('formatDiffs', () => {
-  it('keeps non-empty diffs and drops blank ones', () => {
+  it('skips created files and blank diffs; headers existing-file changes', () => {
+    const unified = [
+      'Index: CLAUDE.md',
+      '===================================================================',
+      '--- CLAUDE.md',
+      '+++ CLAUDE.md',
+      '@@ -1,1 +1,1 @@',
+      '-old',
+      '+new',
+    ].join('\n');
     expect(
-      formatDiffs([
-        { path: 'AGENTS.md', action: 'created', diff: '--- AGENTS.md\n+++ AGENTS.md\n' },
-        { path: 'skip.md', action: 'unchanged', diff: '   \n' },
-      ]),
-    ).toBe('--- AGENTS.md\n+++ AGENTS.md');
+      formatDiffs(
+        [
+          { path: 'AGENTS.md', action: 'created', diff: `${unified}\n` },
+          { path: 'skip.md', action: 'unchanged', diff: '   \n' },
+          { path: 'CLAUDE.md', action: 'updated', diff: unified },
+        ],
+        plain,
+      ),
+    ).toBe(['CLAUDE.md (updated)', '@@ -1,1 +1,1 @@', '-old', '+new'].join('\n'));
   });
 });
 

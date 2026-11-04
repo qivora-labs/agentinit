@@ -17,7 +17,7 @@ Make diffs readable: colored, without header noise, only where something already
 1. **Diff formatter** (`src/ui/diff.ts`, pure): `formatDiff(unified, theme) → string`.
    - Drop `Index:`, `===`, `---`, and `+++` lines and trailing blank lines.
    - Paint `+` lines green, `-` lines red, `@@` lines gray. Context lines stay plain.
-   - Cap a single diff at 40 lines on a TTY, then print `… N more lines (run with --dry-run to see all)`. `--dry-run` itself shows the full diff.
+   - Cap a single diff at 40 lines on a TTY, then print `… N more lines`. `--dry-run` itself shows the full diff (`full: true`).
 2. **Prompter**: add `prompter.diff(unified, title)` to the `Prompter` interface. The Clack adapter formats with `formatDiff` and shows it in a note. The fake prompter records it. `src/io/apply.ts` calls `prompter.diff` instead of `prompter.note`, so `io/` still imports only the prompter interface.
 3. **Conflict wording** (`src/io/apply.ts` `ask`):
    - A managed block reads `the agentinit section of CLAUDE.md`. A whole file reads its path.
@@ -39,13 +39,13 @@ Make diffs readable: colored, without header noise, only where something already
 - `formatDiff` gets a plain theme on pipes, so non-TTY output only loses the header lines.
 
 ## Acceptance criteria
-- [ ] Conflict note on `existing-claude-md` has no `Index:`, `===`, `---`, or `+++` lines and no trailing blank lines (snapshot).
-- [ ] The question names the file without `#blockId` and spells `agentinit` in lowercase.
-- [ ] A long diff is capped at 40 lines in the conflict prompt.
-- [ ] `init --dry-run --yes` on `vite-react` prints fewer than 60 lines, and every created file still appears in the tree.
-- [ ] `init --dry-run --yes --json` output is unchanged.
-- [ ] No user-facing string in `src/` spells the product `AgentInit`. The `AgentInitError` class name stays.
-- [ ] Safety e2e tests pass unchanged.
+- [x] Conflict note on `existing-claude-md` has no `Index:`, `===`, `---`, or `+++` lines and no trailing blank lines (snapshot).
+- [x] The question names the file without `#blockId` and spells `agentinit` in lowercase.
+- [x] A long diff is capped at 40 lines in the conflict prompt.
+- [x] `init --dry-run --yes` on `vite-react` prints fewer than 60 lines, and every created file still appears in the tree.
+- [x] `init --dry-run --yes --json` output is unchanged.
+- [x] No user-facing string in `src/` spells the product `AgentInit`. The `AgentInitError` class name stays.
+- [x] Safety e2e tests pass unchanged.
 
 ## Verify
 ```bash
@@ -58,3 +58,8 @@ cp -r tests/fixtures/existing-claude-md /tmp/ai-t39 && node dist/cli.js init --c
 `feat(ui): format conflict and dry-run diffs`
 
 ## Notes
+- `formatDiff` takes optional `{ full: true }` so dry-run never truncates; conflict prompts cap at 40 on a TTY.
+- Dry-run closing line (`Dry run · N files would change…`) stays TTY-only chrome, matching the previous close behavior. `skipped` files are omitted from N.
+- Apply prompt vs `--yes` adopt paths are byte-identical (regression in `tests/io/apply.test.ts`).
+- Header drop matches `--- path` / `+++ path` only, so hunk lines like a removed markdown HR (`----`) stay.
+- `recordingPrompter` records `diff` calls; `createFakePrompter.diff` is a no-op like `note`.

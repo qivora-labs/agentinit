@@ -286,7 +286,10 @@ describe('init', () => {
     const preview = await runCli(['init', '--yes', '--dry-run', '--cwd', dir]);
     expect(preview.code).toBe(0);
     expect(preview.stdout).toContain('AGENTS.md');
-    expect(preview.stdout).toContain('---');
+    expect(preview.stdout).toContain('(created)');
+    // New files are listed in the tree only; no all-+ diffs.
+    expect(preview.stdout).not.toContain('Index:');
+    expect(preview.stdout).not.toContain('@@');
     expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
     expect(await treeDigest(dir)).toBe(digest);
 
@@ -296,6 +299,56 @@ describe('init', () => {
     expect(parsed).toMatchObject({ dryRun: true, upToDate: false });
     expect(json.stdout).toContain('"diff"');
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('dry-run diffs only existing files and keeps json diffs intact', async () => {
+    const dir = await copyFixture('existing-claude-md');
+    const preview = await runCli(['init', '--yes', '--dry-run', '--agents', 'claude', '--cwd', dir]);
+    expect(preview.code).toBe(0);
+    expect(preview.stdout).toContain('CLAUDE.md');
+    expect(preview.stdout).toContain('(adopted)');
+    expect(preview.stdout).not.toContain('Index:');
+    expect(preview.stdout).not.toContain('===');
+
+    const json = await runCli([
+      'init',
+      '--yes',
+      '--dry-run',
+      '--json',
+      '--agents',
+      'claude',
+      '--cwd',
+      dir,
+    ]);
+    expect(json.code).toBe(0);
+    const parsed = JSON.parse(json.stdout) as {
+      files: readonly { path: string; action: string; diff: string }[];
+    };
+    const claude = parsed.files.find((file) => file.path === 'CLAUDE.md');
+    expect(claude?.diff).toContain('Index:');
+    expect(claude?.diff).toContain('---');
+    expect(claude?.diff).toContain('+++');
+  });
+
+  it('dry-run closing line omits skipped files from the change count', async () => {
+    const dir = await copyFixture('existing-workflow-file');
+    const json = await runCli(['init', '--yes', '--dry-run', '--json', '--cwd', dir]);
+    expect(json.code).toBe(0);
+    const parsed = JSON.parse(json.stdout) as {
+      files: readonly { action: string }[];
+    };
+    expect(parsed.files.some((file) => file.action === 'skipped')).toBe(true);
+    const wouldChange = parsed.files.filter(
+      (file) => file.action !== 'unchanged' && file.action !== 'skipped',
+    ).length;
+
+    const preview = await runCli(['init', '--yes', '--dry-run', '--cwd', dir], {
+      stdoutTTY: true,
+    });
+    expect(preview.code).toBe(0);
+    expect(preview.stdout).toContain(
+      `Dry run · ${String(wouldChange)} files would change. Nothing written.`,
+    );
   });
 
   it('prints the init report as json on a real run', async () => {
@@ -456,6 +509,7 @@ describe('init', () => {
       confirm: inner.prompter.confirm.bind(inner.prompter),
       info: inner.prompter.info.bind(inner.prompter),
       spinner: inner.prompter.spinner.bind(inner.prompter),
+      diff: inner.prompter.diff.bind(inner.prompter),
       note(message?: string, title?: string) {
         if (typeof title === 'string' && title.startsWith('Ready to write')) {
           filesAtCard = listSync(dir);
@@ -629,6 +683,8 @@ describe('init', () => {
       (call) => call.method === 'select' && choicePrompt(call).message.includes('CLAUDE.md'),
     );
     expect(conflictAsks).toHaveLength(1);
+    // Spinner was skipped for the conflict prompt; still print the same success line.
+    expect(result.stdout).toContain('Wrote the rules');
   });
 
   it('cancel at the review card exits 130 with nothing written', async () => {
