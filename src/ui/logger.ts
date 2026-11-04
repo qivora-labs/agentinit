@@ -1,5 +1,6 @@
 import type { Writable } from 'node:stream';
 import { formatBanner, formatClose, formatHeader, type CloseTone } from './brand.js';
+import { fitToWidth } from './display-text.js';
 import { createTheme, type Theme } from './theme.js';
 
 export interface Logger {
@@ -61,7 +62,7 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
     const useStderr = json || level === 'warn' || level === 'error';
     const stream = useStderr ? io.stderr : io.stdout;
     const theme = useStderr ? stderrTheme : stdoutTheme;
-    stream.write(`${renderLine(theme, level, message)}\n`);
+    stream.write(`${renderLine(theme, level, message, columns)}\n`);
   };
 
   const open = (command?: string): void => {
@@ -109,10 +110,12 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
   };
 }
 
-function renderLine(theme: Theme, level: Level, message: string): string {
+function renderLine(theme: Theme, level: Level, message: string, columns: number): string {
   // A file tree, diff, or report is one block. A glyph on the first line would orphan the rest.
   if (!theme.tty || message.includes('\n')) return message;
-  return `${glyphFor(theme, level)}  ${message}`;
+  const glyph = `${glyphFor(theme, level)}  `;
+  const rail = `${theme.muted(theme.glyphs.bar)}  `;
+  return fitToWidth(message, columns, glyph, rail);
 }
 
 function glyphFor(theme: Theme, level: Level): string {

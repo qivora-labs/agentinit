@@ -188,8 +188,8 @@ export function assertFramedRail(screen: string): void {
 }
 
 function isFramedLine(line: string): boolean {
-  // Doctor check details sit indented under an icon row (T37), not on the rail.
-  if (/^[ \t]{2,}\S/.test(line)) return true;
+  // paintDoctorChecks: `  ${message}` and `    Fix: ${fix}` (T37), not on the rail.
+  if (isDoctorDetail(line)) return true;
   const trimmed = line.trimStart();
   return (
     startsWithRail(trimmed)
@@ -213,6 +213,11 @@ function isFramedLine(line: string): boolean {
     || trimmed.startsWith('!')
     || trimmed.startsWith('x')
   );
+}
+
+/** Matches the two indent levels `paintDoctorChecks` emits for issue rows. */
+function isDoctorDetail(line: string): boolean {
+  return /^ {2}\S/.test(line) || line.startsWith('    Fix: ');
 }
 
 function startsWithRail(line: string): boolean {

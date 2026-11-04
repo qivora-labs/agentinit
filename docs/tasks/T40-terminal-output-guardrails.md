@@ -56,6 +56,9 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - Screen tests skip on Windows (`describe.skipIf`). CI still runs the full suite there;
   those cases are no-ops.
 - Doctor checklist issue details are intentionally indented under icon rows (T37), not
-  rail-prefixed. The rail assert allows leading-whitespace continuations for that case.
-  Putting doctor checks under `underRail` would be a T37 follow-up if desired.
+  rail-prefixed. The rail assert allows only the two `paintDoctorChecks` indent shapes
+  (`  message` and `    Fix: …`). Putting doctor checks under `underRail` would be a
+  T37 follow-up if desired.
+- Standalone TTY `logger.warn` / status lines also wrap via `fitToWidth` (glyph on the
+  first line, rail on continuations), not only the under-rail report block.
 - `pnpm test:screens` builds then runs only the pty suite.

@@ -65,6 +65,12 @@ describe('fitToWidth', () => {
   it('prefixes every line including short ones', () => {
     expect(fitToWidth('ok\nnext', 40, rail)).toBe('│  ok\n│  next');
   });
+
+  it('uses a different prefix on wrap continuations', () => {
+    expect(fitToWidth('review the changes with git diff now', 20, '▲  ', rail)).toBe(
+      ['▲  review the', '│  changes with git', '│  diff now'].join('\n'),
+    );
+  });
 });
 
 function stripColor(text: string): string {

@@ -15,17 +15,26 @@ export function sanitizeDisplayText(value: string): string {
 
 /**
  * Wrap `text` so each output line fits in `width` columns. The rail `prefix`
- * is repeated on every line, including continuations. Word boundaries are
- * preferred; a single token longer than the content width is hard-broken.
- * CSI color codes do not count toward width and stay attached to their text.
+ * starts each input line; `continuationPrefix` (defaults to `prefix`) is used
+ * on wrap continuations. Word boundaries are preferred; a single token longer
+ * than the content width is hard-broken. CSI color codes do not count toward
+ * width and stay attached to their text.
  */
-export function fitToWidth(text: string, width: number, prefix: string): string {
+export function fitToWidth(
+  text: string,
+  width: number,
+  prefix: string,
+  continuationPrefix = prefix,
+): string {
   if (text.length === 0) return text;
-  const contentWidth = Math.max(1, width - visibleWidth(prefix));
+  const prefixWidth = Math.max(visibleWidth(prefix), visibleWidth(continuationPrefix));
+  const contentWidth = Math.max(1, width - prefixWidth);
   const lines: string[] = [];
   for (const line of text.split('\n')) {
-    for (const segment of wrapLine(line, contentWidth)) {
-      lines.push(`${prefix}${segment}`);
+    const segments = wrapLine(line, contentWidth);
+    for (let index = 0; index < segments.length; index += 1) {
+      const lead = index === 0 ? prefix : continuationPrefix;
+      lines.push(`${lead}${segments[index] ?? ''}`);
     }
   }
   return lines.join('\n');
