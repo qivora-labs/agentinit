@@ -305,6 +305,8 @@ export type FragmentScope = 'always' | 'glob' | 'auto' | 'manual';
 export interface ProjectProfile {
   root: string;
   mode: 'existing' | 'greenfield';
+  /** package.json `name`, or null when absent / greenfield */
+  name: string | null;
   packageManager: PackageManager | null;   // null in greenfield mode
   srcDir: '' | 'src';
   language: Language;

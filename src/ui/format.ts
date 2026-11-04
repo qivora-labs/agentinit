@@ -1,12 +1,13 @@
-import { compareText } from '../compare-text.js';
 import type { ProjectDraft, DetectionWarning } from '../detect/index.js';
 import type { Registry } from '../registry/load.js';
 import type { RegistryNotice } from '../registry/resolve.js';
+import { alignColumns } from './align.js';
 import { fragmentName } from './catalog.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
 import { sanitizeDisplayText } from './display-text.js';
+import type { Theme } from './theme.js';
 
-export const NO_FRAMEWORK_SUMMARY = 'Framework: none detected';
+export const NO_FRAMEWORK_SUMMARY = 'none detected';
 
 export const NO_FRAMEWORK_NOTICE = 'No framework rules matched; generating base rules.';
 
@@ -20,27 +21,52 @@ export interface SummaryText {
   readonly registry: Registry;
   readonly notices: readonly RegistryNotice[];
   readonly warnings: readonly DetectionWarning[];
+  readonly theme: Theme;
+}
+
+export function formatSummaryTitle(name: string | null): string {
+  if (name === null) return 'Detected project';
+  const safe = sanitizeDisplayText(name).trim();
+  if (safe === '') return 'Detected project';
+  return `Detected ${safe}`;
 }
 
 export function formatSummary(input: SummaryText): string {
-  const { draft, registry } = input;
-  const lines = [
+  const { draft, registry, theme } = input;
+  const rows: string[][] = [];
+
+  rows.push([
+    theme.muted('Framework'),
     draft.frameworks.length === 0
       ? NO_FRAMEWORK_SUMMARY
-      : `Framework: ${nameList(registry, draft.frameworks)}`,
-    `Libraries: ${nameList(registry, draft.libraries)}`,
-    `Language: ${fragmentName(registry, draft.language)}`,
-    `Package manager: ${sanitizeDisplayText(draft.packageManager ?? 'unknown')}`,
-    `Layout: ${draft.srcDir === 'src' ? 'src/' : 'project root'}`,
-    `Architecture: ${fragmentName(registry, draft.architecture.id)} (confidence ${formatConfidence(draft.architecture.confidence)})`,
-    formatVersions(draft.packages),
-  ];
+      : formatFragmentList(registry, draft.frameworks, draft.packages, theme),
+  ]);
 
-  const notices = noticeLines(input);
-  if (notices.length > 0) {
-    lines.push('Notices:', ...notices.map((line) => `  ${line}`));
+  if (draft.libraries.length > 0) {
+    rows.push([
+      theme.muted('Libraries'),
+      formatFragmentList(registry, draft.libraries, draft.packages, theme),
+    ]);
   }
-  return lines.join('\n');
+
+  rows.push([theme.muted('Language'), formatLanguage(draft, theme)]);
+  rows.push([
+    theme.muted('Architecture'),
+    formatArchitecture(registry, draft.architecture, theme),
+  ]);
+  rows.push([theme.muted('Tooling'), formatTooling(draft, theme)]);
+
+  const notes = noticeLines(input);
+  for (let index = 0; index < notes.length; index += 1) {
+    const note = notes[index];
+    if (note === undefined) continue;
+    rows.push([
+      index === 0 ? theme.muted('Notes') : '',
+      `${theme.warn(theme.glyphs.warn)} ${note}`,
+    ]);
+  }
+
+  return alignColumns(rows).join('\n');
 }
 
 export function formatRegistryNotice(notice: RegistryNotice, registry: Registry): string {
@@ -78,18 +104,81 @@ export function formatConfidence(confidence: number): string {
   return confidence.toFixed(3).replace(/\.?0+$/, '');
 }
 
-function nameList(registry: Registry, ids: readonly string[]): string {
-  if (ids.length === 0) return 'none';
-  return ids.map((id) => fragmentName(registry, id)).join(', ');
+function formatFragmentList(
+  registry: Registry,
+  ids: readonly string[],
+  packages: Readonly<Record<string, string>>,
+  theme: Theme,
+): string {
+  return ids.map((id) => formatFragmentValue(registry, id, packages, theme)).join(', ');
 }
 
-function formatVersions(packages: Readonly<Record<string, string>>): string {
-  const entries = Object.entries(packages).sort((left, right) => compareText(left[0], right[0]));
-  if (entries.length === 0) return 'Versions: none';
-  const lines = entries.map(
-    ([name, version]) => `  ${sanitizeDisplayText(name)}@${sanitizeDisplayText(version)}`,
-  );
-  return ['Versions:', ...lines].join('\n');
+/** Fragment display name, then detection package + major.minor in gray when known. */
+export function formatFragmentValue(
+  registry: Registry,
+  id: string,
+  packages: Readonly<Record<string, string>>,
+  theme: Theme,
+): string {
+  const name = fragmentName(registry, id);
+  const versionText = detectionPackageVersion(registry, id, packages);
+  if (versionText === undefined) return name;
+  return `${name}  ${theme.muted(versionText)}`;
+}
+
+function formatLanguage(draft: ProjectDraft, theme: Theme): string {
+  const label = draft.language === 'typescript-strict' ? 'TypeScript · strict' : 'TypeScript';
+  const version = draft.packages.typescript;
+  if (version === undefined) return label;
+  const short = majorMinor(version);
+  if (short === undefined) return label;
+  return `${label}  ${theme.muted(`typescript ${short}`)}`;
+}
+
+function formatArchitecture(
+  registry: Registry,
+  architecture: ProjectDraft['architecture'],
+  theme: Theme,
+): string {
+  const name = fragmentName(registry, architecture.id);
+  if (architecture.confidence >= LOW_ARCHITECTURE_CONFIDENCE) {
+    return `${name}  ${theme.muted('likely')}`;
+  }
+  return `${name}  ${theme.warn(`unsure (${formatConfidence(architecture.confidence)})`)}`;
+}
+
+function formatTooling(draft: ProjectDraft, theme: Theme): string {
+  const manager = sanitizeDisplayText(draft.packageManager ?? 'unknown');
+  const layout = draft.srcDir === 'src' ? 'src/' : 'project root';
+  return `${manager} ${theme.muted('·')} ${layout}`;
+}
+
+function detectionPackageVersion(
+  registry: Registry,
+  id: string,
+  packages: Readonly<Record<string, string>>,
+): string | undefined {
+  const meta = registry.byId.get(id)?.meta;
+  if (meta === undefined || meta.category === 'workflow') return undefined;
+  const names = meta.detect?.packages;
+  if (names === undefined) return undefined;
+  for (const packageName of names) {
+    const version = packages[packageName];
+    if (version === undefined) continue;
+    const short = majorMinor(version);
+    if (short === undefined) continue;
+    return `${sanitizeDisplayText(packageName)} ${short}`;
+  }
+  return undefined;
+}
+
+/** First two numeric segments (`16.3.0` → `16.3`). Non-semver-like strings are skipped. */
+function majorMinor(version: string): string | undefined {
+  const match = /^(\d+)\.(\d+)/.exec(sanitizeDisplayText(version));
+  const major = match?.[1];
+  const minor = match?.[2];
+  if (major === undefined || minor === undefined) return undefined;
+  return `${major}.${minor}`;
 }
 
 function noticeLines(input: SummaryText): string[] {

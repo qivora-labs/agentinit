@@ -14,10 +14,18 @@ import {
 } from './catalog.js';
 import type { PromptedSetup } from './choices.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
-import { formatConfidence, formatRegistryNotice, formatSummary, formatWarning } from './format.js';
+import {
+  formatConfidence,
+  formatRegistryNotice,
+  formatSummary,
+  formatSummaryTitle,
+  formatWarning,
+} from './format.js';
 import type { MultiSelectPrompt, PromptOption, Prompter } from './prompter.js';
+import type { Theme } from './theme.js';
 
 export interface SummaryExtras {
+  readonly theme: Theme;
   readonly notices?: readonly RegistryNotice[];
   readonly warnings?: readonly DetectionWarning[];
   /** `--agents` skips the agent prompt. A saved manifest list does the same. */
@@ -49,11 +57,13 @@ export async function confirmDetected(
   prompter: Prompter,
   draft: ProjectDraft,
   registry: Registry,
-  extras?: SummaryExtras,
+  extras: SummaryExtras,
 ): Promise<PromptedSetup> {
   prompter.note(
     summaryNote(draft, registry, extras),
-    extras?.summary === undefined ? 'Detected project' : (extras.title ?? 'What changed'),
+    extras.summary === undefined
+      ? formatSummaryTitle(draft.name)
+      : (extras.title ?? 'What changed'),
   );
 
   const options: readonly PromptOption<ConfigurationChoice>[] = [
@@ -70,7 +80,7 @@ export async function confirmDetected(
     ? await customize(prompter, draft, registry, detectedInitial(draft))
     : await acceptDetected(prompter, draft, registry);
 
-  const agents = await selectAgents(prompter, agentInput(draft, extras?.agents));
+  const agents = await selectAgents(prompter, agentInput(draft, extras.agents));
   return { selection: toSelection(draft, chosen, choice), agents };
 }
 
@@ -218,13 +228,14 @@ function toSelection(
  * belong on that note, because a re-run otherwise hides an unsupported package
  * or a legacy rule file (PRD §3.4).
  */
-function summaryNote(draft: ProjectDraft, registry: Registry, extras: SummaryExtras | undefined): string {
-  if (extras?.summary === undefined) {
+function summaryNote(draft: ProjectDraft, registry: Registry, extras: SummaryExtras): string {
+  if (extras.summary === undefined) {
     return formatSummary({
       draft,
       registry,
-      notices: extras?.notices ?? [],
-      warnings: extras?.warnings ?? [],
+      notices: extras.notices ?? [],
+      warnings: extras.warnings ?? [],
+      theme: extras.theme,
     });
   }
 
