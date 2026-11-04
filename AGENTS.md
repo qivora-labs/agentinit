@@ -75,10 +75,11 @@ Always-on rules for this project. Scoped rules and workflows stay in each agent'
 
 ## Architecture
 
-- Put new components in `src/components/` and new hooks in `src/hooks/`.
-- Put new helpers in `src/utils/` and shared types in `src/types/`.
-- Keep each new file to one component, one hook, or one helper.
-- When a type folder would take on a second domain, add `src/features/<feature>/` for the new domain.
+- Put business rules in `src/domain/` and use cases in `src/application/`.
+- Put database, HTTP, and filesystem adapters in `src/infrastructure/`.
+- Put UI and delivery code in `src/presentation/`.
+- Point imports inward, toward `src/domain/`.
+- Keep `src/domain/` free of framework and I/O imports.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
 

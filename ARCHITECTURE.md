@@ -79,8 +79,10 @@ These folders are already in the project:
 
 ## Conventions for new code
 
-- **DEFAULT** to one folder per file type: `components/`, `hooks/`, `utils/`, and `types/` under `src/`.
-- **ALWAYS** give a new file a single component, hook, or helper.
-- **PREFER** `src/features/<feature>/` for new code once a type folder would mix a second domain.
-- **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+- **ALWAYS** import inward: `presentation/` and `infrastructure/` may import `application/` and `domain/`; `application/` may import `domain/`.
+- **NEVER** import `application/`, `infrastructure/`, or `presentation/` from `domain/`.
+- **NEVER** import a framework, database client, HTTP client, or filesystem module from `domain/`.
+- **NEVER** import `infrastructure/` or `presentation/` from `application/`.
+- **NEVER** import `presentation/` from `infrastructure/`, or `infrastructure/` from `presentation/`.
+- **PREFER** a port type declared in `application/` or `domain/` when a use case needs I/O, with the implementation in `infrastructure/`.
 <!-- agentinit:end id=architecture -->
