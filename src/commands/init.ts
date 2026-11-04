@@ -394,6 +394,7 @@ async function runReviewLoop(input: {
       changes: prepared.changes,
       theme: logger.theme,
       tokenLimit: ALWAYS_ON_TOKEN_LIMIT,
+      columns: logger.columns,
     });
 
     if (choice === 'write') return { kind: 'write', setup, prepared };
@@ -433,10 +434,15 @@ async function previewChanges(
     action: conflictPaths.has(entry.path) ? 'you decide next' : entry.action,
     diff: entry.diff,
   }));
+  // Same framed dry-run block as printTtyReport: tree + diffs under the rail.
+  const blocks: string[] = [];
   const tree = formatFileTree(files);
-  if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
+  if (tree.length > 0) blocks.push(paintFileTree(tree, logger.theme));
   const diffs = formatDiffs(files, logger.theme);
-  if (diffs.length > 0) logger.info(diffs);
+  if (diffs.length > 0) blocks.push(diffs);
+  if (blocks.length > 0) {
+    logger.info(underRail(blocks.join('\n'), logger.theme, logger.columns));
+  }
 }
 
 async function changeSetup(
@@ -843,7 +849,7 @@ function printTtyReport(
     if (tree.length > 0) blocks.push(paintFileTree(tree, theme));
   } else {
     const entries = reportEntries(report, plan);
-    blocks.push(formatAgentReport(entries, theme));
+    blocks.push(formatAgentReport(entries, theme, { columns: logger.columns }));
   }
 
   const over = tokenBudget(plan.warnings);
@@ -867,7 +873,7 @@ function printTtyReport(
     if (steps.length > 0) blocks.push(formatNextSteps(steps, theme));
   }
 
-  logger.info(underRail(blocks.join('\n'), theme));
+  logger.info(underRail(blocks.join('\n'), theme, logger.columns));
   logger.close(ctx.dryRun ? dryRunDone(files) : DONE, { ttyOnly: true });
 }
 

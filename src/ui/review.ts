@@ -39,6 +39,8 @@ export interface ReviewPlanInput {
   readonly theme: Theme;
   /** Always-on token budget (from the command layer; ui never imports plan/). */
   readonly tokenLimit: number;
+  /** Terminal columns; narrow terminals drop the folder column. */
+  readonly columns?: number;
 }
 
 /**
@@ -47,7 +49,11 @@ export interface ReviewPlanInput {
  */
 export async function reviewPlan(prompter: Prompter, input: ReviewPlanInput): Promise<ReviewChoice> {
   const entries = reviewEntries(input.changes, input.plan);
-  const parts = agentReportParts(entries, input.theme);
+  const parts = agentReportParts(
+    entries,
+    input.theme,
+    input.columns === undefined ? {} : { columns: input.columns },
+  );
   const conflicts = countConflicts(input.changes);
   const over = tokenBudget(input.plan.warnings);
   const tokens = formatTokenLine(input.plan.alwaysOnTokens, over, {

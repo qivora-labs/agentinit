@@ -1,0 +1,31 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+●  No package.json found. Setting up a new project.
+│
+◇  1/5 Which framework are you using?
+│  Web frontend · React + Vite
+│
+◇  2/5 How strict should TypeScript be?
+│  TypeScript Strict
+│
+◇  3/5 Which libraries should we include?
+│
+│
+◆  4/5 Which architecture should we follow?
+│  ● Feature-Based (recommended · src/features/<domain>)
+│  ○ Layered / Clean
+│  ○ Atomic Design
+│  ○ Flat / Minimal
+│  ↑/↓ to navigate • Enter: confirm
+└

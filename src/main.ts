@@ -268,7 +268,14 @@ function terminalChrome(): LoggerChrome {
   return {
     unicode: supportsUnicode(process.env, process.platform),
     color: colorEnabled(process.env),
+    columns: stdoutColumns(),
   };
+}
+
+/** `stdout.columns` is missing when the stream is not a TTY. */
+function stdoutColumns(): number {
+  const value: unknown = process.stdout.columns;
+  return typeof value === 'number' && value > 0 ? value : 80;
 }
 
 function reportError(error: unknown, io: CommandIo, json: boolean, framed: boolean): number {

@@ -1,0 +1,24 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+●  No package.json found. Setting up a new project.
+│
+◆  1/5 Which framework are you using?
+│  ● Web frontend · React + Vite (React 19 actions/use, Vite env, lazy load)
+│  ○ Full-stack web · Next.js App Router
+│  ○                  Next.js Pages Router
+│  ○ Backend / API · Express
+│  ○                 Fastify
+│  ○ Other TypeScript project (library, CLI, scripts)
+│  ↑/↓ to navigate • Enter: confirm
+└

@@ -26,6 +26,13 @@ describe('formatBanner', () => {
     expect(formatBanner(createTheme(false, false))).toBe(`Qivora Labs\n\n+  AGENT  INIT\n|  ${TAGLINE}`);
   });
 
+  it('falls back to the text banner below 60 columns', () => {
+    const theme = createTheme(false, true);
+    expect(formatBanner(theme, 59)).toBe(`Qivora Labs\n\n┌  AGENT  INIT\n│  ${TAGLINE}`);
+    expect(formatBanner(theme, 59)).not.toContain('█████');
+    expect(formatBanner(theme, 60)).toContain('█████');
+  });
+
   it('paints AGENT in the foreground and INIT in cyan', () => {
     const plain = formatBanner(createTheme(true, true, false));
     const banner = formatBanner(createTheme(true, true, true));
@@ -83,5 +90,12 @@ describe('underRail', () => {
   it('prefixes every line with the Clack bar', () => {
     const theme = createTheme(false, true);
     expect(underRail('├── a\n└── b', theme)).toBe('│  ├── a\n│  └── b');
+  });
+
+  it('wraps long lines under the rail', () => {
+    const theme = createTheme(false, true);
+    const wrapped = underRail('one two three four five six seven', theme, 20);
+    expect(wrapped.split('\n').every((line) => line.startsWith('│  '))).toBe(true);
+    expect(wrapped.split('\n').length).toBeGreaterThan(1);
   });
 });

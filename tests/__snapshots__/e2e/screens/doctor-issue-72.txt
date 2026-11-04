@@ -1,0 +1,12 @@
+┌  agentinit doctor
+│
+
+│  ◆  manifest
+│  ■  managed files
+│    .cursor/rules/agentinit-nextjs-app-router.mdc was edited by hand.
+│      Fix: npx @agentinit/cli init
+│  ◆  detected packages
+│  ◆  package versions
+│  ◆  token budget
+│  ◆  legacy files
+└  1 issue found.

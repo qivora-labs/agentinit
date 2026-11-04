@@ -1,0 +1,60 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+●  No package.json found. Setting up a new project.
+│
+◇  1/5 Which framework are you using?
+│  Web frontend · React + Vite
+│
+◇  2/5 How strict should TypeScript be?
+│  TypeScript Strict
+│
+◇  3/5 Which libraries should we include?
+│
+│
+◇  4/5 Which architecture should we follow?
+│  Feature-Based
+│
+◇  5/5 Which agents should we generate rules for?
+│  AGENTS.md is always written.
+│  Cursor, Claude Code, Windsurf, GitHub Copilot
+│
+◇  Ready to write 24 files ───────────────────────────────────────╮
+│                                                                 │
+│  Cursor          5 files  .cursor/                              │
+│  Claude Code     6 files  .claude/                              │
+│  Windsurf        5 files  .windsurf/                            │
+│  GitHub Copilot  6 files  .github/                              │
+│  Shared          AGENTS.md  ARCHITECTURE.md                     │
+│  Context cost  ~816 tokens loaded in every chat (budget 1,500)  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────╯
+│
+◇  What next?
+│  Write files
+│
+◇  Wrote the rules
+│  Wrote 24 files for 4 agents
+│  Cursor          5 files  .cursor/
+│  Claude Code     6 files  .claude/
+│  Windsurf        5 files  .windsurf/
+│  GitHub Copilot  6 files  .github/
+│  Shared          AGENTS.md  ARCHITECTURE.md
+│  Context cost  ~816 tokens loaded in every chat (budget 1,500)
+│  Next steps
+│  1.  Scaffold the project, then run `npx @agentinit/cli` again.
+│  2.  pnpm create vite@latest
+│  3.  Some generators refuse to run in a non-empty directory. Scaffold
+│  here if the generator allows it, or scaffold in a subfolder and move
+│  the files here.
+└  Done.

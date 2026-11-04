@@ -60,6 +60,21 @@ describe('createLogger', () => {
     expect(stdout.text()).toBe('├── AGENTS.md (created)\n└── ARCHITECTURE.md (updated)\n');
   });
 
+  it('wraps long tty status lines under the rail', () => {
+    const stderr = captureStream(true);
+    const logger = createLogger(
+      { stdout: captureStream(true).stream, stderr: stderr.stream },
+      false,
+      { unicode: true, color: false, columns: 28 },
+    );
+    logger.warn('some-package@1.2.3 detected — no matching rules yet.');
+    const lines = stderr.text().trimEnd().split('\n');
+    expect(lines[0]?.startsWith('▲  ')).toBe(true);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.slice(1).every((line) => line.startsWith('│  '))).toBe(true);
+    expect(lines.every((line) => line.length <= 28)).toBe(true);
+  });
+
   it('prints a pipe status line once and skips the wordmark', () => {
     const stdout = captureStream();
     const logger = createLogger({ stdout: stdout.stream, stderr: captureStream().stream }, false);

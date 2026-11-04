@@ -108,6 +108,19 @@ describe('formatAgentReport', () => {
     );
   });
 
+  it('drops the folder column below 60 columns', () => {
+    const report = formatAgentReport(
+      [
+        { path: '.cursor/rules/a.mdc', action: 'created', target: 'cursor' },
+        { path: 'AGENTS.md', action: 'created', target: 'shared' },
+      ],
+      plain,
+      { columns: 59 },
+    );
+    expect(report).toBe(['Wrote 2 files for 1 agent', 'Cursor  1 file', 'Shared  AGENTS.md'].join('\n'));
+    expect(report).not.toContain('.cursor/');
+  });
+
   it('shows mixed-action breakdown and warning colors', () => {
     const report = formatAgentReport(
       [
