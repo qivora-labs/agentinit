@@ -2,13 +2,38 @@ import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import type { Prompter } from './prompter.js';
 
-const AGENT_LABELS = {
+export const AGENT_LABELS = {
   cursor: 'Cursor',
   claude: 'Claude Code',
   windsurf: 'Windsurf',
   copilot: 'GitHub Copilot',
 } as const satisfies Record<AgentTarget, string>;
 
+/** Folder each agent owns. Used by the init report and path-prefix grouping. */
+export const AGENT_FOLDERS = {
+  cursor: '.cursor/',
+  claude: '.claude/',
+  windsurf: '.windsurf/',
+  copilot: '.github/',
+} as const satisfies Record<AgentTarget, string>;
+
+/**
+ * Exact root markers that belong to an agent when the plan no longer lists
+ * them (stale deletes). Keep in sync with `PRESELECT` in `existing-agents.ts`.
+ */
+export const AGENT_ROOT_MARKERS: ReadonlyMap<string, AgentTarget> = new Map([
+  ['CLAUDE.md', 'claude'],
+  ['.cursorrules', 'cursor'],
+  ['.windsurfrules', 'windsurf'],
+]);
+
+/**
+ * Extra directory prefixes beyond `AGENT_FOLDERS` (Windsurf's Devin Desktop
+ * layout). Same sync note as `AGENT_ROOT_MARKERS`.
+ */
+export const AGENT_EXTRA_FOLDERS: Readonly<Partial<Record<AgentTarget, readonly string[]>>> = {
+  windsurf: ['.devin/'],
+};
 export interface AgentPromptInput {
   /** Empty means none of the four has config yet, so all four start selected (PRD §3.5). */
   readonly preselected: readonly AgentTarget[];

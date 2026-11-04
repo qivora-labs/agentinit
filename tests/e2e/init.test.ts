@@ -104,6 +104,9 @@ describe('init', () => {
     expect(result.code).toBe(0);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.stdout).toContain('Always-on tokens:');
+    expect(result.stdout).not.toContain('Context cost');
+    expect(result.stdout).not.toContain('Next steps');
+    expect(result.stdout).not.toContain('Review the changes');
     expect(result.stdout).not.toContain('rules for the agents in this repo');
     const tree = await treeText(dir);
     await expect(tree).toMatchFileSnapshot('../__snapshots__/e2e/next15-src.txt');
@@ -125,15 +128,18 @@ describe('init', () => {
     const tty = await runCli(['init', '--yes', '--cwd', dir], { stdoutTTY: true });
     expect(tty.code).toBe(0);
     const tagline = tty.stdout.indexOf('rules for the agents in this repo');
-    const tokens = tty.stdout.indexOf('Always-on tokens:');
+    const tokens = tty.stdout.indexOf('Context cost');
     expect(tagline).toBeGreaterThanOrEqual(0);
     expect(tagline).toBeLessThan(tokens);
     expect(tty.stdout.split('rules for the agents in this repo')).toHaveLength(2);
-    expect(tty.stdout.split('Rules written.')).toHaveLength(2);
+    expect(tty.stdout.split('Done.')).toHaveLength(2);
+    expect(tty.stdout).toContain('Wrote ');
+    expect(tty.stdout).toContain('Next steps');
+    expect(tty.stdout).not.toContain('├──');
 
     const again = await runCli(['init', '--yes', '--cwd', dir], { stdoutTTY: true });
     expect(again.stdout.split('Already up to date.')).toHaveLength(2);
-    expect(again.stdout).not.toContain('Rules written.');
+    expect(again.stdout).not.toContain('Done.');
 
     const jsonDir = await copyFixture('next15-src');
     const json = await runCli(['init', '--yes', '--json', '--cwd', jsonDir], { stdoutTTY: true });
