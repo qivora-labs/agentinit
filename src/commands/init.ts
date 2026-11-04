@@ -200,6 +200,7 @@ async function runReviewLoop(input: {
       plan: prepared.plan,
       changes: prepared.changes,
       theme: logger.theme,
+      tokenLimit: ALWAYS_ON_TOKEN_LIMIT,
     });
 
     if (choice === 'write') return { kind: 'write', setup, prepared };

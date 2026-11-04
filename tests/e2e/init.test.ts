@@ -378,29 +378,31 @@ describe('init', () => {
     expect(await listFiles(dir)).toContain('.agentinit/manifest.json');
   });
 
-  it('previews changes without writing, then returns to the card', async () => {
+  it('previews changes without writing, then returns to the card and can write', async () => {
     const dir = await copyFixture('existing-claude-md');
     const before = await treeDigest(dir);
     const recorded = recordingPrompter([
       { type: 'select', value: 'use' },
       { type: 'select', value: 'preview' },
-      { type: 'cancel' },
+      WRITE,
+      { type: 'select', value: 'adopt' },
     ]);
     const result = await runCli(['init', '--agents', 'claude', '--cwd', dir], {
       stdinTTY: true,
       stdoutTTY: true,
       prompter: recorded.prompter,
     });
-    expect(result.code).toBe(130);
+    expect(result.code).toBe(0);
     expect(result.stdout).toContain('CLAUDE.md');
     expect(result.stdout).toContain('you decide next');
     expect(result.stdout).toContain('├──');
-    expect(await treeDigest(dir)).toBe(before);
-    expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
-    const conflictAsks = recorded.calls.filter(
+    expect(await treeDigest(dir)).not.toBe(before);
+    expect(await listFiles(dir)).toContain('.agentinit/manifest.json');
+    const previewConflicts = recorded.calls.filter(
       (call) => call.method === 'select' && choicePrompt(call).message.includes('already exists'),
     );
-    expect(conflictAsks).toHaveLength(0);
+    // Conflict prompt only after Write files, not during preview.
+    expect(previewConflicts).toHaveLength(1);
     const ready = recorded.calls.filter(
       (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
     );
@@ -523,7 +525,7 @@ describe('init', () => {
       (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
     );
     if (ready?.method !== 'note') throw new Error('expected a review note');
-    expect(ready.message).toMatch(/1 existing file need your decision/);
+    expect(ready.message).toMatch(/1 existing file needs your decision/);
     const conflictAsks = recorded.calls.filter(
       (call) => call.method === 'select' && choicePrompt(call).message.includes('CLAUDE.md'),
     );

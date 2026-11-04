@@ -58,3 +58,4 @@ cp -r tests/fixtures/existing-claude-md /tmp/ai-t35 && node dist/cli.js init --c
 - `agentReportParts` extracted from `formatAgentReport` so the review card reuses the same rows.
 - `GreenfieldInitial.agents` only preselects; skipping the agent prompt is `GreenfieldOptions.agents` (`--agents` or a greenfield manifest re-run in `chooseSetup`).
 - Preview runs `applyChanges` with `dryRun: true` and `yes: true`, then relabels conflict paths as `you decide next`.
+- `ui/review.ts` takes structural DTOs (`ReviewChange`, `ReviewPlanView`) plus `tokenLimit` from `init.ts`, so it does not import `io/` or `plan/`.
