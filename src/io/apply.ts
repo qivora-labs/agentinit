@@ -153,7 +153,7 @@ async function decide(change: Change, diff: string, options: ApplyOptions): Prom
   if (options.yes === true) return defaultChoice(change);
   const prompter = options.prompter;
   if (prompter === undefined) throw new NotInteractiveError();
-  if (diff.length > 0) prompter.note(diff, change.path);
+  if (diff.length > 0) prompter.diff(diff, change.path);
   const choice = await ask(prompter, change);
   if (choice === 'adopt' && change.opKind !== 'managed-block') {
     throw new AgentInitError(`${change.path}: only shared files can be adopted.`);
@@ -167,24 +167,34 @@ function defaultChoice(change: Change): Choice {
 }
 
 async function ask(prompter: Prompter, change: Change): Promise<Choice> {
-  const label = change.blockId === undefined ? change.path : `${change.path}#${change.blockId}`;
+  const label = conflictLabel(change);
   if (change.kind === 'conflict-unmanaged' && change.opKind === 'managed-block') {
-    return choose(prompter, `${label} already exists and is not managed by AgentInit. What should we do?`, 'adopt', [
-      { value: 'adopt', label: 'Adopt', hint: 'Keep your content and add the managed block' },
-      { value: 'backup-replace', label: 'Backup & replace', hint: 'Back up the file, then write a fresh copy' },
-      { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
-    ]);
+    return choose(
+      prompter,
+      `${label} already exists and agentinit doesn't manage it yet. What should we do?`,
+      'adopt',
+      [
+        { value: 'adopt', label: 'Adopt', hint: 'Keep your content and add the managed block' },
+        { value: 'backup-replace', label: 'Backup & replace', hint: 'Back up the file, then write a fresh copy' },
+        { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
+      ],
+    );
   }
   if (change.kind === 'conflict-unmanaged') {
-    return choose(prompter, `${label} already exists and is not managed by AgentInit. What should we do?`, 'skip', [
-      { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
-      { value: 'backup-replace', label: 'Backup & replace', hint: 'Back up the file, then write a fresh copy' },
-    ]);
+    return choose(
+      prompter,
+      `${label} already exists and agentinit doesn't manage it yet. What should we do?`,
+      'skip',
+      [
+        { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
+        { value: 'backup-replace', label: 'Backup & replace', hint: 'Back up the file, then write a fresh copy' },
+      ],
+    );
   }
   const removing = change.content === undefined;
   const message = removing
     ? `${label} was edited and is no longer in the plan. What should we do?`
-    : `${label} was edited after AgentInit wrote it. What should we do?`;
+    : `${label} was edited after agentinit wrote it. What should we do?`;
   const replaceHint = removing
     ? change.opKind === 'managed-block'
       ? 'Back up the file, then remove the managed block'
@@ -194,6 +204,12 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
     { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
     { value: 'backup-replace', label: 'Backup & replace', hint: replaceHint },
   ]);
+}
+
+/** Plain path, or "the agentinit section of path" for a managed block — never `path#id`. */
+function conflictLabel(change: Change): string {
+  if (change.blockId === undefined) return change.path;
+  return `the agentinit section of ${change.path}`;
 }
 
 async function choose(

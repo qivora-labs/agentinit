@@ -24,7 +24,8 @@ export type RecordedCall =
   | { readonly method: 'select' | 'multiselect' | 'groupMultiselect'; readonly prompt: unknown }
   | { readonly method: 'confirm'; readonly prompt: unknown }
   | { readonly method: 'info'; readonly message: string }
-  | { readonly method: 'note'; readonly message: string | undefined; readonly title: string | undefined };
+  | { readonly method: 'note'; readonly message: string | undefined; readonly title: string | undefined }
+  | { readonly method: 'diff'; readonly unified: string; readonly title: string | undefined };
 
 export interface Recording {
   readonly prompter: Prompter;
@@ -60,6 +61,10 @@ export function recordingPrompter(answers: readonly FakeAnswer[]): Recording {
       note(message, title) {
         calls.push({ method: 'note', message, title });
         inner.note(message, title);
+      },
+      diff(unified, title) {
+        calls.push({ method: 'diff', unified, title });
+        inner.diff(unified, title);
       },
       spinner() {
         return inner.spinner();

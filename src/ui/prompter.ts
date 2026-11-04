@@ -13,7 +13,9 @@ import {
 import pc from 'picocolors';
 import { CANCELLED } from '../exit-codes.js';
 import { AgentInitError } from '../errors.js';
+import { formatDiff } from './diff.js';
 import { sanitizeDisplayText, sanitizeMultilineDisplayText } from './display-text.js';
+import { colorEnabled, createTheme, supportsUnicode, type Theme } from './theme.js';
 
 /** Same sentinel as `OTHER_TYPESCRIPT_PROJECT` in catalog.ts (avoid a cycle). */
 const OTHER_TYPESCRIPT_PROJECT = 'other-typescript-project';
@@ -63,6 +65,8 @@ export interface Prompter {
   /** One rail line (Clack `log.info`), used for the greenfield intro. */
   info: (message: string) => void;
   note: (message?: string, title?: string) => void;
+  /** Conflict preview: formats a unified diff and shows it in a note. */
+  diff: (unified: string, title?: string) => void;
   spinner: () => PromptSpinner;
 }
 
@@ -76,7 +80,7 @@ export type FakeAnswer =
 const CANCEL_MESSAGE = 'Cancelled.';
 const GROUP_JOIN = ' · ';
 
-export function createClackPrompter(): Prompter {
+export function createClackPrompter(theme: Theme = defaultPromptTheme()): Prompter {
   return {
     async select(prompt) {
       const result = await clackSelect({
@@ -118,6 +122,12 @@ export function createClackPrompter(): Prompter {
     note(message, title) {
       clackNote(
         message === undefined ? undefined : sanitizeMultilineDisplayText(message),
+        title === undefined ? undefined : sanitizeDisplayText(title),
+      );
+    },
+    diff(unified, title) {
+      clackNote(
+        formatDiff(unified, theme),
         title === undefined ? undefined : sanitizeDisplayText(title),
       );
     },
@@ -175,6 +185,9 @@ export function createFakePrompter(answers: readonly FakeAnswer[]): Prompter {
     },
     note() {
       // Notes are not answers.
+    },
+    diff() {
+      // Diff notes are not answers.
     },
     spinner() {
       return {
@@ -317,4 +330,13 @@ function unwrap<T>(result: T | typeof CANCEL_SYMBOL): T {
 
 function cancelled(): AgentInitError {
   return new AgentInitError(CANCEL_MESSAGE, { exitCode: CANCELLED });
+}
+
+function defaultPromptTheme(): Theme {
+  const tty = isStdoutTty();
+  return createTheme(tty, supportsUnicode(process.env, process.platform), tty && colorEnabled(process.env));
+}
+
+function isStdoutTty(): boolean {
+  return process.stdout.isTTY;
 }

@@ -286,7 +286,10 @@ describe('init', () => {
     const preview = await runCli(['init', '--yes', '--dry-run', '--cwd', dir]);
     expect(preview.code).toBe(0);
     expect(preview.stdout).toContain('AGENTS.md');
-    expect(preview.stdout).toContain('---');
+    expect(preview.stdout).toContain('(created)');
+    // New files are listed in the tree only; no all-+ diffs.
+    expect(preview.stdout).not.toContain('Index:');
+    expect(preview.stdout).not.toContain('@@');
     expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
     expect(await treeDigest(dir)).toBe(digest);
 
@@ -296,6 +299,35 @@ describe('init', () => {
     expect(parsed).toMatchObject({ dryRun: true, upToDate: false });
     expect(json.stdout).toContain('"diff"');
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('dry-run diffs only existing files and keeps json diffs intact', async () => {
+    const dir = await copyFixture('existing-claude-md');
+    const preview = await runCli(['init', '--yes', '--dry-run', '--agents', 'claude', '--cwd', dir]);
+    expect(preview.code).toBe(0);
+    expect(preview.stdout).toContain('CLAUDE.md');
+    expect(preview.stdout).toContain('(adopted)');
+    expect(preview.stdout).not.toContain('Index:');
+    expect(preview.stdout).not.toContain('===');
+
+    const json = await runCli([
+      'init',
+      '--yes',
+      '--dry-run',
+      '--json',
+      '--agents',
+      'claude',
+      '--cwd',
+      dir,
+    ]);
+    expect(json.code).toBe(0);
+    const parsed = JSON.parse(json.stdout) as {
+      files: readonly { path: string; action: string; diff: string }[];
+    };
+    const claude = parsed.files.find((file) => file.path === 'CLAUDE.md');
+    expect(claude?.diff).toContain('Index:');
+    expect(claude?.diff).toContain('---');
+    expect(claude?.diff).toContain('+++');
   });
 
   it('prints the init report as json on a real run', async () => {
@@ -456,6 +488,7 @@ describe('init', () => {
       confirm: inner.prompter.confirm.bind(inner.prompter),
       info: inner.prompter.info.bind(inner.prompter),
       spinner: inner.prompter.spinner.bind(inner.prompter),
+      diff: inner.prompter.diff.bind(inner.prompter),
       note(message?: string, title?: string) {
         if (typeof title === 'string' && title.startsWith('Ready to write')) {
           filesAtCard = listSync(dir);

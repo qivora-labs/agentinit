@@ -3,6 +3,8 @@ import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import { alignColumns, visibleWidth } from './align.js';
 import { AGENT_EXTRA_FOLDERS, AGENT_FOLDERS, AGENT_LABELS, AGENT_ROOT_MARKERS } from './agents.js';
+import { formatDiff } from './diff.js';
+import { paintAction } from './paint.js';
 import type { Theme } from './theme.js';
 
 export interface ReportFile {
@@ -54,12 +56,20 @@ export function formatFileTree(files: readonly ReportFile[]): string {
   return lines.join('\n');
 }
 
-/** Unified diffs for the dry-run preview. Empty diffs are skipped. */
-export function formatDiffs(files: readonly ReportFile[]): string {
-  return files
-    .map((file) => file.diff.trim())
-    .filter((diff) => diff.length > 0)
-    .join('\n\n');
+/**
+ * Dry-run diffs for files that already exist. New (`created`) files stay in the
+ * tree only. Each block is a bold path, colored action, then a formatted diff.
+ */
+export function formatDiffs(files: readonly ReportFile[], theme: Theme): string {
+  const blocks: string[] = [];
+  for (const file of files) {
+    if (file.action === 'created') continue;
+    const raw = file.diff.trim();
+    if (raw.length === 0) continue;
+    const header = `${theme.ink(file.path)} (${paintAction(file.action, theme)})`;
+    blocks.push(`${header}\n${formatDiff(raw, theme, { full: true })}`);
+  }
+  return blocks.join('\n\n');
 }
 
 /**

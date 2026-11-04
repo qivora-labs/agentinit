@@ -45,7 +45,8 @@ function dimBranches(body: string, theme: Theme): string {
   return `${theme.dim(prefix)}${name}`;
 }
 
-function paintAction(action: string, theme: Theme): string {
+/** Action token colors shared by the file tree and dry-run diff headers. */
+export function paintAction(action: string, theme: Theme): string {
   switch (action) {
     case 'created':
       return theme.success(action);

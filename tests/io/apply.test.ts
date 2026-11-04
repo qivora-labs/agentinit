@@ -403,11 +403,33 @@ describe('applyChanges safety', () => {
 
     const result = await applyChanges(root, changes, applyOptions({ yes: false, prompter }));
 
-    expect(calls[0]?.method).toBe('note');
-    expect(calls[0]?.method === 'note' ? calls[0].message : '').toContain('rules');
+    expect(calls[0]?.method).toBe('diff');
+    expect(calls[0]?.method === 'diff' ? calls[0].unified : '').toContain('rules');
+    expect(calls[0]?.method === 'diff' ? calls[0].unified : '').toContain('Index:');
+    expect(choicePrompt(calls[1]).message).toBe(
+      "the agentinit section of AGENTS.md already exists and agentinit doesn't manage it yet. What should we do?",
+    );
     expect(choicePrompt(calls[1]).initialValue).toBe('adopt');
     expect(reportAction(result, 'AGENTS.md')).toBe('adopted');
     expect((await readFile(path.join(root, 'AGENTS.md'), 'utf8')).startsWith(user)).toBe(true);
+  });
+
+  it('keeps file bytes identical when resolving a conflict via prompt or --yes', async () => {
+    const user = '# Mine\n\nKeep this.\n';
+    const inner = 'Generated rules.\n';
+
+    const yesRoot = await tempDir();
+    await writeFile(path.join(yesRoot, 'AGENTS.md'), user);
+    const yesChanges = await planChanges(yesRoot, [block('AGENTS.md', 'core', inner)], null);
+    await applyChanges(yesRoot, yesChanges, applyOptions({ yes: true }));
+
+    const promptRoot = await tempDir();
+    await writeFile(path.join(promptRoot, 'AGENTS.md'), user);
+    const promptChanges = await planChanges(promptRoot, [block('AGENTS.md', 'core', inner)], null);
+    const { prompter } = recordingPrompter([{ type: 'select', value: 'adopt' }]);
+    await applyChanges(promptRoot, promptChanges, applyOptions({ yes: false, prompter }));
+
+    expect(await treeDigest(promptRoot)).toBe(await treeDigest(yesRoot));
   });
 
   it('asks before replacing an unmanaged file and can skip it', async () => {
