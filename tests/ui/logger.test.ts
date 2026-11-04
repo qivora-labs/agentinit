@@ -84,15 +84,15 @@ describe('createLogger', () => {
     expect(stdout.text().split('rules for the agents in this repo')).toHaveLength(2);
   });
 
-  it('opens a one-line header for doctor and list', () => {
+  it.each(['doctor', 'list'] as const)('opens a one-line header for %s', (command) => {
     const stdout = captureStream(true);
     const logger = createLogger({ stdout: stdout.stream, stderr: captureStream().stream }, false, {
       unicode: true,
       color: false,
     });
-    logger.open('doctor');
+    logger.open(command);
     logger.close('No issues found.');
-    const header = formatHeader(createTheme(true, true, false), 'doctor');
+    const header = formatHeader(createTheme(true, true, false), command);
     expect(stdout.text()).toBe(`\n\n${header}\n\n└  No issues found.\n`);
     expect(stdout.text()).not.toContain('rules for the agents in this repo');
   });
