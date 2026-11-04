@@ -43,7 +43,8 @@ import {
   type ReportFile,
 } from '../ui/report.js';
 import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
-import { confirmDetected } from '../ui/summary.js';
+import { changeExistingSetup, confirmDetected } from '../ui/summary.js';
+import { reviewPlan } from '../ui/review.js';
 import { runGreenfieldWizard, type GreenfieldInitial } from '../ui/wizard.js';
 import { resolveWithConflicts } from './resolve-conflicts.js';
 import pkg from '../../package.json' with { type: 'json' };
@@ -80,22 +81,37 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const prompts = prompterFor(options);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
-  const setup = await chooseSetup(ctx, registry, detection, manifest, prompts);
-  const profile = profileFor(root, detection, setup);
-  const resolved = await resolveWithConflicts(
-    registry,
-    setup.selection,
-    factsFor(detection),
-    ctx.isInteractive,
-    prompts,
-  );
-  const plan = buildPlan(profile, resolved);
-  const changes = await computeChanges(root, plan, manifest);
-  const notices = noticeLines(registry, detection, resolved, setup.notices);
-  const greenfieldSteps = profile.mode === 'greenfield' ? greenfieldNextSteps(profile.frameworks) : [];
+  let setup = await chooseSetup(ctx, registry, detection, manifest, prompts);
+  let prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
+  const notices = () => noticeLines(registry, detection, prepared.resolved, setup.notices);
+  const greenfieldSteps = () =>
+    prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
 
-  if (!hasWork(changes)) return reportUpToDate(ctx, logger, options, plan, notices);
+  if (!hasWork(prepared.changes)) {
+    return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+  }
 
+  if (ctx.isInteractive && !ctx.yes && !ctx.dryRun) {
+    const reviewed = await runReviewLoop({
+      ctx,
+      logger,
+      options,
+      registry,
+      detection,
+      manifest,
+      prompts,
+      root,
+      setup,
+      prepared,
+    });
+    setup = reviewed.setup;
+    prepared = reviewed.prepared;
+    if (reviewed.kind === 'up-to-date') {
+      return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+    }
+  }
+
+  const { profile, resolved, plan, changes } = prepared;
   const writing = spin && !needsConflictPrompt(changes)
     ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
     : undefined;
@@ -120,8 +136,8 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   return reportApplied(ctx, logger, options, {
     plan,
     report: applied.report,
-    notices,
-    greenfieldSteps,
+    notices: notices(),
+    greenfieldSteps: greenfieldSteps(),
     agents: profile.agents,
     workflows: resolved.workflows.map((workflow) => ({
       id: workflow.meta.id,
@@ -129,6 +145,137 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     })),
     mode: profile.mode,
   });
+}
+
+interface PreparedWrite {
+  readonly profile: ProjectProfile;
+  readonly resolved: ResolvedSelection;
+  readonly plan: Plan;
+  readonly changes: readonly Change[];
+}
+
+async function prepareWrite(
+  root: string,
+  registry: Registry,
+  detection: DetectionResult,
+  setup: Setup,
+  manifest: Manifest | null,
+  ctx: RunContext,
+  prompts: () => Prompter,
+): Promise<PreparedWrite> {
+  const profile = profileFor(root, detection, setup);
+  const resolved = await resolveWithConflicts(
+    registry,
+    setup.selection,
+    factsFor(detection),
+    ctx.isInteractive,
+    prompts,
+  );
+  const plan = buildPlan(profile, resolved);
+  const changes = await computeChanges(root, plan, manifest);
+  return { profile, resolved, plan, changes };
+}
+
+type ReviewLoopResult =
+  | { readonly kind: 'write'; readonly setup: Setup; readonly prepared: PreparedWrite }
+  | { readonly kind: 'up-to-date'; readonly setup: Setup; readonly prepared: PreparedWrite };
+
+async function runReviewLoop(input: {
+  readonly ctx: RunContext;
+  readonly logger: Logger;
+  readonly options: InitOptions;
+  readonly registry: Registry;
+  readonly detection: DetectionResult;
+  readonly manifest: Manifest | null;
+  readonly prompts: () => Prompter;
+  readonly root: string;
+  setup: Setup;
+  prepared: PreparedWrite;
+}): Promise<ReviewLoopResult> {
+  let { setup, prepared } = input;
+  const { ctx, logger, options, registry, detection, manifest, prompts, root } = input;
+
+  for (;;) {
+    const choice = await reviewPlan(prompts(), {
+      plan: prepared.plan,
+      changes: prepared.changes,
+      theme: logger.theme,
+      tokenLimit: ALWAYS_ON_TOKEN_LIMIT,
+    });
+
+    if (choice === 'write') return { kind: 'write', setup, prepared };
+
+    if (choice === 'preview') {
+      await previewChanges(root, prepared, options, logger);
+      continue;
+    }
+
+    setup = await changeSetup(ctx, registry, detection, setup, prompts);
+    prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
+    if (!hasWork(prepared.changes)) return { kind: 'up-to-date', setup, prepared };
+  }
+}
+
+async function previewChanges(
+  root: string,
+  prepared: PreparedWrite,
+  options: InitOptions,
+  logger: Logger,
+): Promise<void> {
+  const { profile, resolved, changes } = prepared;
+  const conflictPaths = new Set(
+    changes
+      .filter((change) => change.kind === 'conflict-unmanaged' || change.kind === 'conflict-edited')
+      .map((change) => change.path),
+  );
+  // `--yes` defaults so conflicts are not prompted; the label replaces the action.
+  const applied = await applyChanges(root, changes, {
+    now: options.now ?? new Date(),
+    manifest: manifestBody(profile, resolved),
+    yes: true,
+    dryRun: true,
+  });
+  const files = applied.report.map((entry) => ({
+    path: entry.path,
+    action: conflictPaths.has(entry.path) ? 'you decide next' : entry.action,
+    diff: entry.diff,
+  }));
+  const tree = formatFileTree(files);
+  if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
+  const diffs = formatDiffs(files);
+  if (diffs.length > 0) logger.info(diffs);
+}
+
+async function changeSetup(
+  ctx: RunContext,
+  registry: Registry,
+  detection: DetectionResult,
+  current: Setup,
+  prompts: () => Prompter,
+): Promise<Setup> {
+  if (detection.mode === 'greenfield') {
+    const wizard = await runGreenfieldWizard(prompts(), registry, {
+      ...(ctx.agents === undefined ? {} : { agents: ctx.agents }),
+      initial: {
+        language: current.selection.language,
+        architecture: current.selection.architecture,
+        frameworks: current.selection.frameworks,
+        libraries: current.selection.libraries,
+        agents: current.agents,
+      },
+    });
+    return { ...wizard, notices: current.notices };
+  }
+
+  const agents = ctx.agents;
+  const changed = await changeExistingSetup(
+    prompts(),
+    detection.draft,
+    registry,
+    { selection: current.selection, agents: current.agents },
+    agents === undefined ? {} : { agents },
+  );
+  return { ...changed, notices: current.notices };
 }
 
 function prompterFor(options: InitOptions): () => Prompter {
@@ -246,8 +393,10 @@ async function chooseSetup(
       if (!isNonInteractiveSetup(rejected)) throw rejected;
     }
     const initial = manifest === null ? undefined : greenfieldInitial(manifest.selections);
+    // Manifest agents skip the prompt (same as `--agents`); Change setup only preselects.
+    const skipAgents = ctx.agents ?? initial?.agents;
     const wizard = await runGreenfieldWizard(prompts(), registry, {
-      ...(ctx.agents === undefined ? {} : { agents: ctx.agents }),
+      ...(skipAgents === undefined ? {} : { agents: skipAgents }),
       ...(initial === undefined ? {} : { initial }),
     });
     return { ...wizard, notices: [] };

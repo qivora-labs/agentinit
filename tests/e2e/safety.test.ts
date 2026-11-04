@@ -76,6 +76,7 @@ describe('safety', () => {
     const confirmed = await temp.copyFixture('existing-workflow-file');
     const answers: readonly FakeAnswer[] = [
       { type: 'select', value: 'use' },
+      { type: 'select', value: 'write' },
       { type: 'select', value: 'backup-replace' },
     ];
     const confirm = await runCli(['init', '--agents', 'cursor', '--cwd', confirmed], {

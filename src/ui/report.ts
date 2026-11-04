@@ -89,6 +89,14 @@ export function formatTokenLine(
   return `Context cost  ~${count} tokens loaded in every chat (budget ${budget})`;
 }
 
+/** Counts and aligned rows shared by the post-write report and the review card. */
+export interface AgentReportParts {
+  readonly fileTotal: number;
+  readonly agentTotal: number;
+  /** Agent / Shared / Removed rows. Empty when nothing changed. */
+  readonly rows: string;
+}
+
 /**
  * Grouped TTY report: heading, one row per agent with changes, then Shared
  * and Removed. Pure; callers put the result under the Clack rail.
@@ -98,6 +106,18 @@ export function formatAgentReport(
   theme: Theme,
   options: { readonly dryRun?: boolean } = {},
 ): string {
+  const parts = agentReportParts(entries, theme);
+  const verb = options.dryRun === true ? 'Would write' : 'Wrote';
+  const heading = `${verb} ${formatCount(parts.fileTotal)} ${plural(parts.fileTotal, 'file', 'files')} for ${formatCount(parts.agentTotal)} ${plural(parts.agentTotal, 'agent', 'agents')}`;
+  if (parts.rows.length === 0) return heading;
+  return `${heading}\n${parts.rows}`;
+}
+
+/**
+ * Per-agent rows without the "Wrote N files" heading. The review card uses
+ * these under its own title.
+ */
+export function agentReportParts(entries: readonly ReportEntry[], theme: Theme): AgentReportParts {
   const changed = entries.filter((entry) => entry.action !== 'unchanged');
   const byAgent = new Map<AgentTarget, ReportEntry[]>();
   const shared: ReportEntry[] = [];
@@ -139,13 +159,6 @@ export function formatAgentReport(
   const gap = 2;
 
   const lines: string[] = [];
-  const fileTotal = changed.length;
-  const agentTotal = agentRows.length;
-  const verb = options.dryRun === true ? 'Would write' : 'Wrote';
-  lines.push(
-    `${verb} ${formatCount(fileTotal)} ${plural(fileTotal, 'file', 'files')} for ${formatCount(agentTotal)} ${plural(agentTotal, 'agent', 'agents')}`,
-  );
-
   if (agentRows.length > 0) {
     const body = alignColumns(
       agentRows.map((row) => [row[1] ?? '', row[2] ?? '']),
@@ -171,7 +184,11 @@ export function formatAgentReport(
     lines.push(`${padEndVisible('Removed', labelWidth)}${' '.repeat(gap)}${detail}`);
   }
 
-  return lines.join('\n');
+  return {
+    fileTotal: changed.length,
+    agentTotal: agentRows.length,
+    rows: lines.join('\n'),
+  };
 }
 
 function padEndVisible(text: string, width: number): string {

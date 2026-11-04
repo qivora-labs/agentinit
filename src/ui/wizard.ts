@@ -21,7 +21,7 @@ export interface GreenfieldInitial {
   readonly architecture?: string;
   readonly frameworks?: readonly string[];
   readonly libraries?: readonly string[];
-  /** Saved agents. A manifest list skips the prompt. `--agents` still replaces it. */
+  /** Preselects the agent prompt. Does not skip it; pass `agents` on options for that. */
   readonly agents?: readonly AgentTarget[];
 }
 
@@ -99,11 +99,9 @@ export async function runGreenfieldWizard(
 }
 
 function agentInput(options: GreenfieldOptions | undefined): AgentPromptInput {
-  const saved = options?.initial?.agents;
-  const preselected = saved ?? [];
-  const override = options?.agents ?? saved;
-  if (override === undefined) return { preselected };
-  return { preselected, override };
+  const preselected = options?.initial?.agents ?? [];
+  if (options?.agents === undefined) return { preselected };
+  return { preselected, override: options.agents };
 }
 
 function preferredIds(initial: string | undefined, fallback: string): string[] {

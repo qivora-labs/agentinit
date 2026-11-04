@@ -118,7 +118,7 @@ describe('runGreenfieldWizard', () => {
     expect(calls.filter((call) => call.method === 'multiselect')).toHaveLength(1);
   });
 
-  it('starts later prompts from a saved selection and skips agents', async () => {
+  it('starts later prompts from a saved selection; agents override skips the prompt', async () => {
     const { prompter, calls } = recordingPrompter([
       { type: 'select', value: 'fastify' },
       { type: 'select', value: 'typescript' },
@@ -127,6 +127,7 @@ describe('runGreenfieldWizard', () => {
     ]);
 
     const result = await runGreenfieldWizard(prompter, await bundledRegistry(), {
+      agents: ['claude'],
       initial: {
         language: 'typescript',
         architecture: 'layered',
@@ -144,6 +145,31 @@ describe('runGreenfieldWizard', () => {
     expect(choicePrompt(selects[2]).initialValue).toBe('layered');
     expect(choicePrompt(multis[0]).initialValues).toEqual(['vitest']);
     expect(multis).toHaveLength(1);
+  });
+
+  it('preselects saved agents without skipping the prompt', async () => {
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'fastify' },
+      { type: 'select', value: 'typescript' },
+      { type: 'multiselect', value: ['vitest'] },
+      { type: 'select', value: 'layered' },
+      { type: 'multiselect', value: ['windsurf'] },
+    ]);
+
+    const result = await runGreenfieldWizard(prompter, await bundledRegistry(), {
+      initial: {
+        language: 'typescript',
+        architecture: 'layered',
+        frameworks: ['fastify'],
+        libraries: ['vitest'],
+        agents: ['claude'],
+      },
+    });
+
+    const multis = calls.filter((call) => call.method === 'multiselect');
+    expect(result.agents).toEqual(['windsurf']);
+    expect(multis).toHaveLength(2);
+    expect(choicePrompt(multis[1]).initialValues).toEqual(['claude']);
   });
 
   it('lets --agents replace a saved agent list without asking', async () => {

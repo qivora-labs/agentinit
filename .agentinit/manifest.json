@@ -3,10 +3,7 @@
   "mode": "existing",
   "selections": {
     "language": "typescript-strict",
-    "frameworks": [
-      "react-vite",
-      "nextjs-app-router"
-    ],
+    "frameworks": [],
     "libraries": [
       "vitest"
     ],
@@ -18,18 +15,10 @@
   },
   "fragments": {
     "layered": "1.0.0",
-    "nextjs-app-router": "1.0.0",
-    "react-vite": "1.0.0",
     "typescript-strict": "1.0.0",
     "vitest": "1.0.0"
   },
   "files": {
-    ".claude/rules/agentinit-nextjs-app-router.md": {
-      "sha256": "9af400564da84b363900619664a1ae6a584af15764ff971831bd65f3a4293e0a"
-    },
-    ".claude/rules/agentinit-react-vite.md": {
-      "sha256": "a1768e0653ab95f4d7a1d97166f1cc92399ec4b96b8da229de4be309d3891163"
-    },
     ".claude/rules/agentinit-vitest.md": {
       "sha256": "6b8aad89d34b45adcebf34c25c01372cfaa582c3d7dd71f6315a24c60a0953a6"
     },
@@ -56,12 +45,6 @@
     },
     ".cursor/commands/write-tests.md": {
       "sha256": "c3093f37f20d82e51a8ed585710a9165163e501038d7cb018e45bfa5c6688764"
-    },
-    ".cursor/rules/agentinit-nextjs-app-router.mdc": {
-      "sha256": "9c1d12fa4f2357c1cc4a229714187e7a2fe66ceb3eabf40a11b44a82c49fdd87"
-    },
-    ".cursor/rules/agentinit-react-vite.mdc": {
-      "sha256": "fe15ff0aefc7478ccfaddc954e17cd05e68d32d382b6371b0d6b4640e946d242"
     },
     ".cursor/rules/agentinit-vitest.mdc": {
       "sha256": "ac7d68143636c6bedb2fd146b8593983b9d23a59b4aa2aec56107570a1ac8e6c"

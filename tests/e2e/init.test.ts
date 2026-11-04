@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { compareText } from '../../src/compare-text.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
 import { runCli } from '../helpers/run.js';
-import { recordingPrompter } from '../ui/recording-prompter.js';
+import { choicePrompt, recordingPrompter } from '../ui/recording-prompter.js';
 
 const fixtures = fileURLToPath(new URL('../fixtures/', import.meta.url));
 const directories: string[] = [];
@@ -65,12 +65,15 @@ async function treeDigest(root: string): Promise<string> {
   return hash.digest('hex');
 }
 
+const WRITE: FakeAnswer = { type: 'select', value: 'write' };
+
 const VITE_ANSWERS: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
   { type: 'multiselect', value: [] },
   { type: 'select', value: 'feature-based' },
   { type: 'multiselect', value: ['cursor'] },
+  WRITE,
 ];
 
 const LAYERED_ANSWERS: readonly FakeAnswer[] = [
@@ -79,9 +82,10 @@ const LAYERED_ANSWERS: readonly FakeAnswer[] = [
   { type: 'multiselect', value: [] },
   { type: 'select', value: 'layered' },
   { type: 'multiselect', value: ['cursor'] },
+  WRITE,
 ];
 
-/** A saved manifest skips the agent prompt, so the re-run has no fifth answer. */
+/** A saved manifest skips the agent prompt; up-to-date skips the review card. */
 const VITE_RERUN: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
@@ -305,7 +309,7 @@ describe('init', () => {
     await mkdir(path.join(dir, 'src/app'), { recursive: true });
     await writeFile(path.join(dir, 'src/app/page.ts'), 'export {}\n');
 
-    const recorded = recordingPrompter([{ type: 'select', value: 'use' }]);
+    const recorded = recordingPrompter([{ type: 'select', value: 'use' }, WRITE]);
     const result = await runCli(['init', '--cwd', dir], {
       stdinTTY: true,
       stdoutTTY: true,
@@ -331,6 +335,213 @@ describe('init', () => {
     expect(manifest.selections.agents).toEqual(['cursor']);
     expect(await readFile(path.join(dir, 'AGENTS.md'), 'utf8')).toContain('## Project commands');
     expect(await listFiles(dir)).not.toContain('CLAUDE.md');
+  });
+
+  it('shows the review card before writing and writes after Write files', async () => {
+    const dir = await copyFixture('next15-src');
+    const { readdirSync, statSync } = await import('node:fs');
+    const listSync = (root: string, prefix = ''): string[] => {
+      const out: string[] = [];
+      for (const name of readdirSync(root)) {
+        const relative = prefix.length === 0 ? name : `${prefix}/${name}`;
+        const absolute = path.join(root, name);
+        if (statSync(absolute).isDirectory()) out.push(...listSync(absolute, relative));
+        else out.push(relative);
+      }
+      return out;
+    };
+    const inner = recordingPrompter([{ type: 'select', value: 'use' }, WRITE]);
+    let filesAtCard: string[] | undefined;
+    const prompter = {
+      select: inner.prompter.select.bind(inner.prompter),
+      multiselect: inner.prompter.multiselect.bind(inner.prompter),
+      confirm: inner.prompter.confirm.bind(inner.prompter),
+      spinner: inner.prompter.spinner.bind(inner.prompter),
+      note(message?: string, title?: string) {
+        if (typeof title === 'string' && title.startsWith('Ready to write')) {
+          filesAtCard = listSync(dir);
+        }
+        inner.prompter.note(message, title);
+      },
+    };
+
+    const result = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter,
+    });
+    expect(result.code).toBe(0);
+    expect(filesAtCard).toBeDefined();
+    expect(filesAtCard).not.toContain('AGENTS.md');
+    expect(filesAtCard).not.toContain('.agentinit/manifest.json');
+    expect(await listFiles(dir)).toContain('AGENTS.md');
+    expect(await listFiles(dir)).toContain('.agentinit/manifest.json');
+  });
+
+  it('previews changes without writing, then returns to the card and can write', async () => {
+    const dir = await copyFixture('existing-claude-md');
+    const before = await treeDigest(dir);
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'use' },
+      { type: 'select', value: 'preview' },
+      WRITE,
+      { type: 'select', value: 'adopt' },
+    ]);
+    const result = await runCli(['init', '--agents', 'claude', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('CLAUDE.md');
+    expect(result.stdout).toContain('you decide next');
+    expect(result.stdout).toContain('├──');
+    expect(await treeDigest(dir)).not.toBe(before);
+    expect(await listFiles(dir)).toContain('.agentinit/manifest.json');
+    const previewConflicts = recorded.calls.filter(
+      (call) => call.method === 'select' && choicePrompt(call).message.includes('already exists'),
+    );
+    // Conflict prompt only after Write files, not during preview.
+    expect(previewConflicts).toHaveLength(1);
+    const ready = recorded.calls.filter(
+      (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
+    );
+    expect(ready.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('writes the same files after Write files as --yes', async () => {
+    const interactiveDir = await copyFixture('next15-src');
+    const yesDir = await copyFixture('next15-src');
+    expect(
+      (
+        await runCli(['init', '--agents', 'cursor', '--cwd', interactiveDir], interactive([
+          { type: 'select', value: 'use' },
+          WRITE,
+        ]))
+      ).code,
+    ).toBe(0);
+    expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', yesDir])).code).toBe(0);
+    expect(await treeText(interactiveDir)).toBe(await treeText(yesDir));
+  });
+
+  it('change setup can drop a library and the next card shows fewer files', async () => {
+    const dir = await copyFixture('shadcn-components-json');
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'use' },
+      { type: 'select', value: 'change' },
+      { type: 'select', value: 'typescript-strict' },
+      { type: 'multiselect', value: ['nextjs-app-router'] },
+      { type: 'multiselect', value: ['tailwind'] },
+      { type: 'select', value: 'feature-based' },
+      WRITE,
+    ]);
+    const result = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(result.code).toBe(0);
+    const ready = recorded.calls.filter(
+      (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
+    );
+    expect(ready).toHaveLength(2);
+    const first = ready[0];
+    const second = ready[1];
+    if (first?.method !== 'note' || second?.method !== 'note') throw new Error('expected review notes');
+    const countOf = (title: string | undefined): number => {
+      const match = /^Ready to write (\d+) files?$/.exec(title ?? '');
+      if (match?.[1] === undefined) throw new Error(`bad review title: ${title ?? ''}`);
+      return Number(match[1]);
+    };
+    expect(countOf(second.title)).toBeLessThan(countOf(first.title));
+    expect(await listFiles(dir).then((files) => files.some((file) => file.includes('shadcn')))).toBe(false);
+  });
+
+  it('preselects greenfield answers on change setup', async () => {
+    const dir = await emptyDir();
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'react-vite' },
+      { type: 'select', value: 'typescript-strict' },
+      { type: 'multiselect', value: [] },
+      { type: 'select', value: 'feature-based' },
+      { type: 'multiselect', value: ['cursor'] },
+      { type: 'select', value: 'change' },
+      { type: 'select', value: 'react-vite' },
+      { type: 'select', value: 'typescript-strict' },
+      { type: 'multiselect', value: [] },
+      { type: 'select', value: 'layered' },
+      { type: 'multiselect', value: ['cursor'] },
+      WRITE,
+    ]);
+    const result = await runCli(['init', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(result.code).toBe(0);
+    const selects = recorded.calls.filter((call) => call.method === 'select');
+    // Pass 2: framework (4), language (5), architecture (6) keep the first-pass initials.
+    expect(choicePrompt(selects[4]).initialValue).toBe('react-vite');
+    expect(choicePrompt(selects[5]).initialValue).toBe('typescript-strict');
+    expect(choicePrompt(selects[6]).initialValue).toBe('feature-based');
+    expect(await readFile(path.join(dir, 'ARCHITECTURE.md'), 'utf8')).toContain('src/domain/');
+  });
+
+  it('skips the review card with --yes and --dry-run', async () => {
+    const yesDir = await copyFixture('next15-src');
+    const yes = await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', yesDir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+    });
+    expect(yes.code).toBe(0);
+    expect(yes.stdout).not.toContain('Ready to write');
+    expect(yes.stdout).not.toContain('What next?');
+
+    const dryDir = await copyFixture('next15-src');
+    const dry = await runCli(['init', '--dry-run', '--agents', 'cursor', '--cwd', dryDir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: createFakePrompter([{ type: 'select', value: 'use' }]),
+    });
+    expect(dry.code).toBe(0);
+    expect(dry.stdout).not.toContain('Ready to write');
+    expect(await listFiles(dryDir)).not.toContain('.agentinit/manifest.json');
+  });
+
+  it('conflict count on the card matches later conflict prompts', async () => {
+    const dir = await copyFixture('existing-claude-md');
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'use' },
+      WRITE,
+      { type: 'select', value: 'adopt' },
+    ]);
+    const result = await runCli(['init', '--agents', 'claude', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(result.code).toBe(0);
+    const ready = recorded.calls.find(
+      (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
+    );
+    if (ready?.method !== 'note') throw new Error('expected a review note');
+    expect(ready.message).toMatch(/1 existing file needs your decision/);
+    const conflictAsks = recorded.calls.filter(
+      (call) => call.method === 'select' && choicePrompt(call).message.includes('CLAUDE.md'),
+    );
+    expect(conflictAsks).toHaveLength(1);
+  });
+
+  it('cancel at the review card exits 130 with nothing written', async () => {
+    const dir = await copyFixture('next15-src');
+    const digest = await treeDigest(dir);
+    const result = await runCli(['init', '--agents', 'cursor', '--cwd', dir], interactive([
+      { type: 'select', value: 'use' },
+      { type: 'cancel' },
+    ]));
+    expect(result.code).toBe(130);
+    expect(await treeDigest(dir)).toBe(digest);
+    expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
   });
 
   it('replaces unedited Cursor files when the agent switches to Claude', async () => {
