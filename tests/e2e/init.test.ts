@@ -85,13 +85,8 @@ const LAYERED_ANSWERS: readonly FakeAnswer[] = [
   WRITE,
 ];
 
-/** A saved manifest skips the agent prompt; up-to-date skips the review card. */
-const VITE_RERUN: readonly FakeAnswer[] = [
-  { type: 'select', value: 'react-vite' },
-  { type: 'select', value: 'typescript-strict' },
-  { type: 'multiselect', value: [] },
-  { type: 'select', value: 'feature-based' },
-];
+/** An up-to-date greenfield re-run only asks Done or Change setup. */
+const VITE_RERUN: readonly FakeAnswer[] = [{ type: 'select', value: 'done' }];
 
 function interactive(answers: readonly FakeAnswer[]) {
   return {
@@ -125,6 +120,97 @@ describe('init', () => {
     expect(again.stdout).toContain('Already up to date.');
     expect(again.stdout).not.toContain('┌');
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('prints the up-to-date line before any prompt on an interactive re-run', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const digest = await treeDigest(dir);
+    const recorded = recordingPrompter([{ type: 'select', value: 'done' }]);
+    const again = await runCli(['init', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(again.code).toBe(0);
+    expect(again.stdout).toMatch(/Already up to date · \d+ files? for \d+ agents?/);
+    const upToDateAt = again.stdout.search(/Already up to date ·/);
+    const firstSelect = recorded.calls.find((call) => call.method === 'select');
+    expect(firstSelect).toBeDefined();
+    if (firstSelect?.method === 'select') {
+      expect(choicePrompt(firstSelect).message).toBe('What next?');
+      expect(choicePrompt(firstSelect).options.map((option) => option.value)).toEqual(['done', 'change']);
+    }
+    expect(recorded.calls.some((call) => call.method === 'note')).toBe(false);
+    expect(upToDateAt).toBeGreaterThanOrEqual(0);
+    expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('reaches the review card after Change setup from an up-to-date prompt', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir])).code).toBe(0);
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'change' },
+      { type: 'select', value: 'typescript-strict' },
+      { type: 'multiselect', value: ['nextjs-app-router'] },
+      { type: 'multiselect', value: [] },
+      { type: 'select', value: 'feature-based' },
+      { type: 'select', value: 'write' },
+    ]);
+    const again = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(again.code).toBe(0);
+    expect(again.stdout).toMatch(/Already up to date ·/);
+    const ready = recorded.calls.filter(
+      (call) => call.method === 'note' && typeof call.title === 'string' && call.title.startsWith('Ready to write'),
+    );
+    expect(ready.length).toBeGreaterThanOrEqual(1);
+    expect(recorded.calls.some((call) => {
+      if (call.method !== 'select') return false;
+      return choicePrompt(call).message.includes('Use this configuration');
+    })).toBe(false);
+  });
+
+  it('skips the up-to-date shortcut when a managed file was edited by hand', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir])).code).toBe(0);
+    const managed = path.join(dir, '.cursor/rules/agentinit-nextjs-app-router.mdc');
+    await writeFile(managed, `${await readFile(managed, 'utf8')}user edit\n`);
+    const recorded = recordingPrompter([
+      { type: 'select', value: 'use' },
+      { type: 'select', value: 'write' },
+      { type: 'select', value: 'skip' },
+    ]);
+    const again = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(again.code).toBe(0);
+    expect(again.stdout).not.toMatch(/Already up to date ·/);
+    expect(recorded.calls.some((call) => {
+      if (call.method !== 'select') return false;
+      return choicePrompt(call).message.includes('Use this configuration');
+    })).toBe(true);
+  });
+
+  it('prints a legacy-agent-file warning once on an interactive re-run', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    await writeFile(path.join(dir, '.cursorrules'), 'legacy\n');
+    const warning = '.cursorrules still loads alongside the new rules and will not be modified.';
+    const recorded = recordingPrompter([{ type: 'select', value: 'done' }]);
+    const again = await runCli(['init', '--cwd', dir], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: recorded.prompter,
+    });
+    expect(again.code).toBe(0);
+    const combined = `${again.stdout}\n${again.stderr}`;
+    expect(combined.split(warning)).toHaveLength(2);
   });
 
   it('prints the wordmark once on a terminal and keeps json plain', async () => {
@@ -283,7 +369,7 @@ describe('init', () => {
     const digest = await treeDigest(dir);
     const again = await runCli(['init', '--cwd', dir], interactive(VITE_RERUN));
     expect(again.code).toBe(0);
-    expect(again.stdout).toContain('Already up to date.');
+    expect(again.stdout).toMatch(/Already up to date · \d+ files? for \d+ agents?/);
     expect(await treeDigest(dir)).toBe(digest);
   });
 

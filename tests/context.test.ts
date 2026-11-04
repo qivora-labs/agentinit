@@ -93,6 +93,18 @@ describe('parseAgents', () => {
     expect(() => parseAgents('cursor,foo')).toThrow(/cursor, claude, windsurf, copilot/);
   });
 
+  it('suggests the closest agent when the edit distance is at most 2', () => {
+    expect(() => parseAgents('cursr')).toThrow(
+      'Unknown agent "cursr". Did you mean "cursor"? Valid values: cursor, claude, windsurf, copilot.',
+    );
+  });
+
+  it('lists valid agents without a suggestion when nothing is close', () => {
+    expect(() => parseAgents('xyz')).toThrow(
+      'Unknown agent "xyz". Valid values: cursor, claude, windsurf, copilot.',
+    );
+  });
+
   it('rejects an empty list', () => {
     expect(() => parseAgents(' , ')).toThrow(/Valid values: cursor, claude, windsurf, copilot/);
   });

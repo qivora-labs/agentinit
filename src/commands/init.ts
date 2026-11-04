@@ -42,8 +42,13 @@ import {
   type ReportEntry,
   type ReportFile,
 } from '../ui/report.js';
-import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
-import { changeExistingSetup, confirmDetected } from '../ui/summary.js';
+import {
+  draftWithSavedSelections,
+  formatSelectionChanges,
+  selectionsMatchDetection,
+  type SavedSelections,
+} from '../ui/saved-selection.js';
+import { changeExistingSetup, confirmDetected, confirmUpToDate } from '../ui/summary.js';
 import { reviewPlan } from '../ui/review.js';
 import type { Theme } from '../ui/theme.js';
 import { runGreenfieldWizard, type GreenfieldInitial } from '../ui/wizard.js';
@@ -82,14 +87,42 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const prompts = prompterFor(options);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
+
+  if (manifest !== null && canTakeUpToDateShortcut(detection, manifest)) {
+    const savedSetup = setupFromManifest(ctx, detection, manifest);
+    const savedPrepared = await prepareWrite(root, registry, detection, savedSetup, manifest, ctx, prompts);
+    if (!hasWork(savedPrepared.changes)) {
+      return handleUpToDateShortcut({
+        ctx,
+        logger,
+        options,
+        registry,
+        detection,
+        manifest,
+        prompts,
+        root,
+        setup: savedSetup,
+        prepared: savedPrepared,
+        spin,
+      });
+    }
+  }
+
   let setup = await chooseSetup(ctx, registry, detection, manifest, prompts, logger.theme);
   let prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
-  const notices = () => noticeLines(registry, detection, prepared.resolved, setup.notices);
+  // The detection / "What changed" card already shows legacy warnings.
+  const shownLegacyOnCard = ctx.isInteractive && detection.mode === 'existing';
+  const notices = () =>
+    noticeLines(registry, detection, prepared.resolved, setup.notices, {
+      legacyWarnings: shownLegacyOnCard ? 'omit' : 'include',
+    });
+  const jsonNotices = () =>
+    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'include' });
   const greenfieldSteps = () =>
     prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
 
   if (!hasWork(prepared.changes)) {
-    return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+    return reportUpToDate(ctx, logger, options, prepared.plan, ctx.json ? jsonNotices() : notices());
   }
 
   if (ctx.isInteractive && !ctx.yes && !ctx.dryRun) {
@@ -108,7 +141,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     setup = reviewed.setup;
     prepared = reviewed.prepared;
     if (reviewed.kind === 'up-to-date') {
-      return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+      return reportUpToDate(ctx, logger, options, prepared.plan, ctx.json ? jsonNotices() : notices());
     }
   }
 
@@ -137,6 +170,105 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   return reportApplied(ctx, logger, options, {
     plan,
     report: applied.report,
+    notices: ctx.json ? jsonNotices() : notices(),
+    greenfieldSteps: greenfieldSteps(),
+    agents: profile.agents,
+    workflows: resolved.workflows.map((workflow) => ({
+      id: workflow.meta.id,
+      order: workflow.meta.order,
+    })),
+    mode: profile.mode,
+  });
+}
+
+async function handleUpToDateShortcut(input: {
+  readonly ctx: RunContext;
+  readonly logger: Logger;
+  readonly options: InitOptions;
+  readonly registry: Registry;
+  readonly detection: DetectionResult;
+  readonly manifest: Manifest;
+  readonly prompts: () => Prompter;
+  readonly root: string;
+  setup: Setup;
+  prepared: PreparedWrite;
+  readonly spin: boolean;
+}): Promise<number> {
+  const { ctx, logger, options, registry, detection, manifest, prompts, root, spin } = input;
+  let { setup, prepared } = input;
+  const allNotices = () =>
+    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'include' });
+
+  if (!ctx.isInteractive || ctx.yes) {
+    return reportUpToDate(ctx, logger, options, prepared.plan, allNotices());
+  }
+
+  for (const notice of allNotices()) logger.warn(notice);
+  logger.success(formatUpToDateLine(prepared.plan, setup.agents));
+
+  const choice = await confirmUpToDate(prompts());
+  if (choice === 'done') {
+    logger.close();
+    return SUCCESS;
+  }
+
+  setup = await changeSetup(ctx, registry, detection, setup, prompts);
+  prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
+  const notices = () =>
+    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'omit' });
+  const greenfieldSteps = () =>
+    prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
+
+  // Change setup always reaches the review card, even when nothing would write.
+  if (!ctx.dryRun) {
+    const reviewed = await runReviewLoop({
+      ctx,
+      logger,
+      options,
+      registry,
+      detection,
+      manifest,
+      prompts,
+      root,
+      setup,
+      prepared,
+    });
+    setup = reviewed.setup;
+    prepared = reviewed.prepared;
+    if (reviewed.kind === 'up-to-date') {
+      return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+    }
+  }
+
+  if (!hasWork(prepared.changes)) {
+    return reportUpToDate(ctx, logger, options, prepared.plan, notices());
+  }
+
+  const { profile, resolved, plan, changes } = prepared;
+  const writing = spin && !needsConflictPrompt(changes)
+    ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
+    : undefined;
+  let applied;
+  try {
+    applied = await applyChanges(root, changes, {
+      now: options.now ?? new Date(),
+      manifest: manifestBody(profile, resolved),
+      yes: false,
+      force: ctx.force,
+      dryRun: ctx.dryRun,
+      ...(!ctx.force ? { prompter: prompts() } : {}),
+      ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
+      ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
+    });
+  } catch (error) {
+    stopSpin(writing, error, ctx.dryRun ? 'Could not preview the changes' : 'Could not write the rules');
+    throw error;
+  }
+  writing?.stop(ctx.dryRun ? 'Previewed the changes' : 'Wrote the rules');
+
+  return reportApplied(ctx, logger, options, {
+    plan,
+    report: applied.report,
     notices: notices(),
     greenfieldSteps: greenfieldSteps(),
     agents: profile.agents,
@@ -146,6 +278,54 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     })),
     mode: profile.mode,
   });
+}
+
+function canTakeUpToDateShortcut(detection: DetectionResult, manifest: Manifest): boolean {
+  if (detection.mode === 'greenfield') return true;
+  return selectionsMatchDetection(
+    manifest.selections,
+    detection.draft,
+    manifest.mode === 'greenfield',
+  );
+}
+
+function setupFromManifest(ctx: RunContext, detection: DetectionResult, manifest: Manifest): Setup {
+  const saved = manifest.selections;
+  if (detection.mode === 'greenfield') {
+    return {
+      selection: {
+        language: saved.language,
+        architecture: saved.architecture,
+        frameworks: [...saved.frameworks],
+        libraries: [...saved.libraries],
+        origin: {},
+      },
+      agents: ctx.agents ?? [...saved.agents],
+      notices: [],
+    };
+  }
+
+  const draft = draftWithSavedSelections(detection.draft, saved);
+  const agents = agentOverride(ctx, saved) ?? [...saved.agents];
+  return {
+    selection: {
+      language: draft.language,
+      architecture: draft.architecture.id,
+      frameworks: [...draft.frameworks],
+      libraries: [...draft.libraries],
+      origin: {},
+    },
+    agents: [...agents],
+    notices: [],
+  };
+}
+
+function formatUpToDateLine(plan: Plan, agents: readonly AgentTarget[]): string {
+  const files = plan.ops.length;
+  const agentCount = agents.length;
+  const fileWord = files === 1 ? 'file' : 'files';
+  const agentWord = agentCount === 1 ? 'agent' : 'agents';
+  return `Already up to date · ${String(files)} ${fileWord} for ${String(agentCount)} ${agentWord}`;
 }
 
 interface PreparedWrite {
@@ -540,11 +720,15 @@ function noticeLines(
   detection: DetectionResult,
   resolved: ResolvedSelection,
   lowConfidence: readonly LowConfidenceNotice[],
+  options: { readonly legacyWarnings: 'include' | 'omit' } = { legacyWarnings: 'include' },
 ): string[] {
   const lines: string[] = [];
   if (detection.mode === 'existing') {
     for (const notice of detection.notices) lines.push(formatRegistryNotice(notice, registry));
-    for (const warning of detection.warnings) lines.push(formatWarning(warning));
+    for (const warning of detection.warnings) {
+      if (options.legacyWarnings === 'omit' && warning.kind === 'legacy-agent-file') continue;
+      lines.push(formatWarning(warning));
+    }
   }
   for (const notice of resolved.notices) lines.push(formatRegistryNotice(notice, registry));
   for (const notice of lowConfidence) lines.push(formatLowConfidence(notice, registry));

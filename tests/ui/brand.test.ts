@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBanner, formatClose, underRail, TAGLINE } from '../../src/ui/brand.js';
+import { formatBanner, formatClose, formatHeader, underRail, PRODUCT_NAME, TAGLINE } from '../../src/ui/brand.js';
 import { createTheme } from '../../src/ui/theme.js';
 
 const NEEDLE = [
@@ -50,6 +50,20 @@ function stripColor(text: string): string {
   }
   return plain;
 }
+
+describe('formatHeader', () => {
+  it('prints the product name then the command on a rail', () => {
+    expect(formatHeader(createTheme(false, true), 'doctor')).toBe(`┌  ${PRODUCT_NAME} doctor\n│`);
+    expect(formatHeader(createTheme(false, false), 'list')).toBe(`+  ${PRODUCT_NAME} list\n|`);
+  });
+
+  it('paints the product name in the foreground and the command in gray', () => {
+    const line = formatHeader(createTheme(true, true, true), 'doctor');
+    expect(stripColor(line)).toBe(`┌  ${PRODUCT_NAME} doctor\n│`);
+    expect(line).toContain('\u001b[1magentinit\u001b[22m');
+    expect(line).toContain('\u001b[90mdoctor');
+  });
+});
 
 describe('formatClose', () => {
   it('closes with the message once', () => {

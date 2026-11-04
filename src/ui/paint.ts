@@ -72,3 +72,29 @@ function paintDoctorLine(line: string, theme: Theme): string {
   if (line.length === 0 || line.startsWith(' ')) return line;
   return theme.boldAccent(line);
 }
+
+/** Structured TTY checklist: icon + label, then indented issue lines. */
+export function paintDoctorChecks(
+  checks: readonly {
+    readonly label: string;
+    readonly ok: boolean;
+    readonly issues: readonly { readonly message: string; readonly fix: string }[];
+  }[],
+  theme: Theme,
+): string {
+  const blocks: string[] = [];
+  for (const check of checks) {
+    const icon = check.ok
+      ? theme.success(theme.glyphs.success)
+      : theme.error(theme.glyphs.error);
+    const lines = [`${icon}  ${check.label}`];
+    if (!check.ok) {
+      for (const issue of check.issues) {
+        lines.push(`  ${issue.message}`);
+        lines.push(`    Fix: ${issue.fix}`);
+      }
+    }
+    blocks.push(lines.join('\n'));
+  }
+  return blocks.join('\n');
+}

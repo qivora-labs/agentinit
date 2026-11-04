@@ -34,6 +34,22 @@ export function draftWithSavedSelections(draft: ProjectDraft, saved: SavedSelect
   };
 }
 
+/**
+ * True when the saved framework/library set still matches detection and the
+ * project did not just leave greenfield. Architecture and agents are preferences
+ * and are not compared here.
+ */
+export function selectionsMatchDetection(
+  saved: SavedSelections,
+  draft: ProjectDraft,
+  fromGreenfield: boolean,
+): boolean {
+  if (fromGreenfield) return false;
+  const savedIds = new Set([...saved.frameworks, ...saved.libraries]);
+  const detectedIds = new Set([...draft.frameworks, ...draft.libraries]);
+  return listedIds(draft, savedIds).length === 0 && listedSaved(saved, detectedIds).length === 0;
+}
+
 export function formatSelectionChanges(input: {
   readonly saved: SavedSelections;
   readonly draft: ProjectDraft;

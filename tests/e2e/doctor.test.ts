@@ -136,12 +136,31 @@ describe('doctor', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
-  it('prints the wordmark once around a clean report on a terminal', async () => {
+  it('prints a one-line header and six passing checks on a terminal', async () => {
     const dir = await initYes('next15-src');
     const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
     expect(result.code).toBe(0);
+    expect(result.stdout).toContain('agentinit doctor');
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
+    expect(result.stdout).toContain('manifest');
+    expect(result.stdout).toContain('managed files');
+    expect(result.stdout).toContain('detected packages');
+    expect(result.stdout).toContain('package versions');
+    expect(result.stdout).toContain('token budget');
+    expect(result.stdout).toContain('legacy files');
     expect(result.stdout.split('No issues found.')).toHaveLength(2);
-    expect(result.stdout.split('rules for the agents in this repo')).toHaveLength(2);
+  });
+
+  it('shows a failing check with its issue and fix on a terminal', async () => {
+    const dir = await copyFixture('next15-src');
+    const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    expect(result.code).toBe(2);
+    expect(result.stdout).toContain('agentinit doctor');
+    expect(result.stdout).toContain('manifest');
+    expect(result.stdout).toContain('Not initialized');
+    expect(result.stdout).toContain(`Fix: ${FIX}`);
+    expect(result.stdout).toContain('1 issue found.');
+    expect(result.stdout).not.toContain('rules for the agents in this repo');
   });
 
   it('ignores --agents and keeps the manifest selection', async () => {

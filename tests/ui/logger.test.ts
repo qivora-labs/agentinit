@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBanner } from '../../src/ui/brand.js';
+import { formatBanner, formatHeader } from '../../src/ui/brand.js';
 import { createLogger } from '../../src/ui/logger.js';
 import { createTheme } from '../../src/ui/theme.js';
 import { captureStream } from '../helpers/run.js';
@@ -75,13 +75,26 @@ describe('createLogger', () => {
       unicode: true,
       color: false,
     });
-    logger.open();
-    logger.open();
+    logger.open('init');
+    logger.open('init');
     logger.close('Rules written.');
     const banner = formatBanner(createTheme(true, true, false));
     expect(stdout.text()).toBe(`\n\n${banner}\n\n└  Rules written.\n`);
     expect(stdout.text().startsWith('\n\n')).toBe(true);
     expect(stdout.text().split('rules for the agents in this repo')).toHaveLength(2);
+  });
+
+  it('opens a one-line header for doctor and list', () => {
+    const stdout = captureStream(true);
+    const logger = createLogger({ stdout: stdout.stream, stderr: captureStream().stream }, false, {
+      unicode: true,
+      color: false,
+    });
+    logger.open('doctor');
+    logger.close('No issues found.');
+    const header = formatHeader(createTheme(true, true, false), 'doctor');
+    expect(stdout.text()).toBe(`\n\n${header}\n\n└  No issues found.\n`);
+    expect(stdout.text()).not.toContain('rules for the agents in this repo');
   });
 
   it('uses ASCII bars when Unicode is off', () => {
@@ -90,7 +103,7 @@ describe('createLogger', () => {
       unicode: false,
       color: false,
     });
-    logger.open();
+    logger.open('init');
     logger.info('hello');
     expect(stdout.text()).toBe('\n\nQivora Labs\n\n+  AGENT  INIT\n|  rules for the agents in this repo\n\n*  hello\n');
   });
