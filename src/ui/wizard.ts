@@ -8,6 +8,7 @@ import {
   frameworkOptions,
   languageOptions,
   libraryOptions,
+  mayOfferLibraries,
   OTHER_TYPESCRIPT_PROJECT,
   preferredOption,
   valuesInOptions,
@@ -15,6 +16,7 @@ import {
 } from './catalog.js';
 import type { PromptedSetup } from './choices.js';
 import type { MultiSelectPrompt, Prompter } from './prompter.js';
+import { countSetupSteps, withStep } from './steps.js';
 
 export interface GreenfieldInitial {
   readonly language?: string;
@@ -50,48 +52,68 @@ export async function runGreenfieldWizard(
     throw new AgentInitError('The registry has no architecture fragments.');
   }
 
+  const askAgents = options?.agents === undefined;
+  prompter.info('No package.json found. Setting up a new project.');
+
   const frameworksOffered = frameworkOptions(registry, true);
+  // Before a framework is chosen, count a library step when any offered
+  // framework (or an agnostic library) would unlock one.
+  let total = countSetupSteps({
+    libraries: mayOfferLibraries(registry, frameworksOffered),
+    agents: askAgents,
+  });
+  let step = 1;
+
   const framework = await prompter.select(
     withInitial(
       {
-        message: 'Which framework is this project?',
+        message: withStep(step, total, 'Which framework are you using?'),
         options: frameworksOffered,
       },
       initialFramework(options?.initial?.frameworks, frameworksOffered),
     ),
   );
+  step += 1;
   const frameworks = framework === OTHER_TYPESCRIPT_PROJECT ? [] : [framework];
+
+  const libraryChoices = libraryOptions(registry, frameworks);
+  total = countSetupSteps({ libraries: libraryChoices.length > 0, agents: askAgents });
 
   const languagePreferred = preferredIds(options?.initial?.language, 'typescript-strict');
   const language = await prompter.select(
     withInitial(
       {
-        message: 'How strict should TypeScript be?',
+        message: withStep(step, total, 'How strict should TypeScript be?'),
         options: languages,
       },
       preferredOption(languages, languagePreferred),
     ),
   );
+  step += 1;
 
-  const libraryChoices = libraryOptions(registry, frameworks);
-  const libraries = await multiselectOrEmpty(prompter, {
-    message: 'Which libraries should we include?',
+  const libraries = await groupMultiselectOrEmpty(prompter, {
+    message: withStep(step, total, 'Which libraries should we include?'),
     options: libraryChoices,
     initialValues: valuesInOptions(libraryChoices, options?.initial?.libraries ?? []),
   });
+  if (libraryChoices.length > 0) step += 1;
 
   const architecturePreferred = preferredIds(options?.initial?.architecture, 'feature-based');
   const architecture = await prompter.select(
     withInitial(
       {
-        message: 'Which architecture should we follow?',
+        message: withStep(step, total, 'Which architecture should we follow?'),
         options: architectures,
       },
       preferredOption(architectures, architecturePreferred),
     ),
   );
+  step += 1;
 
-  const agents = await selectAgents(prompter, agentInput(options));
+  const agents = await selectAgents(prompter, agentInput(options), {
+    step,
+    total,
+  });
   return {
     selection: manualSelection({ language, architecture, frameworks, libraries }),
     agents,
@@ -133,11 +155,11 @@ function manualSelection(chosen: {
   return { ...chosen, origin };
 }
 
-async function multiselectOrEmpty(
+async function groupMultiselectOrEmpty(
   prompter: Prompter,
   prompt: MultiSelectPrompt<string>,
 ): Promise<string[]> {
   if (prompt.options.length === 0) return [];
   // Clack defaults `required` to true and rejects the empty selection this step allows.
-  return prompter.multiselect({ ...prompt, required: false });
+  return prompter.groupMultiselect({ ...prompt, required: false });
 }

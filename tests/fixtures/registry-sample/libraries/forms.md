@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Form state and validation.
+hint: Sample picker hint.
 scope: always
 requires:
   - zustand

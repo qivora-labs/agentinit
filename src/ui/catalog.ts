@@ -1,3 +1,4 @@
+import { pickerHint, truncateHint } from '../registry/hint.js';
 import type { Registry } from '../registry/load.js';
 import type { Fragment } from '../registry/parse.js';
 import { sanitizeDisplayText } from './display-text.js';
@@ -57,16 +58,32 @@ export function libraryOptions(registry: Registry, frameworkIds: readonly string
   return groupedOptionsFrom(allowed, LIBRARY_GROUPS);
 }
 
+/**
+ * True when at least one listed framework (or an agnostic library) would unlock
+ * a library step. Ignores the greenfield "Other TypeScript project" sentinel.
+ */
+export function mayOfferLibraries(
+  registry: Registry,
+  frameworksOffered: readonly { readonly value: string }[],
+): boolean {
+  if (libraryOptions(registry, []).length > 0) return true;
+  const ids = frameworksOffered
+    .map((option) => option.value)
+    .filter((id) => id !== OTHER_TYPESCRIPT_PROJECT);
+  return libraryOptions(registry, ids).length > 0;
+}
+
 export function languageOptions(registry: Registry): PromptOption<string>[] {
   return orderedOptions(registry, 'language', LANGUAGE_ORDER, (id, fragment) => {
-    if (id !== RECOMMENDED_LANGUAGE) return fragment.meta.description;
-    return `recommended · ${fragment.meta.description}`;
+    const base = fragmentHint(fragment);
+    if (id !== RECOMMENDED_LANGUAGE) return base;
+    return truncateHint(`recommended · ${base}`);
   });
 }
 
 export function architectureOptions(registry: Registry): PromptOption<string>[] {
   return orderedOptions(registry, 'architecture', ARCHITECTURE_ORDER, (id, fragment) => {
-    if (id !== RECOMMENDED_ARCHITECTURE) return fragment.meta.description;
+    if (id !== RECOMMENDED_ARCHITECTURE) return fragmentHint(fragment);
     return 'recommended · src/features/<domain>';
   });
 }
@@ -166,9 +183,13 @@ function orderedOptions(
 
 function optionFor(fragment: Fragment, group: string): PromptOption<string> {
   return {
-    ...promptOption(fragment.meta.id, fragment.meta.name, fragment.meta.description),
+    ...promptOption(fragment.meta.id, fragment.meta.name, fragmentHint(fragment)),
     group,
   };
+}
+
+function fragmentHint(fragment: Fragment): string {
+  return pickerHint(fragment.meta.hint, fragment.meta.description);
 }
 
 function promptOption(id: string, label: string, hint: string): PromptOption<string> {

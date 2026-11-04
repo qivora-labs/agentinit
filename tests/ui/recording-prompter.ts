@@ -21,8 +21,9 @@ export interface RecordedConfirm {
 }
 
 export type RecordedCall =
-  | { readonly method: 'select' | 'multiselect'; readonly prompt: unknown }
+  | { readonly method: 'select' | 'multiselect' | 'groupMultiselect'; readonly prompt: unknown }
   | { readonly method: 'confirm'; readonly prompt: unknown }
+  | { readonly method: 'info'; readonly message: string }
   | { readonly method: 'note'; readonly message: string | undefined; readonly title: string | undefined };
 
 export interface Recording {
@@ -44,9 +45,17 @@ export function recordingPrompter(answers: readonly FakeAnswer[]): Recording {
         calls.push({ method: 'multiselect', prompt });
         return inner.multiselect(prompt);
       },
+      async groupMultiselect(prompt) {
+        calls.push({ method: 'groupMultiselect', prompt });
+        return inner.groupMultiselect(prompt);
+      },
       async confirm(prompt) {
         calls.push({ method: 'confirm', prompt });
         return inner.confirm(prompt);
+      },
+      info(message) {
+        calls.push({ method: 'info', message });
+        inner.info(message);
       },
       note(message, title) {
         calls.push({ method: 'note', message, title });
@@ -60,7 +69,10 @@ export function recordingPrompter(answers: readonly FakeAnswer[]): Recording {
 }
 
 export function choicePrompt(call: RecordedCall | undefined): ChoicePrompt {
-  if (call === undefined || (call.method !== 'select' && call.method !== 'multiselect')) {
+  if (
+    call === undefined
+    || (call.method !== 'select' && call.method !== 'multiselect' && call.method !== 'groupMultiselect')
+  ) {
     throw new Error('expected a choice prompt');
   }
   return call.prompt as ChoicePrompt;

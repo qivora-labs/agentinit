@@ -5,6 +5,7 @@ import {
   frameworkOptions,
   languageOptions,
   libraryOptions,
+  mayOfferLibraries,
   OTHER_TYPESCRIPT_LABEL,
   OTHER_TYPESCRIPT_PROJECT,
 } from '../../src/ui/catalog.js';
@@ -30,17 +31,39 @@ describe('frameworkOptions', () => {
     ]);
   });
 
-  it('strips terminal controls from names and descriptions', () => {
+  it('strips terminal controls from names and prefers hint over description', () => {
     const fragment = ruleFragment('hono', 'framework');
     const registry = registryOf([
       {
         ...fragment,
-        meta: { ...fragment.meta, name: 'Hono\u001b[31m', description: 'fast\u001b[0m' },
+        meta: {
+          ...fragment.meta,
+          name: 'Hono\u001b[31m',
+          description: 'a long description that would wrap past the rail',
+          hint: 'fast\u001b[0m',
+        },
       },
     ]);
     expect(frameworkOptions(registry, false)).toEqual([
       { value: 'hono', label: 'Hono', hint: 'fast', group: 'Other' },
     ]);
+  });
+
+  it('truncates a missing hint from the description at a word boundary', () => {
+    const fragment = ruleFragment('hono', 'framework');
+    const registry = registryOf([
+      {
+        ...fragment,
+        meta: {
+          ...fragment.meta,
+          description: 'React 19 actions and use, public Vite env vars, and lazy-loaded components.',
+        },
+      },
+    ]);
+    expect(frameworkOptions(registry, false)[0]?.hint).toBe(
+      'React 19 actions and use, public Vite env…',
+    ); // 42 chars; cut before "vars,"
+    expect(frameworkOptions(registry, false)[0]?.hint?.length).toBeLessThanOrEqual(48);
   });
 
   it('puts a framework id that has no group under Other, before the sentinel', () => {
@@ -85,6 +108,26 @@ describe('libraryOptions', () => {
   });
 });
 
+describe('mayOfferLibraries', () => {
+  it('is true when an agnostic library exists, even with only the Other sentinel', () => {
+    const registry = registryOf([ruleFragment('vitest', 'library')]);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(true);
+  });
+
+  it('ignores the Other sentinel and counts only real framework ids', () => {
+    const registry = registryOf([
+      ruleFragment('zustand', 'library', 'compatibleWith:\n  - react-vite\n'),
+    ]);
+    expect(
+      mayOfferLibraries(registry, [
+        { value: 'react-vite' },
+        { value: OTHER_TYPESCRIPT_PROJECT },
+      ]),
+    ).toBe(true);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(false);
+  });
+});
+
 describe('language and architecture options', () => {
   it('marks strict TypeScript and feature-based as recommended', async () => {
     const bundled = await bundledRegistry();
@@ -92,6 +135,7 @@ describe('language and architecture options', () => {
     const architectures = architectureOptions(bundled);
     expect(languages.map((option) => option.value)).toEqual(['typescript-strict', 'typescript']);
     expect(languages[0]?.hint).toMatch(/^recommended · /);
+    expect(languages.every((option) => (option.hint?.length ?? 0) <= 48)).toBe(true);
     expect(architectures.map((option) => option.value)).toEqual([
       'feature-based',
       'layered',
@@ -100,5 +144,6 @@ describe('language and architecture options', () => {
     ]);
     expect(architectures[0]?.hint).toBe('recommended · src/features/<domain>');
     expect(architectures[0]?.label).toBe('Feature-Based');
+    expect(architectures.every((option) => (option.hint?.length ?? 0) <= 48)).toBe(true);
   });
 });

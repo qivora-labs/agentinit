@@ -231,6 +231,23 @@ describe('checkFragments', () => {
     expect(() => checkFragments([fragment], '2026-02-31')).toThrow(AgentInitError);
     expect(() => checkFragments([fragment], 'yesterday')).toThrow('today must be YYYY-MM-DD.');
   });
+
+  it('warns when a rule fragment is missing a hint', () => {
+    expect(checkFragments([ruleFragment({ body: VALID_RULE, hint: null })], TODAY)).toEqual([
+      warning('missing hint; the picker will truncate description'),
+    ]);
+  });
+
+  it('warns when a hint is longer than 48 characters', () => {
+    const hint = 'x'.repeat(49);
+    expect(checkFragments([ruleFragment({ body: VALID_RULE, hint })], TODAY)).toEqual([
+      warning('hint is 49 characters; the limit is 48'),
+    ]);
+  });
+
+  it('does not require a hint on a workflow', () => {
+    expect(checkFragments([workflowFragment(workflowBody())], TODAY)).toEqual([]);
+  });
 });
 
 describe('problemsFromLoadError', () => {
@@ -742,6 +759,7 @@ category: library
 version: 1.0.0
 order: 40
 description: A library rule.
+hint: Alpha library picker hint.
 scope: always
 sources:
   - https://example.com/docs
@@ -806,6 +824,7 @@ category: library
 version: 1.0.0
 order: 40
 description: A library rule.
+hint: Sample library picker hint.
 scope: always
 sources:
   - https://example.com/docs
@@ -835,6 +854,7 @@ function ruleFragment(options: {
   verifiedAt?: string;
   globs?: readonly string[];
   id?: string;
+  hint?: string | null;
 }): Fragment {
   const category = options.category ?? 'library';
   const id = options.id ?? 'sample';
@@ -849,6 +869,10 @@ function ruleFragment(options: {
     options.globs === undefined
       ? ''
       : `globs:\n${options.globs.map((glob) => `  - ${JSON.stringify(glob)}`).join('\n')}\n`;
+  const hint =
+    options.hint === null
+      ? ''
+      : `hint: ${options.hint ?? 'A short sample hint.'}\n`;
   return parseFragment(
     `---
 id: ${id}
@@ -857,7 +881,7 @@ category: ${category}
 version: 1.0.0
 order: 10
 description: A sample.
-scope: ${scope}
+${hint}scope: ${scope}
 ${globs}sources:
   - https://example.com/docs
 verifiedAt: ${options.verifiedAt ?? '2026-10-17'}

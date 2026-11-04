@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: CSS-first tokens, complete class strings, and cn for conflicting utilities.
+hint: CSS-first tokens, full class strings, cn()
 scope: glob
 globs:
   - "{{src}}**/*.tsx"

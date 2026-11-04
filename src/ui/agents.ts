@@ -1,6 +1,7 @@
 import { AGENT_TARGETS } from '../context.js';
 import type { AgentTarget } from '../types.js';
 import type { Prompter } from './prompter.js';
+import { withStep } from './steps.js';
 
 export const AGENT_LABELS = {
   cursor: 'Cursor',
@@ -13,6 +14,14 @@ export const AGENT_LABELS = {
 export const AGENT_FOLDERS = {
   cursor: '.cursor/',
   claude: '.claude/',
+  windsurf: '.windsurf/',
+  copilot: '.github/',
+} as const satisfies Record<AgentTarget, string>;
+
+/** Picker hint naming what the agent target writes (PRD §3.2). */
+export const AGENT_HINTS = {
+  cursor: '.cursor/',
+  claude: '.claude/ + CLAUDE.md',
   windsurf: '.windsurf/',
   copilot: '.github/',
 } as const satisfies Record<AgentTarget, string>;
@@ -41,6 +50,11 @@ export interface AgentPromptInput {
   readonly override?: readonly AgentTarget[];
 }
 
+export interface AgentStepInfo {
+  readonly step: number;
+  readonly total: number;
+}
+
 /**
  * `--agents` wins. Otherwise agents whose config already exists are selected.
  * An empty preselection is all four.
@@ -54,11 +68,21 @@ export function resolvedAgents(
   return [...AGENT_TARGETS];
 }
 
-export async function selectAgents(prompter: Prompter, input: AgentPromptInput): Promise<AgentTarget[]> {
+export async function selectAgents(
+  prompter: Prompter,
+  input: AgentPromptInput,
+  stepInfo?: AgentStepInfo,
+): Promise<AgentTarget[]> {
   if (input.override !== undefined) return [...input.override];
+  const question = 'Which agents should we generate rules for?';
+  const headed = stepInfo === undefined ? question : withStep(stepInfo.step, stepInfo.total, question);
   return prompter.multiselect({
-    message: 'Which agents should we generate rules for?',
-    options: AGENT_TARGETS.map((agent) => ({ value: agent, label: AGENT_LABELS[agent] })),
+    message: `${headed}\nAGENTS.md is always written.`,
+    options: AGENT_TARGETS.map((agent) => ({
+      value: agent,
+      label: AGENT_LABELS[agent],
+      hint: AGENT_HINTS[agent],
+    })),
     initialValues: resolvedAgents(input.preselected),
     // Clack defaults `required` to true. Clearing every agent matches an empty `--agents`.
     required: false,

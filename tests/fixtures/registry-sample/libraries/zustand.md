@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Small client-side state.
+hint: Sample picker hint.
 scope: glob
 globs:
   - "{{src}}**/*.ts"

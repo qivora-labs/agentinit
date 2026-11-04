@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
+hint: React 19 actions/use, Vite env, lazy load
 scope: auto
 globs:
   - "{{src}}**/*.tsx"

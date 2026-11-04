@@ -5,6 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: React Server Components by default.
+hint: Sample picker hint.
 scope: glob
 globs:
   - "{{src}}app/**/*.ts"

@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Behavior assertions, top-level vi.mock, and fake timers.
+hint: Behavior asserts, top-level mock, fake timers
 scope: glob
 globs:
   - "**/*.test.tsx"

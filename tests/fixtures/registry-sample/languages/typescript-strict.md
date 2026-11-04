@@ -5,6 +5,7 @@ category: language
 version: 1.0.0
 order: 20
 description: Strict TypeScript for application and test code.
+hint: Sample picker hint.
 scope: always
 sources:
   - https://www.typescriptlang.org/tsconfig/strict.html

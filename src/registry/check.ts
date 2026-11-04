@@ -1,10 +1,12 @@
 import { AgentInitError } from '../errors.js';
 import { findPlaceholders, isKnownPlaceholder } from '../plan/placeholders.js';
 import { getSections, type Fragment } from './parse.js';
+import { PICKER_HINT_LIMIT } from './hint.js';
 
 const LINE_LIMIT = 120;
 const SUMMARY_LINE_LIMIT = 10;
 const FRESHNESS_MONTHS = 6;
+const HINT_CATEGORIES = new Set(['architecture', 'language', 'framework', 'library']);
 
 const DIRECTIVE = /\b(?:ALWAYS|NEVER|PREFER|FORBID|DEFAULT)\b/u;
 const PROHIBITION = /\b(?:NEVER|FORBID)\b/u;
@@ -102,10 +104,30 @@ function checkFragment(fragment: Fragment, today: string): RegistryProblem[] {
   }
 
   problems.push(...placeholderProblems(fragment));
+  problems.push(...hintProblems(fragment));
   const freshness = freshnessProblem(fragment, today);
   if (freshness !== undefined) problems.push(freshness);
   problems.push(...forbiddenPhraseProblems(fragment));
   return problems;
+}
+
+/** Picker `hint` is display-only; warn when missing or longer than the Clack line budget. */
+function hintProblems(fragment: Fragment): RegistryProblem[] {
+  if (!HINT_CATEGORIES.has(fragment.meta.category)) return [];
+  const hint = fragment.meta.hint;
+  if (hint === undefined) {
+    return [problem(fragment, 'warning', 'missing hint; the picker will truncate description')];
+  }
+  if (hint.length > PICKER_HINT_LIMIT) {
+    return [
+      problem(
+        fragment,
+        'warning',
+        `hint is ${String(hint.length)} characters; the limit is ${String(PICKER_HINT_LIMIT)}`,
+      ),
+    ];
+  }
+  return [];
 }
 
 function ruleProblems(fragment: Fragment): RegistryProblem[] {

@@ -5,6 +5,7 @@ category: architecture
 version: 1.0.0
 order: 10
 description: UI composed only from lower levels, from atoms up through pages.
+hint: Compose UI from atoms up through pages
 scope: always
 sources:
   - https://atomicdesign.bradfrost.com/chapter-2/

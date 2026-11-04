@@ -5,6 +5,7 @@ category: library
 version: 1.0.0
 order: 40
 description: Role locators, web-first assertions, and isolated browser tests.
+hint: Role locators, web-first asserts, isolation
 scope: glob
 globs:
   - "e2e/**/*.ts"

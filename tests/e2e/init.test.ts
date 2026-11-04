@@ -70,7 +70,7 @@ const WRITE: FakeAnswer = { type: 'select', value: 'write' };
 const VITE_ANSWERS: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
-  { type: 'multiselect', value: [] },
+  { type: 'groupMultiselect', value: [] },
   { type: 'select', value: 'feature-based' },
   { type: 'multiselect', value: ['cursor'] },
   WRITE,
@@ -79,7 +79,7 @@ const VITE_ANSWERS: readonly FakeAnswer[] = [
 const LAYERED_ANSWERS: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
-  { type: 'multiselect', value: [] },
+  { type: 'groupMultiselect', value: [] },
   { type: 'select', value: 'layered' },
   { type: 'multiselect', value: ['cursor'] },
   WRITE,
@@ -161,8 +161,8 @@ describe('init', () => {
     const recorded = recordingPrompter([
       { type: 'select', value: 'change' },
       { type: 'select', value: 'typescript-strict' },
-      { type: 'multiselect', value: ['nextjs-app-router'] },
-      { type: 'multiselect', value: [] },
+      { type: 'groupMultiselect', value: ['nextjs-app-router'] },
+      { type: 'groupMultiselect', value: [] },
       { type: 'select', value: 'feature-based' },
       { type: 'select', value: 'write' },
     ]);
@@ -452,7 +452,9 @@ describe('init', () => {
     const prompter = {
       select: inner.prompter.select.bind(inner.prompter),
       multiselect: inner.prompter.multiselect.bind(inner.prompter),
+      groupMultiselect: inner.prompter.groupMultiselect.bind(inner.prompter),
       confirm: inner.prompter.confirm.bind(inner.prompter),
+      info: inner.prompter.info.bind(inner.prompter),
       spinner: inner.prompter.spinner.bind(inner.prompter),
       note(message?: string, title?: string) {
         if (typeof title === 'string' && title.startsWith('Ready to write')) {
@@ -527,8 +529,8 @@ describe('init', () => {
       { type: 'select', value: 'use' },
       { type: 'select', value: 'change' },
       { type: 'select', value: 'typescript-strict' },
-      { type: 'multiselect', value: ['nextjs-app-router'] },
-      { type: 'multiselect', value: ['tailwind'] },
+      { type: 'groupMultiselect', value: ['nextjs-app-router'] },
+      { type: 'groupMultiselect', value: ['tailwind'] },
       { type: 'select', value: 'feature-based' },
       WRITE,
     ]);
@@ -559,13 +561,13 @@ describe('init', () => {
     const recorded = recordingPrompter([
       { type: 'select', value: 'react-vite' },
       { type: 'select', value: 'typescript-strict' },
-      { type: 'multiselect', value: [] },
+      { type: 'groupMultiselect', value: [] },
       { type: 'select', value: 'feature-based' },
       { type: 'multiselect', value: ['cursor'] },
       { type: 'select', value: 'change' },
       { type: 'select', value: 'react-vite' },
       { type: 'select', value: 'typescript-strict' },
-      { type: 'multiselect', value: [] },
+      { type: 'groupMultiselect', value: [] },
       { type: 'select', value: 'layered' },
       { type: 'multiselect', value: ['cursor'] },
       WRITE,
