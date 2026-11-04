@@ -36,14 +36,14 @@ Show what `init` is about to do before it writes anything, and let the user writ
 - Add a `FakeAnswer` script for each branch: write, preview then write, change then write.
 
 ## Acceptance criteria
-- [ ] Interactive `init` on `next15-src` shows the card before any file exists on disk.
-- [ ] *Write files* writes the same files as today.
-- [ ] *Preview changes* prints the tree, writes nothing (including `.agentinit/`), asks no conflict question, and returns to the card.
-- [ ] *Change setup* on an existing project can drop a library, and the next card shows the smaller count.
-- [ ] *Change setup* on greenfield preselects the earlier answers.
-- [ ] `--yes` and `--dry-run` never show the card.
-- [ ] The conflict count matches the number of conflict prompts that follow on `existing-claude-md`.
-- [ ] Cancel at the card exits `130` with nothing written.
+- [x] Interactive `init` on `next15-src` shows the card before any file exists on disk.
+- [x] *Write files* writes the same files as today.
+- [x] *Preview changes* prints the tree, writes nothing (including `.agentinit/`), asks no conflict question, and returns to the card.
+- [x] *Change setup* on an existing project can drop a library, and the next card shows the smaller count.
+- [x] *Change setup* on greenfield preselects the earlier answers.
+- [x] `--yes` and `--dry-run` never show the card.
+- [x] The conflict count matches the number of conflict prompts that follow on `existing-claude-md`.
+- [x] Cancel at the card exits `130` with nothing written.
 
 ## Verify
 ```bash
@@ -55,3 +55,6 @@ cp -r tests/fixtures/existing-claude-md /tmp/ai-t35 && node dist/cli.js init --c
 `feat(cli): review the plan before writing in interactive init`
 
 ## Notes
+- `agentReportParts` extracted from `formatAgentReport` so the review card reuses the same rows.
+- `GreenfieldInitial.agents` only preselects; skipping the agent prompt is `GreenfieldOptions.agents` (`--agents` or a greenfield manifest re-run in `chooseSetup`).
+- Preview runs `applyChanges` with `dryRun: true` and `yes: true`, then relabels conflict paths as `you decide next`.

@@ -67,11 +67,35 @@ export async function confirmDetected(
   });
 
   const chosen = choice === 'customize'
-    ? await customize(prompter, draft, registry)
+    ? await customize(prompter, draft, registry, detectedInitial(draft))
     : await acceptDetected(prompter, draft, registry);
 
   const agents = await selectAgents(prompter, agentInput(draft, extras?.agents));
   return { selection: toSelection(draft, chosen, choice), agents };
+}
+
+/**
+ * Review-card *Change setup*: customize prompts then agents, with the current
+ * answers preselected. `--agents` still skips the agent prompt.
+ */
+export async function changeExistingSetup(
+  prompter: Prompter,
+  draft: ProjectDraft,
+  registry: Registry,
+  current: PromptedSetup,
+  extras?: { readonly agents?: readonly AgentTarget[] },
+): Promise<PromptedSetup> {
+  const chosen = await customize(prompter, draft, registry, {
+    language: current.selection.language,
+    architecture: current.selection.architecture,
+    frameworks: current.selection.frameworks,
+    libraries: current.selection.libraries,
+  });
+  const agents = await selectAgents(
+    prompter,
+    agentInput(draft, extras?.agents, current.agents),
+  );
+  return { selection: toSelection(draft, chosen, 'customize'), agents };
 }
 
 async function acceptDetected(
@@ -101,16 +125,33 @@ async function acceptDetected(
   return { ...base, architecture, architectureManual: true };
 }
 
+interface CustomizeInitial {
+  readonly language: string;
+  readonly architecture: string;
+  readonly frameworks: readonly string[];
+  readonly libraries: readonly string[];
+}
+
+function detectedInitial(draft: ProjectDraft): CustomizeInitial {
+  return {
+    language: draft.language,
+    architecture: draft.architecture.id,
+    frameworks: draft.frameworks,
+    libraries: draft.libraries,
+  };
+}
+
 async function customize(
   prompter: Prompter,
   draft: ProjectDraft,
   registry: Registry,
+  initial: CustomizeInitial,
 ): Promise<ChosenFragments> {
   const languages = languageOptions(registry);
   const language = await prompter.select(
     withInitial(
       { message: 'How strict should TypeScript be?', options: languages },
-      preferredOption(languages, [draft.language, 'typescript-strict']),
+      preferredOption(languages, [initial.language, 'typescript-strict']),
     ),
   );
 
@@ -118,20 +159,20 @@ async function customize(
   const frameworks = await multiselectOrEmpty(prompter, {
     message: 'Which frameworks should we include?',
     options: frameworkChoices,
-    initialValues: valuesInOptions(frameworkChoices, draft.frameworks),
+    initialValues: valuesInOptions(frameworkChoices, initial.frameworks),
   });
 
   const libraryChoices = libraryOptions(registry, frameworks);
   const libraries = await multiselectOrEmpty(prompter, {
     message: 'Which libraries should we include?',
     options: libraryChoices,
-    initialValues: valuesInOptions(libraryChoices, draft.libraries),
+    initialValues: valuesInOptions(libraryChoices, initial.libraries),
   });
 
   const architectures = architectureOptions(registry);
   const preferred = draft.architecture.confidence < LOW_ARCHITECTURE_CONFIDENCE
-    ? ['flat', draft.architecture.id]
-    : [draft.architecture.id, 'feature-based'];
+    ? ['flat', initial.architecture]
+    : [initial.architecture, 'feature-based'];
   const architecture = await prompter.select(
     withInitial(
       { message: 'Which architecture should we follow?', options: architectures },
@@ -198,9 +239,10 @@ function summaryNote(draft: ProjectDraft, registry: Registry, extras: SummaryExt
 function agentInput(
   draft: ProjectDraft,
   override: readonly AgentTarget[] | undefined,
+  preselected: readonly AgentTarget[] = draft.suggestedAgents,
 ): AgentPromptInput {
-  if (override === undefined) return { preselected: draft.suggestedAgents };
-  return { preselected: draft.suggestedAgents, override };
+  if (override === undefined) return { preselected };
+  return { preselected, override };
 }
 
 function architectureQuestion(draft: ProjectDraft): string {

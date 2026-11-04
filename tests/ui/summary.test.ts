@@ -4,7 +4,7 @@ import { AgentInitError } from '../../src/errors.js';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
 import type { ProjectDraft } from '../../src/detect/index.js';
 import { NO_FRAMEWORK_NOTICE, NO_FRAMEWORK_SUMMARY, formatSummary } from '../../src/ui/format.js';
-import { confirmDetected } from '../../src/ui/summary.js';
+import { changeExistingSetup, confirmDetected } from '../../src/ui/summary.js';
 import type { FakeAnswer } from '../../src/ui/prompter.js';
 import { choicePrompt, recordingPrompter, type RecordedCall } from './recording-prompter.js';
 import { sampleDraft } from './draft.js';
@@ -221,4 +221,35 @@ describe('confirmDetected', () => {
       await expect(pending).rejects.toMatchObject({ exitCode: CANCELLED });
     },
   );
+});
+
+describe('changeExistingSetup', () => {
+  it('preselects the current answers and skips the use-or-customize card', async () => {
+    const draft = sampleDraft({ libraries: ['vitest', 'zustand'] });
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'typescript' },
+      { type: 'multiselect', value: ['nextjs-app-router'] },
+      { type: 'multiselect', value: ['vitest'] },
+      { type: 'select', value: 'layered' },
+      { type: 'multiselect', value: ['claude'] },
+    ]);
+
+    const result = await changeExistingSetup(prompter, draft, await bundledRegistry(), {
+      selection: {
+        language: 'typescript-strict',
+        architecture: 'feature-based',
+        frameworks: ['nextjs-app-router'],
+        libraries: ['vitest', 'zustand'],
+        origin: {},
+      },
+      agents: ['cursor'],
+    });
+
+    expect(calls.some((call) => call.method === 'note')).toBe(false);
+    expect(choicePrompt(choiceCalls(calls, 'select')[0]).initialValue).toBe('typescript-strict');
+    expect(choicePrompt(choiceCalls(calls, 'multiselect')[1]).initialValues).toEqual(['vitest', 'zustand']);
+    expect(choicePrompt(choiceCalls(calls, 'multiselect')[2]).initialValues).toEqual(['cursor']);
+    expect(result.selection.libraries).toEqual(['vitest']);
+    expect(result.agents).toEqual(['claude']);
+  });
 });

@@ -54,6 +54,7 @@ const VITE_ANSWERS: readonly FakeAnswer[] = [
   { type: 'multiselect', value: [] },
   { type: 'select', value: 'feature-based' },
   { type: 'multiselect', value: ['cursor'] },
+  { type: 'select', value: 'write' },
 ];
 
 afterEach(async () => {
