@@ -40,6 +40,17 @@ export function formatBanner(theme: Theme): string {
   return needleBanner(theme);
 }
 
+/**
+ * One-line header for `list` and `doctor`: product name in the terminal
+ * foreground, command in gray, then a blank rail line (PRD §3.1).
+ */
+export function formatHeader(theme: Theme, command: string): string {
+  const start = theme.muted(theme.glyphs.barStart);
+  const bar = theme.muted(theme.glyphs.bar);
+  const line = `${theme.ink(PRODUCT_NAME)} ${theme.muted(command)}`;
+  return `${start}  ${line}\n${bar}`;
+}
+
 export function formatClose(theme: Theme, message: string, tone: CloseTone = 'neutral'): string {
   const mark = theme.glyphs.barEnd;
   const bar = tone === 'error' ? theme.error(mark) : theme.muted(mark);

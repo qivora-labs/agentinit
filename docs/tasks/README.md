@@ -135,7 +135,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | done |
 | [T35](T35-review-before-write.md) | Review before write | M7 | T34 | L | done |
 | [T36](T36-detection-card.md) | Detection summary card | M7 | T27 | S | done |
-| [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | todo |
+| [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | done |
 | [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | todo |
 | [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | todo |
 | [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | todo |

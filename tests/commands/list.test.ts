@@ -227,10 +227,16 @@ describe('list', () => {
     expect(json.stderr).toBe('');
   });
 
-  it('rejects an unknown category and lists the valid ones', async () => {
-    await expect(runList({ category: 'libraries' })).rejects.toThrow(AgentInitError);
-    await expect(runList({ category: 'libraries' })).rejects.toThrow(
-      'Unknown category "libraries". Valid categories: architecture, language, framework, library, workflow.',
+  it('rejects an unknown category and suggests the closest name', async () => {
+    await expect(runList({ category: 'libary' })).rejects.toThrow(AgentInitError);
+    await expect(runList({ category: 'libary' })).rejects.toThrow(
+      'Unknown category "libary". Did you mean "library"? Valid categories: architecture, language, framework, library, workflow.',
+    );
+  });
+
+  it('lists valid categories without a suggestion when nothing is close', async () => {
+    await expect(runList({ category: 'xyz' })).rejects.toThrow(
+      'Unknown category "xyz". Valid categories: architecture, language, framework, library, workflow.',
     );
   });
 

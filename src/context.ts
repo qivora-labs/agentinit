@@ -1,5 +1,6 @@
 import { AgentInitError, NotInteractiveError } from './errors.js';
 import type { AgentTarget } from './types.js';
+import { closestMatch } from './suggest.js';
 
 export const AGENT_TARGETS: readonly AgentTarget[] = ['cursor', 'claude', 'windsurf', 'copilot'];
 
@@ -57,9 +58,7 @@ export function parseAgents(input: string): AgentTarget[] {
 
   const unknown = parts.filter((part) => !isAgentTarget(part));
   if (unknown.length > 0) {
-    const listed = unknown.map((name) => `"${name}"`).join(', ');
-    const noun = unknown.length === 1 ? 'agent' : 'agents';
-    throw new AgentInitError(`Unknown ${noun} ${listed}. Valid values: ${VALID_AGENTS}.`);
+    throw new AgentInitError(unknownAgentsMessage(unknown));
   }
 
   const agents: AgentTarget[] = [];
@@ -76,4 +75,14 @@ function isAgentTarget(value: string): value is AgentTarget {
     if (agent === value) return true;
   }
   return false;
+}
+
+function unknownAgentsMessage(unknown: readonly string[]): string {
+  const listed = unknown.map((name) => `"${name}"`).join(', ');
+  const noun = unknown.length === 1 ? 'agent' : 'agents';
+  const suggestion =
+    unknown.length === 1 ? closestMatch(unknown[0] ?? '', AGENT_TARGETS) : undefined;
+  const hint =
+    suggestion === undefined ? '' : ` Did you mean "${suggestion}"?`;
+  return `Unknown ${noun} ${listed}.${hint} Valid values: ${VALID_AGENTS}.`;
 }

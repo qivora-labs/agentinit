@@ -1,5 +1,5 @@
 import type { Writable } from 'node:stream';
-import { formatBanner, formatClose, type CloseTone } from './brand.js';
+import { formatBanner, formatClose, formatHeader, type CloseTone } from './brand.js';
 import { createTheme, type Theme } from './theme.js';
 
 export interface Logger {
@@ -10,8 +10,12 @@ export interface Logger {
   warn: (message: string) => void;
   error: (message: string) => void;
   step: (message: string) => void;
-  /** Wordmark on a TTY. A pipe, `--json`, and a second call write nothing. */
-  open: () => void;
+  /**
+   * Session chrome on a TTY. `list` and `doctor` get a one-line header;
+   * anything else (including `--help`) gets the wordmark. A pipe, `--json`,
+   * and a second call write nothing.
+   */
+  open: (command?: string) => void;
   /**
    * Bottom rule. On a pipe this prints `message` once, so a status line can
    * move here without showing up twice. `ttyOnly` is chrome that pipes omit.
@@ -55,11 +59,15 @@ export function createLogger(io: LoggerStreams, json: boolean, chrome: LoggerChr
     stream.write(`${renderLine(theme, level, message)}\n`);
   };
 
-  const open = (): void => {
+  const open = (command?: string): void => {
     if (opened || !stdoutTty) return;
     opened = true;
     // The leading gap keeps the mark clear of the command the user just entered.
-    io.stdout.write(`\n\n${formatBanner(stdoutTheme)}\n\n`);
+    const chrome =
+      command === 'list' || command === 'doctor'
+        ? formatHeader(stdoutTheme, command)
+        : formatBanner(stdoutTheme);
+    io.stdout.write(`\n\n${chrome}\n\n`);
   };
 
   const close = (message?: string, options?: CloseOptions): void => {

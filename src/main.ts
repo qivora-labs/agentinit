@@ -68,7 +68,7 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
     json = ctx.json;
     const commandName = cli.matchedCommand?.name ?? 'init';
     const logger = createLogger(io, ctx.json, chrome);
-    logger.open();
+    logger.open(commandName);
     framed = logger.presented;
     return await dispatch(commandName, ctx, logger, {
       stdout: io.stdout,

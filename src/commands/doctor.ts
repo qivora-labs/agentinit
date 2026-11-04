@@ -6,8 +6,10 @@ import { readPackageJson, resolveVersions } from '../detect/packages.js';
 import { findGitRoot } from '../detect/workspace.js';
 import {
   collectDoctorIssues,
+  doctorChecklist,
   doctorReport,
   formatDoctorReport,
+  issuesFoundMessage,
   NO_ISSUES,
   type CheckedFragment,
   type DoctorIssue,
@@ -29,7 +31,7 @@ import {
 } from '../registry/resolve.js';
 import type { ProjectProfile } from '../types.js';
 import type { Logger } from '../ui/logger.js';
-import { paintDoctorReport } from '../ui/paint.js';
+import { paintDoctorChecks, paintDoctorReport } from '../ui/paint.js';
 
 export interface DoctorOptions {
   readonly stdout?: Writable;
@@ -52,8 +54,14 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
 
   const report = doctorReport(issues);
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);
-  else if (report.ok) logger.close(NO_ISSUES);
-  else {
+  else if (logger.theme.tty) {
+    const checks = doctorChecklist(issues);
+    logger.info(paintDoctorChecks(checks, logger.theme));
+    if (report.ok) logger.close(NO_ISSUES);
+    else logger.close(issuesFoundMessage(issues.length), { tone: 'error' });
+  } else if (report.ok) {
+    logger.close(NO_ISSUES);
+  } else {
     logger.info(paintDoctorReport(formatDoctorReport(issues), logger.theme));
     logger.close();
   }

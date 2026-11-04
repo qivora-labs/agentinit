@@ -49,6 +49,24 @@ interface ChosenFragments {
 
 type ConfigurationChoice = 'use' | 'customize';
 
+export type UpToDateChoice = 'done' | 'change';
+
+/**
+ * Interactive re-run when nothing would change (PRD §3.4).
+ * *Done* (default) exits; *Change setup* continues into customize.
+ */
+export async function confirmUpToDate(prompter: Prompter): Promise<UpToDateChoice> {
+  const options: readonly PromptOption<UpToDateChoice>[] = [
+    { value: 'done', label: 'Done' },
+    { value: 'change', label: 'Change setup' },
+  ];
+  return prompter.select<UpToDateChoice>({
+    message: 'What next?',
+    options,
+    initialValue: 'done',
+  });
+}
+
 /**
  * Existing-project summary from PRD §3.3 steps 4–5.
  * Low-confidence architecture still asks, including after "Use this configuration".

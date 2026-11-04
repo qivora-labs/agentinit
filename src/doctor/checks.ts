@@ -36,6 +36,48 @@ export interface DoctorReport {
   readonly issues: readonly DoctorIssue[];
 }
 
+export const DOCTOR_CHECK_IDS = [
+  'manifest',
+  'managed-files',
+  'detected-packages',
+  'package-versions',
+  'token-budget',
+  'legacy-files',
+] as const;
+
+export type DoctorCheckId = (typeof DOCTOR_CHECK_IDS)[number];
+
+/** TTY checklist row from PRD §6.5. Painting stays in `ui/`. */
+export interface DoctorCheck {
+  readonly id: DoctorCheckId;
+  readonly label: string;
+  readonly ok: boolean;
+  readonly issues: readonly DoctorIssue[];
+}
+
+const CHECK_LABEL: Record<DoctorCheckId, string> = {
+  manifest: 'manifest',
+  'managed-files': 'managed files',
+  'detected-packages': 'detected packages',
+  'package-versions': 'package versions',
+  'token-budget': 'token budget',
+  'legacy-files': 'legacy files',
+};
+
+const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
+  'not-initialized': 'manifest',
+  missing: 'managed-files',
+  edited: 'managed-files',
+  outdated: 'managed-files',
+  unmanaged: 'managed-files',
+  stale: 'managed-files',
+  unselected: 'detected-packages',
+  'package-removed': 'package-versions',
+  'unsupported-version': 'package-versions',
+  'always-on-tokens': 'token-budget',
+  'legacy-file': 'legacy-files',
+};
+
 /**
  * A slice of `Change` from `computeChanges`. This module cannot import `io/`.
  * `blockMissing` is set by the command: a removed owned block is classified
@@ -109,6 +151,46 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
 
 export function doctorReport(issues: readonly DoctorIssue[]): DoctorReport {
   return { ok: issues.length === 0, issues };
+}
+
+/**
+ * Six checks from PRD §6.5. Issues are grouped under the check they fail;
+ * a check with no matching issue is a pass.
+ * Without a manifest, later checks never ran — list only the failed manifest row.
+ */
+export function doctorChecklist(issues: readonly DoctorIssue[]): DoctorCheck[] {
+  const notInitialized = issues.filter((issue) => issue.kind === 'not-initialized');
+  if (notInitialized.length > 0) {
+    return [
+      {
+        id: 'manifest',
+        label: CHECK_LABEL.manifest,
+        ok: false,
+        issues: notInitialized,
+      },
+    ];
+  }
+
+  const byCheck = new Map<DoctorCheckId, DoctorIssue[]>();
+  for (const id of DOCTOR_CHECK_IDS) byCheck.set(id, []);
+  for (const issue of issues) {
+    const bucket = byCheck.get(CHECK_FOR_KIND[issue.kind]);
+    if (bucket === undefined) continue;
+    bucket.push(issue);
+  }
+  return DOCTOR_CHECK_IDS.map((id) => {
+    const checkIssues = byCheck.get(id) ?? [];
+    return {
+      id,
+      label: CHECK_LABEL[id],
+      ok: checkIssues.length === 0,
+      issues: checkIssues,
+    };
+  });
+}
+
+export function issuesFoundMessage(count: number): string {
+  return count === 1 ? '1 issue found.' : `${String(count)} issues found.`;
 }
 
 /** Groups issues by kind, in first-seen order, with a fix command on every issue. */

@@ -4,6 +4,7 @@ import { AgentInitError } from '../errors.js';
 import { SUCCESS } from '../exit-codes.js';
 import { FRAGMENT_CATEGORIES, loadRegistry, type Registry } from '../registry/load.js';
 import type { Fragment } from '../registry/parse.js';
+import { closestMatch } from '../suggest.js';
 import type { FragmentCategory } from '../types.js';
 import type { Logger } from '../ui/logger.js';
 import { paintGroupedList } from '../ui/paint.js';
@@ -82,8 +83,10 @@ function readCategory(value: string | undefined): FragmentCategory | undefined {
     throw new AgentInitError('Flag --category requires a category name.');
   }
   if (!isFragmentCategory(category)) {
+    const suggestion = closestMatch(category, FRAGMENT_CATEGORIES);
+    const hint = suggestion === undefined ? '' : ` Did you mean "${suggestion}"?`;
     throw new AgentInitError(
-      `Unknown category "${category}". Valid categories: ${FRAGMENT_CATEGORIES.join(', ')}.`,
+      `Unknown category "${category}".${hint} Valid categories: ${FRAGMENT_CATEGORIES.join(', ')}.`,
     );
   }
   return category;

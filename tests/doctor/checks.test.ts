@@ -6,7 +6,9 @@ import {
   checkLegacy,
   checkUnselected,
   collectDoctorIssues,
+  doctorChecklist,
   formatDoctorReport,
+  issuesFoundMessage,
   notInitializedIssue,
   type DriftChange,
 } from '../../src/doctor/checks.js';
@@ -236,6 +238,54 @@ describe('checkLegacy', () => {
         fix: `Remove ${filePath} if you no longer need it.`,
       },
     ]);
+  });
+});
+
+describe('doctorChecklist', () => {
+  it('lists six passing checks when there are no issues', () => {
+    expect(doctorChecklist([])).toEqual([
+      { id: 'manifest', label: 'manifest', ok: true, issues: [] },
+      { id: 'managed-files', label: 'managed files', ok: true, issues: [] },
+      { id: 'detected-packages', label: 'detected packages', ok: true, issues: [] },
+      { id: 'package-versions', label: 'package versions', ok: true, issues: [] },
+      { id: 'token-budget', label: 'token budget', ok: true, issues: [] },
+      { id: 'legacy-files', label: 'legacy files', ok: true, issues: [] },
+    ]);
+  });
+
+  it('lists only the failed manifest check when not initialized', () => {
+    expect(doctorChecklist([notInitializedIssue()])).toEqual([
+      {
+        id: 'manifest',
+        label: 'manifest',
+        ok: false,
+        issues: [notInitializedIssue()],
+      },
+    ]);
+  });
+
+  it('attaches failing issues under the matching check', () => {
+    const missing = {
+      kind: 'missing' as const,
+      path: 'AGENTS.md',
+      message: 'AGENTS.md is missing.',
+      fix: FIX,
+    };
+    const checks = doctorChecklist([missing]);
+    expect(checks.find((check) => check.id === 'managed-files')).toMatchObject({
+      ok: false,
+      issues: [missing],
+    });
+    expect(checks.filter((check) => check.ok)).toHaveLength(5);
+  });
+});
+
+describe('issuesFoundMessage', () => {
+  it.each([
+    [1, '1 issue found.'],
+    [2, '2 issues found.'],
+  ])('formats %i issues', (count, message) => {
+    expect(issuesFoundMessage(count)).toBe(message);
   });
 });
 

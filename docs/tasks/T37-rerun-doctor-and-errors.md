@@ -33,14 +33,14 @@ Respect a returning user's time: an up-to-date re-run says so before asking anyt
 - The up-to-date check must use the same plan `init` would write, so the shortcut can never hide a pending change. Add a test that edits one managed file and confirms the shortcut is not taken.
 
 ## Acceptance criteria
-- [ ] Interactive re-run on an up-to-date `next15-src` prints the up-to-date line before any prompt, and Enter exits `0` with nothing written.
-- [ ] *Change setup* from the up-to-date prompt reaches the review card.
-- [ ] A hand-edited managed file skips the shortcut and goes through the normal flow.
-- [ ] `doctor` and `list` on a TTY print the one-line header and no wordmark. `init` and `--help` still print the wordmark.
-- [ ] Healthy `doctor` on a TTY lists six passing checks. A failing check shows its issue and fix.
-- [ ] `doctor --json` and `list --json` output are unchanged.
-- [ ] `--agents cursr` suggests `cursor`. `--agents xyz` lists the valid values with no suggestion.
-- [ ] `.cursorrules` warning appears once per interactive run.
+- [x] Interactive re-run on an up-to-date `next15-src` prints the up-to-date line before any prompt, and Enter exits `0` with nothing written.
+- [x] *Change setup* from the up-to-date prompt reaches the review card.
+- [x] A hand-edited managed file skips the shortcut and goes through the normal flow.
+- [x] `doctor` and `list` on a TTY print the one-line header and no wordmark. `init` and `--help` still print the wordmark.
+- [x] Healthy `doctor` on a TTY lists six passing checks. A failing check shows its issue and fix.
+- [x] `doctor --json` and `list --json` output are unchanged.
+- [x] `--agents cursr` suggests `cursor`. `--agents xyz` lists the valid values with no suggestion.
+- [x] `.cursorrules` warning appears once per interactive run.
 
 ## Verify
 ```bash
@@ -55,3 +55,6 @@ node dist/cli.js init --agents cursr --cwd /tmp/ai-t37   # expect "Did you mean"
 `feat(ui): shorten re-runs and polish doctor, list, and flag errors`
 
 ## Notes
+- Levenshtein helper lives in `src/suggest.ts` (next to `parseAgents`) so `context` does not import `ui/`.
+- After *Change setup* from the up-to-date shortcut, the review card always opens even when the new selection would write nothing.
+- `legacy-agent-file` warnings stay on the detection / up-to-date path once; JSON `notices` still include them.
