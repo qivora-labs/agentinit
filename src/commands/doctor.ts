@@ -130,6 +130,7 @@ function profileFor(root: string, detection: DetectionResult, manifest: Manifest
     return {
       root,
       mode: 'greenfield',
+      name: null,
       packageManager: null,
       srcDir: 'src',
       language: selections.language,
@@ -149,6 +150,7 @@ function profileFor(root: string, detection: DetectionResult, manifest: Manifest
   return {
     root: draft.root,
     mode: 'existing',
+    name: draft.name,
     packageManager: draft.packageManager,
     srcDir: draft.srcDir,
     language: selections.language,

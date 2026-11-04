@@ -34,11 +34,11 @@ Turn the "Detected project" box from a debug dump into a card a developer can re
 - `sanitizeDisplayText` still wraps every value that came from the project.
 
 ## Acceptance criteria
-- [ ] `next15-src` summary has five rows and no `Versions:` block (snapshot).
-- [ ] Confidence ≥ 0.7 shows `likely` and no number. Below 0.7 shows the number in the warning color.
-- [ ] A library with an unknown version shows no version text and no `null`.
-- [ ] `tailwind-v3` still shows the unsupported-version notice under `Notes`.
-- [ ] The box border lines up with color on (manual check in a real terminal, noted below).
+- [x] `next15-src` summary has five rows and no `Versions:` block (snapshot).
+- [x] Confidence ≥ 0.7 shows `likely` and no number. Below 0.7 shows the number in the warning color.
+- [x] A library with an unknown version shows no version text and no `null`.
+- [x] `tailwind-v3` still shows the unsupported-version notice under `Notes`.
+- [x] The box border lines up with color on (manual check in a real terminal, noted below).
 
 ## Verify
 ```bash
@@ -50,3 +50,7 @@ node dist/cli.js init --dry-run --cwd tests/fixtures/next15-src
 `feat(ui): redesign the detected project summary`
 
 ## Notes
+- Reused `src/ui/align.ts` from T34 (`alignColumns(rows, gap)`); theme painting stays in the caller.
+- Captured `package.json` `name` on `ProjectProfile` / the draft so the Clack note title can be `Detected <name>` without `ui/` reading disk.
+- "Five rows" for next15-src = title + four body rows (Libraries omitted when empty). Snapshot: `tests/__snapshots__/ui/next15-src-summary.txt`.
+- Border: `alignColumns` pads by visible width (ANSI stripped; covered in `align.test.ts`). `formatSummary` paints then aligns before `prompter.note`, same pattern as the T34 report. Spot-checked painted summary width vs plain; Clack receives the aligned string.

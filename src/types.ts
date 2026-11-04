@@ -12,6 +12,8 @@ export type FragmentScope = 'always' | 'glob' | 'auto' | 'manual';
 export interface ProjectProfile {
   root: string;
   mode: 'existing' | 'greenfield';
+  /** `package.json` `name`, or null when absent / greenfield. */
+  name: string | null;
   /** Null in greenfield mode. */
   packageManager: PackageManager | null;
   srcDir: '' | 'src';

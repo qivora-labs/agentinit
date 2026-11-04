@@ -45,6 +45,7 @@ import {
 import { draftWithSavedSelections, formatSelectionChanges, type SavedSelections } from '../ui/saved-selection.js';
 import { changeExistingSetup, confirmDetected } from '../ui/summary.js';
 import { reviewPlan } from '../ui/review.js';
+import type { Theme } from '../ui/theme.js';
 import { runGreenfieldWizard, type GreenfieldInitial } from '../ui/wizard.js';
 import { resolveWithConflicts } from './resolve-conflicts.js';
 import pkg from '../../package.json' with { type: 'json' };
@@ -81,7 +82,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const prompts = prompterFor(options);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
-  let setup = await chooseSetup(ctx, registry, detection, manifest, prompts);
+  let setup = await chooseSetup(ctx, registry, detection, manifest, prompts, logger.theme);
   let prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
   const notices = () => noticeLines(registry, detection, prepared.resolved, setup.notices);
   const greenfieldSteps = () =>
@@ -386,6 +387,7 @@ async function chooseSetup(
   detection: DetectionResult,
   manifest: Manifest | null,
   prompts: () => Prompter,
+  theme: Theme,
 ): Promise<Setup> {
   if (detection.mode === 'greenfield') {
     if (ctx.yes) {
@@ -417,6 +419,7 @@ async function chooseSetup(
   }
 
   const confirmed = await confirmDetected(prompts(), draft, registry, {
+    theme,
     notices: detection.notices,
     warnings: detection.warnings,
     ...(agents === undefined ? {} : { agents }),
@@ -428,6 +431,7 @@ async function chooseSetup(
             draft: detection.draft,
             registry,
             fromGreenfield,
+            theme,
           }),
           title: 'What changed',
         }),
@@ -460,6 +464,7 @@ function profileFor(root: string, detection: DetectionResult, setup: Setup): Pro
     return {
       root,
       mode: 'greenfield',
+      name: null,
       packageManager: null,
       // No source tree yet. `src/` matches the recommended feature-based root
       // and the `{{src}}` prefix in architecture maps.
@@ -481,6 +486,7 @@ function profileFor(root: string, detection: DetectionResult, setup: Setup): Pro
   return {
     root: draft.root,
     mode: 'existing',
+    name: draft.name,
     packageManager: draft.packageManager,
     srcDir: draft.srcDir,
     language,

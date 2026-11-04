@@ -6,6 +6,7 @@ export function profile(overrides: Partial<ProjectProfile> = {}): ProjectProfile
   const base: ProjectProfile = {
     root: '/repo',
     mode: 'existing',
+    name: 'repo',
     packageManager: 'pnpm',
     srcDir: 'src',
     language: 'typescript-strict',

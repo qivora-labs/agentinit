@@ -321,10 +321,12 @@ describe('init', () => {
     expect(note).toMatchObject({ method: 'note', title: 'What changed' });
     if (note?.method !== 'note') throw new Error('expected a summary note');
     expect(note.message).toContain('Keeping the saved architecture and agents.');
-    expect(note.message).toContain('Added:');
-    expect(note.message).toContain('Removed:');
-    expect(note.message).toContain('Layout: src/');
-    expect(note.message).not.toContain('Package manager:');
+    expect(note.message).toContain('Added');
+    expect(note.message).toContain('Removed');
+    expect(note.message).toContain('Layout');
+    expect(note.message).toContain('src/');
+    expect(note.message).not.toContain('Package manager');
+    expect(note.message).not.toContain('Versions:');
 
     const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
       mode: string;

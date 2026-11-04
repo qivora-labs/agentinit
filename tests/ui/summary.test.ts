@@ -3,13 +3,20 @@ import { CANCELLED } from '../../src/exit-codes.js';
 import { AgentInitError } from '../../src/errors.js';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
 import type { ProjectDraft } from '../../src/detect/index.js';
-import { NO_FRAMEWORK_NOTICE, NO_FRAMEWORK_SUMMARY, formatSummary } from '../../src/ui/format.js';
+import {
+  NO_FRAMEWORK_NOTICE,
+  NO_FRAMEWORK_SUMMARY,
+  formatSummary,
+  formatSummaryTitle,
+} from '../../src/ui/format.js';
 import { changeExistingSetup, confirmDetected } from '../../src/ui/summary.js';
 import type { FakeAnswer } from '../../src/ui/prompter.js';
+import { createTheme } from '../../src/ui/theme.js';
 import { choicePrompt, recordingPrompter, type RecordedCall } from './recording-prompter.js';
 import { sampleDraft } from './draft.js';
 
 let registry: Registry | undefined;
+const theme = createTheme(false, true);
 
 async function bundledRegistry(): Promise<Registry> {
   registry ??= await loadRegistry();
@@ -29,7 +36,7 @@ describe('confirmDetected', () => {
       { type: 'multiselect', value: ['cursor', 'windsurf'] },
     ]);
 
-    const result = await confirmDetected(prompter, draft, bundled);
+    const result = await confirmDetected(prompter, draft, bundled, { theme });
 
     expect(result.selection).toEqual({
       language: draft.language,
@@ -46,8 +53,8 @@ describe('confirmDetected', () => {
     expect(result.agents).toEqual(['cursor', 'windsurf']);
     expect(calls[0]).toMatchObject({
       method: 'note',
-      title: 'Detected project',
-      message: formatSummary({ draft, registry: bundled, notices: [], warnings: [] }),
+      title: formatSummaryTitle(draft.name),
+      message: formatSummary({ draft, registry: bundled, notices: [], warnings: [], theme }),
     });
     expect(choiceCalls(calls, 'select')).toHaveLength(1);
   });
@@ -63,7 +70,7 @@ describe('confirmDetected', () => {
       { type: 'multiselect', value: ['claude'] },
     ]);
 
-    const result = await confirmDetected(prompter, draft, await bundledRegistry());
+    const result = await confirmDetected(prompter, draft, await bundledRegistry(), { theme });
     const frameworks = calls.find(
       (call) => call.method === 'multiselect' && choicePrompt(call).message.includes('frameworks'),
     );
@@ -100,7 +107,7 @@ describe('confirmDetected', () => {
       { type: 'multiselect', value: ['cursor'] },
     ]);
 
-    const result = await confirmDetected(prompter, draft, await bundledRegistry());
+    const result = await confirmDetected(prompter, draft, await bundledRegistry(), { theme });
     const architecture = choiceCalls(calls, 'select')[1];
 
     expect(result.selection.architecture).toBe('layered');
@@ -127,7 +134,7 @@ describe('confirmDetected', () => {
       { type: 'multiselect', value: ['cursor'] },
     ]);
 
-    await confirmDetected(prompter, draft, bundled);
+    await confirmDetected(prompter, draft, bundled, { theme });
     const note = calls[0];
     if (note?.method !== 'note') throw new Error('expected a summary note');
     expect(note.message).toContain(NO_FRAMEWORK_SUMMARY);
@@ -137,6 +144,7 @@ describe('confirmDetected', () => {
       registry: bundled,
       notices: [],
       warnings: [],
+      theme,
     }));
   });
 
@@ -151,7 +159,7 @@ describe('confirmDetected', () => {
       { type: 'multiselect', value: ['cursor'] },
     ]);
 
-    const result = await confirmDetected(prompter, draft, await bundledRegistry());
+    const result = await confirmDetected(prompter, draft, await bundledRegistry(), { theme });
     const architecture = choiceCalls(calls, 'select').at(-1);
 
     expect(result.selection.architecture).toBe('flat');
@@ -166,6 +174,7 @@ describe('confirmDetected', () => {
     const { prompter, calls } = recordingPrompter([{ type: 'select', value: 'use' }]);
 
     await confirmDetected(prompter, draft, bundled, {
+      theme,
       summary: 'No package changes since the last run.',
       title: 'What changed',
       agents: ['cursor'],
@@ -190,11 +199,12 @@ describe('confirmDetected', () => {
       { type: 'select', value: 'use' },
       { type: 'multiselect', value: ['claude'] },
     ]);
-    await confirmDetected(detected.prompter, draft, await bundledRegistry());
+    await confirmDetected(detected.prompter, draft, await bundledRegistry(), { theme });
     expect(choicePrompt(choiceCalls(detected.calls, 'multiselect')[0]).initialValues).toEqual(['claude']);
 
     const overridden = recordingPrompter([{ type: 'select', value: 'use' }]);
     const result = await confirmDetected(overridden.prompter, draft, await bundledRegistry(), {
+      theme,
       agents: ['copilot'],
     });
     expect(result.agents).toEqual(['copilot']);
@@ -216,7 +226,7 @@ describe('confirmDetected', () => {
     'cancel at the $name prompt exits 130',
     async ({ answers, draft }) => {
       const { prompter } = recordingPrompter(answers);
-      const pending = confirmDetected(prompter, draft ?? sampleDraft(), await bundledRegistry());
+      const pending = confirmDetected(prompter, draft ?? sampleDraft(), await bundledRegistry(), { theme });
       await expect(pending).rejects.toBeInstanceOf(AgentInitError);
       await expect(pending).rejects.toMatchObject({ exitCode: CANCELLED });
     },

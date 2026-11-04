@@ -4,6 +4,7 @@ export function sampleDraft(overrides: Partial<ProjectDraft> = {}): ProjectDraft
   return {
     root: '/repo/app',
     mode: 'existing',
+    name: 'app',
     packageManager: 'pnpm',
     srcDir: 'src',
     language: 'typescript-strict',

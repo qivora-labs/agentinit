@@ -19,6 +19,7 @@ import {
   existingFiles,
   readPackageJson,
   resolveVersions,
+  type PackageJson,
 } from './packages.js';
 import {
   assertTypeScriptProject,
@@ -104,6 +105,7 @@ export function detectProject(root: string, registry: Registry): DetectionResult
     draft: {
       root: projectRoot,
       mode: 'existing',
+      name: packageName(pkgJson),
       packageManager: detectPackageManager(projectRoot, pkgJson),
       srcDir,
       language: suggestLanguage(tsconfig),
@@ -225,4 +227,10 @@ function gitLocation(root: string): { gitRoot: string | null; belowGitRoot: bool
     gitRoot,
     belowGitRoot: gitRoot !== null && gitRoot !== root,
   };
+}
+
+/** Empty `name` fields are treated as missing so the summary title stays generic. */
+function packageName(pkgJson: PackageJson): string | null {
+  const name = pkgJson.name?.trim();
+  return name === undefined || name.length === 0 ? null : name;
 }

@@ -178,6 +178,7 @@ describe('detectProject', () => {
     const root = await copyFixture('next15-src');
     const result = asExisting(detectProject(root, await detectionRegistry()));
 
+    expect(result.draft.name).toBe('next15-src');
     expect(result.draft.frameworks).toEqual(['nextjs-app-router']);
     expect(result.draft.libraries).toEqual([]);
     expect(result.draft.srcDir).toBe('src');
