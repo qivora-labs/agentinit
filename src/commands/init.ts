@@ -145,39 +145,16 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     }
   }
 
-  const { profile, resolved, plan, changes } = prepared;
-  const writing = spin && !needsConflictPrompt(changes)
-    ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
-    : undefined;
-  let applied;
-  try {
-    applied = await applyChanges(root, changes, {
-      now: options.now ?? new Date(),
-      manifest: manifestBody(profile, resolved),
-      yes: ctx.yes,
-      force: ctx.force,
-      dryRun: ctx.dryRun,
-      ...(!ctx.yes && !ctx.force ? { prompter: prompts() } : {}),
-      ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
-      ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
-    });
-  } catch (error) {
-    stopSpin(writing, error, ctx.dryRun ? 'Could not preview the changes' : 'Could not write the rules');
-    throw error;
-  }
-  writing?.stop(ctx.dryRun ? 'Previewed the changes' : 'Wrote the rules');
-
-  return reportApplied(ctx, logger, options, {
-    plan,
-    report: applied.report,
+  return applyPreparedWrite({
+    ctx,
+    logger,
+    options,
+    root,
+    prepared,
     notices: ctx.json ? jsonNotices() : notices(),
     greenfieldSteps: greenfieldSteps(),
-    agents: profile.agents,
-    workflows: resolved.workflows.map((workflow) => ({
-      id: workflow.meta.id,
-      order: workflow.meta.order,
-    })),
-    mode: profile.mode,
+    prompts,
+    spin,
   });
 }
 
@@ -244,6 +221,31 @@ async function handleUpToDateShortcut(input: {
     return reportUpToDate(ctx, logger, options, prepared.plan, notices());
   }
 
+  return applyPreparedWrite({
+    ctx,
+    logger,
+    options,
+    root,
+    prepared,
+    notices: notices(),
+    greenfieldSteps: greenfieldSteps(),
+    prompts,
+    spin,
+  });
+}
+
+async function applyPreparedWrite(input: {
+  readonly ctx: RunContext;
+  readonly logger: Logger;
+  readonly options: InitOptions;
+  readonly root: string;
+  readonly prepared: PreparedWrite;
+  readonly notices: readonly string[];
+  readonly greenfieldSteps: readonly string[];
+  readonly prompts: () => Prompter;
+  readonly spin: boolean;
+}): Promise<number> {
+  const { ctx, logger, options, root, prepared, notices, greenfieldSteps, prompts, spin } = input;
   const { profile, resolved, plan, changes } = prepared;
   const writing = spin && !needsConflictPrompt(changes)
     ? startSpin(prompts, ctx.dryRun ? 'Previewing changes' : 'Writing rules')
@@ -253,10 +255,10 @@ async function handleUpToDateShortcut(input: {
     applied = await applyChanges(root, changes, {
       now: options.now ?? new Date(),
       manifest: manifestBody(profile, resolved),
-      yes: false,
+      yes: ctx.yes,
       force: ctx.force,
       dryRun: ctx.dryRun,
-      ...(!ctx.force ? { prompter: prompts() } : {}),
+      ...(!ctx.yes && !ctx.force ? { prompter: prompts() } : {}),
       ...(options.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
       ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
     });
@@ -269,8 +271,8 @@ async function handleUpToDateShortcut(input: {
   return reportApplied(ctx, logger, options, {
     plan,
     report: applied.report,
-    notices: notices(),
-    greenfieldSteps: greenfieldSteps(),
+    notices,
+    greenfieldSteps,
     agents: profile.agents,
     workflows: resolved.workflows.map((workflow) => ({
       id: workflow.meta.id,
