@@ -30,6 +30,7 @@ import {
   type Selection,
 } from '../registry/resolve.js';
 import type { ProjectProfile } from '../types.js';
+import { underRail } from '../ui/brand.js';
 import type { Logger } from '../ui/logger.js';
 import { paintDoctorChecks, paintDoctorReport } from '../ui/paint.js';
 
@@ -56,7 +57,7 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);
   else if (logger.theme.tty) {
     const checks = doctorChecklist(issues);
-    logger.info(paintDoctorChecks(checks, logger.theme));
+    logger.info(underRail(paintDoctorChecks(checks, logger.theme), logger.theme, logger.columns));
     if (report.ok) logger.close(NO_ISSUES);
     else logger.close(issuesFoundMessage(issues.length), { tone: 'error' });
   } else if (report.ok) {

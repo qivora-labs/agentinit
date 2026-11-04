@@ -1,10 +1,10 @@
 ┌  agentinit doctor
 │
 
-◆  manifest
-◆  managed files
-◆  detected packages
-◆  package versions
-◆  token budget
-◆  legacy files
+│  ◆  manifest
+│  ◆  managed files
+│  ◆  detected packages
+│  ◆  package versions
+│  ◆  token budget
+│  ◆  legacy files
 └  No issues found.

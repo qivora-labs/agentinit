@@ -71,6 +71,13 @@ describe('fitToWidth', () => {
       ['▲  review the', '│  changes with git', '│  diff now'].join('\n'),
     );
   });
+
+  it('drops the prefix when it alone fills or exceeds the width budget', () => {
+    expect(fitToWidth('abcdef', 3, rail)).toBe(['abc', 'def'].join('\n'));
+    for (const line of fitToWidth('abcdefgh', 3, rail).split('\n')) {
+      expect(stripColor(line).length).toBeLessThanOrEqual(3);
+    }
+  });
 });
 
 function stripColor(text: string): string {

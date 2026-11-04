@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn as spawnPty, type IPty } from 'node-pty';
 import xterm from '@xterm/headless';
+import { visibleWidth } from '../../src/ui/align.js';
 
 const { Terminal } = xterm;
 type HeadlessTerminal = InstanceType<typeof Terminal>;
@@ -160,8 +161,9 @@ export function readScreen(term: HeadlessTerminal): string {
 /** Visible lines must not exceed the terminal width. */
 export function assertLinesFit(screen: string, cols: number): void {
   for (const line of screen.split('\n')) {
-    if (line.length > cols) {
-      throw new Error(`Line exceeds ${String(cols)} columns (${String(line.length)}): ${JSON.stringify(line)}`);
+    const width = visibleWidth(line);
+    if (width > cols) {
+      throw new Error(`Line exceeds ${String(cols)} columns (${String(width)}): ${JSON.stringify(line)}`);
     }
   }
 }
@@ -188,7 +190,7 @@ export function assertFramedRail(screen: string): void {
 }
 
 function isFramedLine(line: string): boolean {
-  // paintDoctorChecks: `  ${message}` and `    Fix: ${fix}` (T37), not on the rail.
+  // Legacy bare doctor indent rows (pre-underRail). Rail-prefixed checks pass below.
   if (isDoctorDetail(line)) return true;
   const trimmed = line.trimStart();
   return (

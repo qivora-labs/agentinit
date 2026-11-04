@@ -27,14 +27,19 @@ export function fitToWidth(
   continuationPrefix = prefix,
 ): string {
   if (text.length === 0) return text;
-  const prefixWidth = Math.max(visibleWidth(prefix), visibleWidth(continuationPrefix));
-  const contentWidth = Math.max(1, width - prefixWidth);
+  const budget = Math.max(1, width);
+  // A prefix that already fills the budget would make every line overflow; drop it.
+  const lead = visibleWidth(prefix) < budget ? prefix : '';
+  const cont =
+    visibleWidth(continuationPrefix) < budget ? continuationPrefix : lead;
+  const prefixWidth = Math.max(visibleWidth(lead), visibleWidth(cont));
+  const contentWidth = Math.max(1, budget - prefixWidth);
   const lines: string[] = [];
   for (const line of text.split('\n')) {
     const segments = wrapLine(line, contentWidth);
     for (let index = 0; index < segments.length; index += 1) {
-      const lead = index === 0 ? prefix : continuationPrefix;
-      lines.push(`${lead}${segments[index] ?? ''}`);
+      const start = index === 0 ? lead : cont;
+      lines.push(`${start}${segments[index] ?? ''}`);
     }
   }
   return lines.join('\n');

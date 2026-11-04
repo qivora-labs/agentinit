@@ -434,10 +434,15 @@ async function previewChanges(
     action: conflictPaths.has(entry.path) ? 'you decide next' : entry.action,
     diff: entry.diff,
   }));
+  // Same framed dry-run block as printTtyReport: tree + diffs under the rail.
+  const blocks: string[] = [];
   const tree = formatFileTree(files);
-  if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
+  if (tree.length > 0) blocks.push(paintFileTree(tree, logger.theme));
   const diffs = formatDiffs(files, logger.theme);
-  if (diffs.length > 0) logger.info(diffs);
+  if (diffs.length > 0) blocks.push(diffs);
+  if (blocks.length > 0) {
+    logger.info(underRail(blocks.join('\n'), logger.theme, logger.columns));
+  }
 }
 
 async function changeSetup(
