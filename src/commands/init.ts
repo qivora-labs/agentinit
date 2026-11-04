@@ -273,8 +273,8 @@ async function applyPreparedWrite(input: {
   }
   if (writing !== undefined) {
     writing.stop(ctx.dryRun ? 'Previewed the changes' : WROTE_THE_RULES);
-  } else if (spin && hadConflicts && !ctx.dryRun) {
-    // Spinner was skipped so the conflict prompt owns the terminal; match the success line.
+  } else if (hadConflicts && !ctx.dryRun && ctx.isInteractive && logger.presented) {
+    // No spinner (conflicts own the terminal, or tests capture stdout); match the success line.
     logger.success(WROTE_THE_RULES);
   }
 

@@ -61,3 +61,5 @@ cp -r tests/fixtures/existing-claude-md /tmp/ai-t39 && node dist/cli.js init --c
 - `formatDiff` takes optional `{ full: true }` so dry-run never truncates; conflict prompts cap at 40 on a TTY.
 - Dry-run closing line (`Dry run · N files would change…`) stays TTY-only chrome, matching the previous close behavior.
 - Apply prompt vs `--yes` adopt paths are byte-identical (regression in `tests/io/apply.test.ts`).
+- Header drop matches `--- path` / `+++ path` only, so hunk lines like a removed markdown HR (`----`) stay.
+- `recordingPrompter` records `diff` calls; `createFakePrompter.diff` is a no-op like `note`.

@@ -662,6 +662,8 @@ describe('init', () => {
       (call) => call.method === 'select' && choicePrompt(call).message.includes('CLAUDE.md'),
     );
     expect(conflictAsks).toHaveLength(1);
+    // Spinner was skipped for the conflict prompt; still print the same success line.
+    expect(result.stdout).toContain('Wrote the rules');
   });
 
   it('cancel at the review card exits 130 with nothing written', async () => {
