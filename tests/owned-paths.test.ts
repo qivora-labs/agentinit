@@ -12,6 +12,8 @@ import { profile, resolved } from './plan/helpers.js';
 
 const fixturesDir = fileURLToPath(new URL('./fixtures', import.meta.url));
 const AGENTS = ['cursor', 'claude', 'windsurf', 'copilot'] as const satisfies readonly AgentTarget[];
+/** Fixtures that cannot produce a plan (JS-only projects, monorepo roots). */
+const SKIP_DETECT_FIXTURES = new Set(['js-only', 'pnpm-monorepo']);
 
 const temp = createTempProject('agentinit-owned-');
 
@@ -84,13 +86,18 @@ describe('every plan path is owned', () => {
       .map((entry) => entry.name)
       .sort();
 
+    const skippedDetect = new Set<string>();
     for (const name of fixtureNames) {
       const dir = await temp.copyFixture(name);
       let detection;
       try {
         detection = detectProject(dir, registry);
-      } catch {
-        continue;
+      } catch (error) {
+        if (SKIP_DETECT_FIXTURES.has(name)) {
+          skippedDetect.add(name);
+          continue;
+        }
+        throw error;
       }
       if (detection.mode === 'greenfield') {
         const greenfield = profile({
@@ -141,6 +148,7 @@ describe('every plan path is owned', () => {
       );
       assertOwnedOps(buildPlan(project, resolvedFixture).ops, `fixture:${name}`);
     }
+    expect([...skippedDetect].sort()).toEqual([...SKIP_DETECT_FIXTURES].sort());
   });
 });
 
