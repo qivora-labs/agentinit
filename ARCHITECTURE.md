@@ -63,9 +63,7 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 ## Layout
 
-None of the detected folders match a row in the architecture map.
-
-## Other existing folders
+No detected folder matches the architecture map. Follow the conventions below for new code.
 
 These folders are already in the project:
 

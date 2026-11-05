@@ -11,7 +11,8 @@
     "agents": [
       "cursor",
       "claude"
-    ]
+    ],
+    "excluded": []
   },
   "fragments": {
     "layered": "1.0.0",
@@ -53,7 +54,7 @@
       "sha256": "9cbc7b65641e539d5bf07061482390edf7bce6915f94c777f399cccc65d6d71f"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "c7dea1eaa4225bd6251f3ec36d90e837f3704dd88284c8a3ad672970a7747336"
+      "sha256": "d85a4bfbb5e63a11026648c831cda25625872fbfb033838f317f32eb8024af2f"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
