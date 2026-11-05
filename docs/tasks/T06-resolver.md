@@ -60,7 +60,7 @@ pnpm lint && pnpm typecheck && pnpm test
 `feat(registry): resolve fragment selections from project facts`
 
 ## Notes
-- `RegistryNotice` is the shared discriminated union. `unknown-version` is `{ kind, package, fragmentId }` and is emitted only when the fragment is still suggested, for a `null` version of a `detect` package or an `appliesTo` package. A known version with no `appliesTo` entry is silent. If any package is outside its range, the fragment is omitted and only `unsupported-version` notices are emitted for it.
+- `RegistryNotice` is the shared discriminated union. `unknown-version` is `{ kind, package, fragmentId, included }`. `included: true` when the fragment is still suggested (null version of a `detect` or `appliesTo` package). `included: false` when version-split siblings could not be disambiguated and none were suggested. A known version with no `appliesTo` entry is silent. If any package is outside its range, the fragment is omitted and only `unsupported-version` notices are emitted for it.
 - `suggestFragments` returns framework and library ids only. Both Next.js fragments are suggested from the `next` package alone; router filtering stays in T18. Marker files match `facts.files` by exact string.
 - Version checks use `semver.satisfies(version, range, { includePrerelease: true })`, so `15.0.0-canary.1` matches `>=15`.
 - Unknown ids and ids from the wrong category throw `AgentInitError`. A `requires` id missing from the registry throws as well; `loadRegistry` already rejects that for real registries.

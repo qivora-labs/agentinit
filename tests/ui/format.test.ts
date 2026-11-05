@@ -37,9 +37,24 @@ const notices: readonly { readonly name: string; readonly notice: RegistryNotice
     text: 'tailwindcss@3.4.17 detected — no matching rules yet.',
   },
   {
-    name: 'unknown version',
-    notice: { kind: 'unknown-version', package: 'tailwindcss', fragmentId: 'tailwind' },
+    name: 'unknown version included',
+    notice: {
+      kind: 'unknown-version',
+      package: 'tailwindcss',
+      fragmentId: 'tailwind',
+      included: true,
+    },
     text: 'tailwindcss version is unknown — included Tailwind CSS.',
+  },
+  {
+    name: 'unknown version skipped for ambiguous siblings',
+    notice: {
+      kind: 'unknown-version',
+      package: 'express',
+      fragmentId: 'express',
+      included: false,
+    },
+    text: 'express version is unknown — skipped version-specific rules.',
   },
   {
     name: 'required fragment',

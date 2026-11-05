@@ -72,5 +72,6 @@ node dist/cli.js init --yes --cwd /tmp/ai-t42   # expect "Already up to date."
 ### Implementation clarifications
 - Overlapping `appliesTo` check requires the same `detect.packages` **and** the same globs, so App Router and Pages Router may both cover `next`.
 - Unsupported-version notices are deduped to one per package when no fragment for that package matched.
-- Version-split siblings collapse to the current-major id when the version is unknown.
+- Version-split siblings are omitted when the version is unknown (no current-major
+  guess); an `unknown-version` notice with `included: false` explains the skip.
 - Content Tasks checklist completed; human reviewed `nextjs-app-router-15` and `express-4` on 2026-11-05.

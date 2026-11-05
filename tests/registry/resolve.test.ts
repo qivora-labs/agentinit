@@ -106,8 +106,18 @@ const suggestCases: readonly SuggestCase[] = [
       frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
       libraries: [],
       notices: [
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-app-router',
+          included: true,
+        },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-pages-router',
+          included: true,
+        },
       ],
     },
   },
@@ -117,7 +127,9 @@ const suggestCases: readonly SuggestCase[] = [
     expected: {
       frameworks: [],
       libraries: ['zustand'],
-      notices: [{ kind: 'unknown-version', package: 'zustand', fragmentId: 'zustand' }],
+      notices: [
+        { kind: 'unknown-version', package: 'zustand', fragmentId: 'zustand', included: true },
+      ],
     },
   },
   {
@@ -539,14 +551,40 @@ const bundledSuggestCases: readonly SuggestCase[] = [
     },
   },
   {
-    name: 'collapses version-split App Router siblings when next version is unknown',
+    name: 'omits version-split App Router siblings when next version is unknown',
     packages: { next: null },
     expected: {
-      frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
+      frameworks: ['nextjs-pages-router'],
       libraries: [],
       notices: [
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-app-router',
+          included: false,
+        },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-pages-router',
+          included: true,
+        },
+      ],
+    },
+  },
+  {
+    name: 'omits version-split Express siblings when express version is unknown',
+    packages: { express: null },
+    expected: {
+      frameworks: [],
+      libraries: [],
+      notices: [
+        {
+          kind: 'unknown-version',
+          package: 'express',
+          fragmentId: 'express',
+          included: false,
+        },
       ],
     },
   },

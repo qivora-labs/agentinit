@@ -74,6 +74,9 @@ export function formatRegistryNotice(notice: RegistryNotice, registry: Registry)
     case 'unsupported-version':
       return `${sanitizeDisplayText(notice.package)}@${sanitizeDisplayText(notice.version)} detected — no matching rules yet.`;
     case 'unknown-version':
+      if (!notice.included) {
+        return `${sanitizeDisplayText(notice.package)} version is unknown — skipped version-specific rules.`;
+      }
       return `${sanitizeDisplayText(notice.package)} version is unknown — included ${fragmentName(registry, notice.fragmentId)}.`;
     case 'required-by':
       return `${fragmentName(registry, notice.fragmentId)} was added because ${fragmentName(registry, notice.requiredBy)} requires it.`;

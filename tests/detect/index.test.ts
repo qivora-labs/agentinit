@@ -408,10 +408,22 @@ describe('detectProject', () => {
     const result = asExisting(detectProject(root, await detectionRegistry()));
 
     expect(result.draft.packages).toEqual({ typescript: '5.9.0' });
-    expect(result.draft.frameworks).toEqual(['nextjs-app-router']);
+    // App Router siblings are omitted when next's version is unknown; Pages is
+    // filtered out by the app/ layout, so no framework is preselected.
+    expect(result.draft.frameworks).toEqual([]);
     expect(result.notices).toEqual([
-      { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
-      { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+      {
+        kind: 'unknown-version',
+        package: 'next',
+        fragmentId: 'nextjs-app-router',
+        included: false,
+      },
+      {
+        kind: 'unknown-version',
+        package: 'next',
+        fragmentId: 'nextjs-pages-router',
+        included: true,
+      },
     ]);
   });
 

@@ -32,7 +32,9 @@ export interface FragmentConflict {
 
 /**
  * Notices stay structured so the wizard (T19) and `doctor` (T28) can format them.
- * `unknown-version` is only emitted when the fragment is still suggested.
+ * `unknown-version` with `included: true` means the fragment stayed in the
+ * suggestion. `included: false` means version-split siblings could not be
+ * disambiguated, so none of them were suggested.
  */
 export type RegistryNotice =
   | {
@@ -45,6 +47,7 @@ export type RegistryNotice =
       kind: 'unknown-version';
       package: string;
       fragmentId: string;
+      included: boolean;
     }
   | {
       kind: 'required-by';
@@ -90,9 +93,10 @@ interface Expanded {
 /**
  * Suggest framework and library fragments from detected packages and marker files.
  * Both Next.js router fragments can be returned together; router filtering happens later.
- * Version-split siblings that share detect packages and globs collapse to one id when
- * the version is unknown. An `unsupported-version` notice is emitted once per package
- * when no fragment for that package matched.
+ * Version-split siblings that share detect packages and globs are omitted when the
+ * version is unknown — guessing the current major would apply the wrong rules.
+ * An `unsupported-version` notice is emitted once per package when no fragment for
+ * that package matched.
  */
 export function suggestFragments(registry: Registry, facts: ProjectFacts): Suggestion {
   const files = new Set(facts.files);
@@ -117,13 +121,13 @@ export function suggestFragments(registry: Registry, facts: ProjectFacts): Sugge
     matched.push(fragment);
   }
 
-  const collapsed = collapseVersionSiblings(matched);
+  const { kept, ambiguousNotices } = collapseVersionSiblings(matched);
   const frameworks: string[] = [];
   const libraries: string[] = [];
-  const notices: RegistryNotice[] = [];
+  const notices: RegistryNotice[] = [...ambiguousNotices];
   const matchedPackages = new Set<string>();
 
-  for (const fragment of collapsed) {
+  for (const fragment of kept) {
     const meta = detectableMeta(fragment);
     if (meta === undefined) continue;
     for (const name of meta.detect?.packages ?? []) matchedPackages.add(name);
@@ -270,7 +274,7 @@ function versionNoticesFor(meta: RuleFragmentMeta, packages: ProjectFacts['packa
     const version = packageVersion(packages, name);
     if (version === undefined) continue;
     if (version === null) {
-      unknown.push({ kind: 'unknown-version', package: name, fragmentId: meta.id });
+      unknown.push({ kind: 'unknown-version', package: name, fragmentId: meta.id, included: true });
       continue;
     }
     const range = appliesTo[name];
@@ -392,9 +396,12 @@ function isLibraryCompatible(meta: RuleFragmentMeta, frameworkIds: readonly stri
 /**
  * Version-split siblings share detect packages and globs (e.g. `express` /
  * `express-4`). When more than one matched because the version was unknown,
- * keep the current-major id (no trailing `-<digits>` suffix).
+ * omit them all — preferring the current-major id would mis-label older majors.
  */
-function collapseVersionSiblings(fragments: readonly Fragment[]): Fragment[] {
+function collapseVersionSiblings(fragments: readonly Fragment[]): {
+  kept: Fragment[];
+  ambiguousNotices: RegistryNotice[];
+} {
   const groups = new Map<string, Fragment[]>();
   const order: string[] = [];
 
@@ -416,18 +423,28 @@ function collapseVersionSiblings(fragments: readonly Fragment[]): Fragment[] {
     }
   }
 
-  const collapsed: Fragment[] = [];
+  const kept: Fragment[] = [];
+  const ambiguousNotices: RegistryNotice[] = [];
   for (const key of order) {
     const group = groups.get(key);
     if (group === undefined) continue;
     if (group.length === 1) {
       const only = group[0];
-      if (only !== undefined) collapsed.push(only);
+      if (only !== undefined) kept.push(only);
       continue;
     }
-    collapsed.push(preferCurrentMajor(group));
+    const representative = preferCurrentMajor(group);
+    const meta = ruleMeta(representative);
+    for (const name of meta?.detect?.packages ?? []) {
+      ambiguousNotices.push({
+        kind: 'unknown-version',
+        package: name,
+        fragmentId: representative.meta.id,
+        included: false,
+      });
+    }
   }
-  return collapsed;
+  return { kept, ambiguousNotices };
 }
 
 function versionSiblingKey(meta: RuleFragmentMeta): string {
@@ -436,7 +453,7 @@ function versionSiblingKey(meta: RuleFragmentMeta): string {
   return `${packages}\0${globs}`;
 }
 
-/** Prefer `express` over `express-4`, `nextjs-app-router` over `nextjs-app-router-15`. */
+/** Prefer `express` over `express-4` when naming an ambiguous sibling group. */
 function preferCurrentMajor(fragments: readonly Fragment[]): Fragment {
   const current = fragments.find((fragment) => !/-\d+$/u.test(fragment.meta.id));
   if (current !== undefined) return current;
