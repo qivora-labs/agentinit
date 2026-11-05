@@ -217,14 +217,11 @@ export function resolveSelection(
     notices.push({ kind: 'no-framework' });
   }
 
+  // Only selected libraries get incompatible notices — not transitive `requires`.
   const incompatibleCause = frameworkIds.length === 0 ? 'no-framework' : 'different-framework';
-  for (const fragment of expanded.fragments) {
-    if (dropped.has(fragment.meta.id)) {
-      notices.push({
-        kind: 'incompatible',
-        fragmentId: fragment.meta.id,
-        cause: incompatibleCause,
-      });
+  for (const id of selection.libraries) {
+    if (dropped.has(id)) {
+      notices.push({ kind: 'incompatible', fragmentId: id, cause: incompatibleCause });
     }
   }
 

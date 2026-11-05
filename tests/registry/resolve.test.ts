@@ -312,10 +312,7 @@ const resolveCases: readonly ResolveCase[] = [
       origin: detected('typescript', 'layered', 'nextjs-pages-router', 'forms'),
     }),
     fragmentIds: ['layered', 'typescript', 'nextjs-pages-router'],
-    notices: [
-      { kind: 'incompatible', fragmentId: 'forms', cause: 'different-framework' },
-      { kind: 'incompatible', fragmentId: 'zustand', cause: 'different-framework' },
-    ],
+    notices: [{ kind: 'incompatible', fragmentId: 'forms', cause: 'different-framework' }],
     conflicts: [],
   },
   {
