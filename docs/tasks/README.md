@@ -39,7 +39,7 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] `pnpm registry:check` passes.
 - [x] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05. A human reviewed those two fragments on 2026-11-05. T45 aligned Contract examples with softened `typescript-strict` (decision B) on 2026-11-06; human review of those content edits is required on the PR before merge.
+T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05. A human reviewed those two fragments on 2026-11-05. T45 aligned Contract examples with softened `typescript-strict` (decision B) on 2026-11-06. A human reviewed those content edits on 2026-11-06.
 
 ## Dependency Graph
 

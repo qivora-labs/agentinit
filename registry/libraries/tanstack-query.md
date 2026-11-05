@@ -49,8 +49,8 @@ import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
-  type UseMutationResult,
 } from "@tanstack/react-query";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 export const todoKeys = {
   all: ["todos"],

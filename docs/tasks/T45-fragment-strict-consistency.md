@@ -60,9 +60,9 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm registry:check
 - PRD §4.4 Next.js `Page` example omits a return type; that is allowed under B, so the PRD snippet was left unchanged.
 
 ### Contract audit (fragment → changes)
-- `languages/typescript-strict.md` → directive exception + version `1.1.0`; Contract already compliant.
+- `languages/typescript-strict.md` → directive exception + version `1.1.0`; `verifiedAt` 2026-11-06; Contract already compliant.
 - `languages/typescript.md` → `amount` return type `: number`; version `1.0.1`.
-- `libraries/tanstack-query.md` → `todoOptions` / `useAddTodo` return types; PascalCase `Todo` left exempt; version `1.0.1`.
+- `libraries/tanstack-query.md` → `todoOptions` / `useAddTodo` return types; `import type` for `UseMutationResult`; PascalCase `Todo` left exempt; version `1.0.1`.
 - `libraries/react-hook-form-zod.md` → `parseProfile` return type; `ProfileForm` left exempt; version `1.0.1`.
 - `frameworks/fastify.md` → `userRoutes`: `Promise<void>`; version `1.0.2`.
 - Next.js / React Vite / shadcn / tailwind / zustand / atomic-design Contracts → PascalCase components or framework entries only; no edits.
@@ -77,4 +77,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm registry:check
 - `next15-src` always-on estimate ~854 (was ~830); still under the 1,500 budget.
 
 ### Human review
-- Content changes need human review on the PR before merge (Content Tasks checklist).
+- Content changes reviewed by the owner on 2026-11-06 (Content Tasks checklist).

@@ -17,7 +17,7 @@ sources:
   - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-8.html#type-only-imports-and-export
   - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator
   - https://www.typescriptlang.org/tsconfig/strict.html
-verifiedAt: 2026-11-03
+verifiedAt: 2026-11-06
 ---
 
 ## Boundary
