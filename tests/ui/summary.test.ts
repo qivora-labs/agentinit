@@ -100,6 +100,7 @@ describe('confirmDetected', () => {
       },
     });
     expect(result.agents).toEqual(['claude']);
+    expect(result.excluded).toEqual(['nextjs-app-router', 'vitest']);
     expect(choicePrompt(language).message).toBe('1/5 How strict should TypeScript be?');
     expect(choicePrompt(frameworks).required).toBe(false);
     expect(choicePrompt(libraries).required).toBe(false);
@@ -110,6 +111,40 @@ describe('confirmDetected', () => {
     expect(choicePrompt(agents).message).toBe(
       '5/5 Which agents should we generate rules for?\nAGENTS.md is always written.',
     );
+  });
+
+  it('removes a fragment from excluded when Customize selects it again', async () => {
+    const draft = sampleDraft({ libraries: ['vitest', 'zustand'] });
+    const { prompter } = recordingPrompter([
+      { type: 'select', value: 'customize' },
+      { type: 'select', value: 'typescript-strict' },
+      { type: 'groupMultiselect', value: ['nextjs-app-router'] },
+      { type: 'groupMultiselect', value: ['vitest', 'zustand'] },
+      { type: 'select', value: 'feature-based' },
+      { type: 'multiselect', value: ['cursor'] },
+    ]);
+
+    const result = await confirmDetected(prompter, draft, await bundledRegistry(), {
+      theme,
+      excluded: ['zustand'],
+      detectedIds: ['nextjs-app-router', 'vitest', 'zustand'],
+    });
+    expect(result.excluded).toEqual([]);
+  });
+
+  it('keeps excluded when the user accepts the configuration', async () => {
+    const draft = sampleDraft({ libraries: ['vitest'] });
+    const { prompter } = recordingPrompter([
+      { type: 'select', value: 'use' },
+      { type: 'multiselect', value: ['cursor'] },
+    ]);
+
+    const result = await confirmDetected(prompter, draft, await bundledRegistry(), {
+      theme,
+      excluded: ['zustand'],
+      detectedIds: ['nextjs-app-router', 'vitest', 'zustand'],
+    });
+    expect(result.excluded).toEqual(['zustand']);
   });
 
   it('asks for architecture when confidence is low even if the user accepts the rest', async () => {

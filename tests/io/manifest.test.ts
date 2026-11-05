@@ -26,6 +26,7 @@ function sampleManifest(): Manifest {
       libraries: ['tailwind', 'zustand'],
       architecture: 'feature-based',
       agents: ['cursor', 'claude', 'windsurf', 'copilot'],
+      excluded: [],
     },
     fragments: {
       zustand: '1.0.0',
@@ -57,7 +58,8 @@ const SERIALIZED = `{
       "claude",
       "windsurf",
       "copilot"
-    ]
+    ],
+    "excluded": []
   },
   "fragments": {
     "nextjs-app-router": "1.0.0",
@@ -205,5 +207,41 @@ describe('readManifest', () => {
     const root = await tempDir();
     await writeManifest(root, serializeManifest(sampleManifest()));
     await expect(readManifest(root)).resolves.toEqual(sampleManifest());
+  });
+
+  it('parses a manifest without excluded and defaults to an empty list', async () => {
+    const root = await tempDir();
+    const withoutExcluded = SERIALIZED.replace(/,\n {4}"excluded": \[\]/u, '');
+    expect(withoutExcluded).not.toContain('"excluded"');
+    await writeManifest(root, withoutExcluded);
+    const read = await readManifest(root);
+    expect(read?.selections.excluded).toEqual([]);
+    if (read === null) return;
+    expect(serializeManifest(read)).toContain('"excluded": []');
+  });
+
+  it('rejects a duplicate excluded id', async () => {
+    const root = await tempDir();
+    await writeManifest(
+      root,
+      SERIALIZED.replace('"excluded": []', '"excluded": ["zustand", "zustand"]'),
+    );
+    await expect(readManifest(root)).rejects.toSatisfy((error: unknown) => {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return false;
+      expect(error.message).toContain('must be unique');
+      return true;
+    });
+  });
+
+  it('rejects a non-kebab excluded id', async () => {
+    const root = await tempDir();
+    await writeManifest(root, SERIALIZED.replace('"excluded": []', '"excluded": ["Zustand"]'));
+    await expect(readManifest(root)).rejects.toSatisfy((error: unknown) => {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return false;
+      expect(error.message).toContain('must be kebab-case');
+      return true;
+    });
   });
 });

@@ -48,13 +48,13 @@ Record the answers under **Notes** and in the PRD.
 - Excluding a framework is allowed. The project then falls back to base rules (PRD §3.6).
 
 ## Acceptance criteria
-- [ ] Owner decisions recorded under **Notes**, and the PRD updated.
-- [ ] Excluding Zustand in *Customize* writes `"excluded": ["zustand"]`. A following `doctor` exits `0`, and `init --yes` doesn't re-add it.
-- [ ] Selecting Zustand again in *Customize* removes it from `excluded`.
-- [ ] With `.cursorrules` present and nothing else wrong, `doctor` exits `0`, shows the warning on a TTY, and reports `"severity": "warning"` in `--json`.
-- [ ] A hand-edited managed file still exits `2`, and the fix text names both options.
-- [ ] Manifests without `excluded` (fixtures, dogfood) parse. The next write adds `"excluded": []`.
-- [ ] `--json` output for a healthy project is `{ "ok": true, "issues": [] }`.
+- [x] Owner decisions recorded under **Notes**, and the PRD updated.
+- [x] Excluding Zustand in *Customize* writes `"excluded": ["zustand"]`. A following `doctor` exits `0`, and `init --yes` doesn't re-add it.
+- [x] Selecting Zustand again in *Customize* removes it from `excluded`.
+- [x] With `.cursorrules` present and nothing else wrong, `doctor` exits `0`, shows the warning on a TTY, and reports `"severity": "warning"` in `--json`.
+- [x] A hand-edited managed file still exits `2`, and the fix text names both options.
+- [x] Manifests without `excluded` (fixtures, dogfood) parse. The next write adds `"excluded": []`.
+- [x] `--json` output for a healthy project is `{ "ok": true, "issues": [] }`.
 
 ## Verify
 ```bash
@@ -67,3 +67,11 @@ echo "old" > /tmp/ai-t43/.cursorrules && node dist/cli.js doctor --cwd /tmp/ai-t
 `feat(doctor): add fragment opt-out and warning-level checks`
 
 ## Notes
+- Owner accepted the recommended severity table and keeping `edited` as an error
+  (2026-11-05).
+- `selections.excluded` is optional on read (defaults to `[]`) and always written,
+  sorted unique kebab-case ids.
+- *Customize* updates excluded from detection-suggested ids; `--yes` and *Use this
+  configuration* leave it alone. Unknown registry ids are pruned with a notice.
+- Doctor TTY close tone uses `warn` when only warnings remain; summary says
+  `N error(s), M warning(s) found.`

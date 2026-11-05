@@ -33,6 +33,7 @@ function manifest(files: Record<string, string>): Manifest {
       libraries: [],
       architecture: 'flat',
       agents: [],
+      excluded: [],
     },
     fragments: {},
     files: Object.fromEntries(Object.entries(files).map(([key, sha256]) => [key, { sha256 }])),

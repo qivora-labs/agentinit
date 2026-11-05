@@ -171,10 +171,11 @@ Triggered when `package.json` exists in the target directory.
 
 ### 3.4 Re-Running `init`
 `init` is idempotent and is the update path in v0.1.
-- When a manifest exists, its selections become the defaults. The CLI re-detects the project and lists framework and library ids that were added or removed. Layout is included when a greenfield manifest meets a new `package.json`. The manifest does not store package versions, so a version change is left out of that list. Unsupported-version notices and legacy-file warnings are included in the same summary.
-- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed.
+- When a manifest exists, its selections become the defaults. The CLI re-detects the project and lists framework and library ids that were added or removed. Ids in `selections.excluded` are omitted from that list and from the defaults, and the summary card shows them on one muted line (for example *"Excluded: Zustand"*). Layout is included when a greenfield manifest meets a new `package.json`. The manifest does not store package versions, so a version change is left out of that list. Unsupported-version notices and legacy-file warnings are included in the same summary.
+- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed. The up-to-date shortcut also ignores excluded ids when comparing selections to detection.
 - Interactive re-run: when the saved selections still match detection and no file would change, the CLI says so first (*"Already up to date"* with the file and agent counts), then asks *Done* (default) · *Change setup*. It does not ask "Use this configuration, or customize?" in that case.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
+- In *Customize*, deselecting a fragment that detection suggested adds its id to `selections.excluded`; selecting it again removes the id. Ids that are no longer in the registry are dropped with a notice.
 
 ### 3.5 Non-Interactive Defaults (`--yes`)
 Every prompt has a defined non-interactive answer:
@@ -193,8 +194,9 @@ Every prompt has a defined non-interactive answer:
 | Existing unmanaged shared file | Adopt (§6.3) |
 | Existing unmanaged non-shared file | Skip and report |
 | Managed content edited by hand | Skip and report |
+| `selections.excluded` | Kept as saved; `--yes` never adds or removes excluded ids |
 
-`conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both).
+`conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both), except ids listed in `selections.excluded`, which stay out of the defaults.
 
 ### 3.6 Projects Without a Supported Framework
 TypeScript libraries, CLIs, scripts, and projects using a framework the registry doesn't cover yet are **supported with base rules**:
@@ -539,7 +541,8 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
     "frameworks": ["nextjs-app-router"],
     "libraries": ["tailwind", "zustand"],
     "architecture": "feature-based",
-    "agents": ["cursor", "claude", "windsurf", "copilot"]
+    "agents": ["cursor", "claude", "windsurf", "copilot"],
+    "excluded": []
   },
   "fragments": { "nextjs-app-router": "1.0.0", "zustand": "1.0.0" },
   "files": {
@@ -549,6 +552,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
   }
 }
 ```
+- `selections.excluded` is a sorted list of unique kebab-case fragment ids the team intentionally left out of detection. Older manifests without the field still parse; the next write always includes `"excluded": []` (or the saved ids).
 - Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
 - Manifest keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
 - Hash matches → safe to regenerate silently.
@@ -571,15 +575,22 @@ The conflict prompt names the file by its path (a managed block is "the agentini
 - Permission errors produce a readable message, not a stack trace.
 
 ### 6.5 `doctor` (v0.1, read-only)
-Compares the manifest, the current project, and the files on disk. Never writes. Exits `2` when any issue is found, so it can run in CI:
-- No manifest found (suggests `init`).
-- A managed file or block is missing, or was edited by hand.
-- A detected package has a matching fragment that isn't selected.
-- A selected fragment's package was removed, or its version left the `appliesTo` range.
-- The always-on core is over budget.
-- Legacy rule files (`.cursorrules`, `.windsurfrules`) are still present.
+Compares the manifest, the current project, and the files on disk. Never writes. Each issue has a severity. Exits `2` only when at least one **error** is found, so warnings do not fail CI:
 
-Each issue includes the command that fixes it (usually re-running `init`). `--json` emits a machine-readable report. On a TTY, the report lists every check above with a pass or fail icon, including when there are no issues.
+| Severity | Exit | Kinds |
+| :--- | :---: | :--- |
+| **error** | `2` | `not-initialized`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `package-removed`, `unsupported-version` |
+| **warning** | `0` | `legacy-file`, `always-on-tokens` |
+
+Checks:
+- No manifest found (suggests `init`).
+- A managed file or block is missing, or was edited by hand. The `edited` fix tells the user to move their text outside the agentinit markers and re-run `init`, or to exclude the fragment with *Customize*.
+- A detected package has a matching fragment that isn't selected and isn't in `selections.excluded`.
+- A selected fragment's package was removed, or its version left the `appliesTo` range.
+- The always-on core is over budget (warning).
+- Legacy rule files (`.cursorrules`, `.windsurfrules`) are still present (warning).
+
+Each issue includes the command that fixes it (usually re-running `init`). `--json` emits a machine-readable report with `severity` on every issue; `ok` is `true` when there are no errors (warnings may still be listed). On a TTY, the report lists every check above with a pass, warning, or fail icon, and the summary line counts errors and warnings separately.
 
 **Flag errors.** An unknown `--agents` value or `--category` name suggests the closest valid value (for example, *Unknown agent "cursr". Did you mean "cursor"?*).
 

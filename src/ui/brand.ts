@@ -10,7 +10,7 @@ export const COMPANY = 'Qivora Labs';
 /** Below this width the Needle mark and report folder column do not fit. */
 export const NARROW_COLUMNS = 60;
 
-export type CloseTone = 'neutral' | 'error';
+export type CloseTone = 'neutral' | 'error' | 'warn';
 
 type Glyph = readonly string[];
 
@@ -57,8 +57,10 @@ export function formatHeader(theme: Theme, command: string): string {
 
 export function formatClose(theme: Theme, message: string, tone: CloseTone = 'neutral'): string {
   const mark = theme.glyphs.barEnd;
-  const bar = tone === 'error' ? theme.error(mark) : theme.muted(mark);
-  const text = tone === 'error' ? theme.error(message) : message;
+  const bar =
+    tone === 'error' ? theme.error(mark) : tone === 'warn' ? theme.warn(mark) : theme.muted(mark);
+  const text =
+    tone === 'error' ? theme.error(message) : tone === 'warn' ? theme.warn(message) : message;
   return `${bar}  ${text}`;
 }
 

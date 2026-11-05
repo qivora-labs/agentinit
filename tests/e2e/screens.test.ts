@@ -201,7 +201,7 @@ describe.skipIf(skipWindows)('terminal screens', () => {
       timeoutMs: 30_000,
     });
     expect(issue.exitCode).toBe(2);
-    expect(issue.screen).toMatch(/issue/);
+    expect(issue.screen).toMatch(/error/);
     await snapshot('doctor-issue', cols, issue.screen);
   }, 120_000);
 

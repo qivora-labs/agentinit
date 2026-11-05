@@ -5,6 +5,9 @@ import type { PlanWarning } from '../plan/types.js';
 /** Same command `init` prints for users who have not generated rules yet. */
 export const INIT_FIX = 'npx @agentinit/cli init';
 
+export const EDITED_FIX =
+  'Move your text outside the agentinit markers, then run `npx @agentinit/cli init`, or exclude the fragment with *Customize*.';
+
 export const NO_ISSUES = 'No issues found.';
 
 export const DOCTOR_ISSUE_KINDS = [
@@ -23,8 +26,11 @@ export const DOCTOR_ISSUE_KINDS = [
 
 export type DoctorIssueKind = (typeof DOCTOR_ISSUE_KINDS)[number];
 
+export type DoctorSeverity = 'error' | 'warning';
+
 export interface DoctorIssue {
   readonly kind: DoctorIssueKind;
+  readonly severity: DoctorSeverity;
   /** Project-relative path, or `path#blockId` for one managed block. */
   readonly path?: string;
   readonly message: string;
@@ -77,6 +83,45 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
   'always-on-tokens': 'token-budget',
   'legacy-file': 'legacy-files',
 };
+
+/**
+ * Severity per issue kind (PRD §6.5). A new kind must pick a severity —
+ * the `never` branch fails the typecheck until it does.
+ */
+const SEVERITY_FOR_KIND = {
+  'not-initialized': 'error',
+  missing: 'error',
+  edited: 'error',
+  outdated: 'error',
+  unmanaged: 'error',
+  stale: 'error',
+  unselected: 'error',
+  'package-removed': 'error',
+  'unsupported-version': 'error',
+  'always-on-tokens': 'warning',
+  'legacy-file': 'warning',
+} as const satisfies Record<DoctorIssueKind, DoctorSeverity>;
+
+function severityFor(kind: DoctorIssueKind): DoctorSeverity {
+  switch (kind) {
+    case 'not-initialized':
+    case 'missing':
+    case 'edited':
+    case 'outdated':
+    case 'unmanaged':
+    case 'stale':
+    case 'unselected':
+    case 'package-removed':
+    case 'unsupported-version':
+    case 'always-on-tokens':
+    case 'legacy-file':
+      return SEVERITY_FOR_KIND[kind];
+    default: {
+      const unexpected: never = kind;
+      throw new Error(`Unhandled doctor issue kind: ${String(unexpected)}`);
+    }
+  }
+}
 
 /**
  * A slice of `Change` from `computeChanges`. This module cannot import `io/`.
@@ -149,8 +194,22 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
   ];
 }
 
+/** `ok` is true when there are no error-severity issues (warnings are fine). */
 export function doctorReport(issues: readonly DoctorIssue[]): DoctorReport {
-  return { ok: issues.length === 0, issues };
+  return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
+}
+
+export function countBySeverity(issues: readonly DoctorIssue[]): {
+  readonly errors: number;
+  readonly warnings: number;
+} {
+  let errors = 0;
+  let warnings = 0;
+  for (const issue of issues) {
+    if (issue.severity === 'error') errors += 1;
+    else warnings += 1;
+  }
+  return { errors, warnings };
 }
 
 /**
@@ -189,8 +248,14 @@ export function doctorChecklist(issues: readonly DoctorIssue[]): DoctorCheck[] {
   });
 }
 
-export function issuesFoundMessage(count: number): string {
-  return count === 1 ? '1 issue found.' : `${String(count)} issues found.`;
+export function issuesFoundMessage(errors: number, warnings: number): string {
+  const parts: string[] = [];
+  if (errors === 1) parts.push('1 error');
+  else if (errors > 1) parts.push(`${String(errors)} errors`);
+  if (warnings === 1) parts.push('1 warning');
+  else if (warnings > 1) parts.push(`${String(warnings)} warnings`);
+  if (parts.length === 0) return NO_ISSUES;
+  return `${parts.join(', ')} found.`;
 }
 
 /** Groups issues by kind, in first-seen order, with a fix command on every issue. */
@@ -213,24 +278,25 @@ export function formatDoctorReport(issues: readonly DoctorIssue[]): string {
 }
 
 export function notInitializedIssue(): DoctorIssue {
-  return { kind: 'not-initialized', message: 'Not initialized', fix: INIT_FIX };
+  return issue('not-initialized', { message: 'Not initialized', fix: INIT_FIX });
 }
 
 export function checkChanges(changes: readonly DriftChange[]): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
   for (const change of changes) {
-    const issue = issueForChange(change);
-    if (issue !== undefined) issues.push(issue);
+    const next = issueForChange(change);
+    if (next !== undefined) issues.push(next);
   }
   return issues;
 }
 
 export function checkUnselected(fragments: readonly NamedFragment[]): DoctorIssue[] {
-  return fragments.map((fragment) => ({
-    kind: 'unselected' as const,
-    message: `${fragment.name} (${fragment.id}) matches this project and is not selected.`,
-    fix: INIT_FIX,
-  }));
+  return fragments.map((fragment) =>
+    issue('unselected', {
+      message: `${fragment.name} (${fragment.id}) matches this project and is not selected.`,
+      fix: INIT_FIX,
+    }),
+  );
 }
 
 /**
@@ -246,15 +312,15 @@ export function checkFragmentPackages(
     const seen = new Set<string>();
     for (const packageName of fragment.packages) {
       seen.add(packageName);
-      const issue = packageIssue(fragment, packageName, installed);
-      if (issue !== undefined) issues.push(issue);
+      const next = packageIssue(fragment, packageName, installed);
+      if (next !== undefined) issues.push(next);
     }
     const extras = Object.keys(fragment.appliesTo)
       .filter((packageName) => !seen.has(packageName))
       .sort(compareText);
     for (const packageName of extras) {
-      const issue = versionIssue(fragment, packageName, installed);
-      if (issue !== undefined) issues.push(issue);
+      const next = versionIssue(fragment, packageName, installed);
+      if (next !== undefined) issues.push(next);
     }
   }
   return issues;
@@ -264,21 +330,34 @@ export function checkAlwaysOn(warnings: readonly PlanWarning[]): DoctorIssue[] {
   return warnings.map((warning) => {
     const tokens = tokenCount(warning.tokens);
     const limit = tokenCount(warning.limit);
-    return {
-      kind: 'always-on-tokens' as const,
+    return issue('always-on-tokens', {
       message: `Always-on content is ${tokens} tokens, over the ${limit} token budget.`,
       fix: `Reduce always-on rules below ${limit} tokens.`,
-    };
+    });
   });
 }
 
 export function checkLegacy(paths: readonly string[]): DoctorIssue[] {
-  return paths.map((filePath) => ({
-    kind: 'legacy-file' as const,
-    path: filePath,
-    message: `${filePath} still loads alongside the new rules.`,
-    fix: `Remove ${filePath} if you no longer need it.`,
-  }));
+  return paths.map((filePath) =>
+    issue('legacy-file', {
+      path: filePath,
+      message: `${filePath} still loads alongside the new rules.`,
+      fix: `Remove ${filePath} if you no longer need it.`,
+    }),
+  );
+}
+
+function issue(
+  kind: DoctorIssueKind,
+  fields: { readonly message: string; readonly fix: string; readonly path?: string },
+): DoctorIssue {
+  return {
+    kind,
+    severity: severityFor(kind),
+    message: fields.message,
+    fix: fields.fix,
+    ...(fields.path === undefined ? {} : { path: fields.path }),
+  };
 }
 
 function issueForChange(change: DriftChange): DoctorIssue | undefined {
@@ -300,22 +379,20 @@ function issueForChange(change: DriftChange): DoctorIssue | undefined {
 }
 
 function missingFile(change: DriftChange): DoctorIssue {
-  return {
-    kind: 'missing',
+  return issue('missing', {
     path: location(change),
     message: `${change.path} is missing.`,
     fix: INIT_FIX,
-  };
+  });
 }
 
 function missingBlock(change: DriftChange): DoctorIssue {
   const blockId = change.blockId ?? 'unknown';
-  return {
-    kind: 'missing',
+  return issue('missing', {
     path: location(change),
     message: `${change.path} is missing managed block "${blockId}".`,
     fix: INIT_FIX,
-  };
+  });
 }
 
 function edited(change: DriftChange): DoctorIssue {
@@ -324,14 +401,14 @@ function edited(change: DriftChange): DoctorIssue {
     blockId === undefined
       ? `${change.path} was edited by hand.`
       : `${change.path} managed block "${blockId}" was edited by hand.`;
-  return { kind: 'edited', path: location(change), message, fix: INIT_FIX };
+  return issue('edited', { path: location(change), message, fix: EDITED_FIX });
 }
 
 function drifted(change: DriftChange, kind: DoctorIssueKind, detail: string): DoctorIssue {
   const blockId = change.blockId;
   const message =
     blockId === undefined ? `${change.path} ${detail}.` : `${change.path} managed block "${blockId}" ${detail}.`;
-  return { kind, path: location(change), message, fix: INIT_FIX };
+  return issue(kind, { path: location(change), message, fix: INIT_FIX });
 }
 
 function location(change: DriftChange): string {
@@ -358,28 +435,26 @@ function versionIssue(
   const range = fragment.appliesTo[packageName];
   if (range === undefined) return undefined;
   if (satisfies(version, range, { includePrerelease: true })) return undefined;
-  return {
-    kind: 'unsupported-version',
+  return issue('unsupported-version', {
     message: `${fragment.name} (${fragment.id}) is selected, but ${packageName}@${version} is outside ${range}.`,
     fix: INIT_FIX,
-  };
+  });
 }
 
 function packageRemoved(fragment: CheckedFragment, packageName: string): DoctorIssue {
-  return {
-    kind: 'package-removed',
+  return issue('package-removed', {
     message: `${fragment.name} (${fragment.id}) is selected, but ${packageName} is not in the project.`,
     fix: INIT_FIX,
-  };
+  });
 }
 
 function formatGroup(group: { title: string; issues: readonly DoctorIssue[] }): string {
   const lines = [group.title];
-  for (const issue of group.issues) {
+  for (const next of group.issues) {
     // The not-initialized message is the group title. Print that phrase once.
-    const repeated = issue.message === group.title;
-    if (!repeated) lines.push(`  ${issue.message}`);
-    lines.push(`${repeated ? '  ' : '    '}Fix: ${issue.fix}`);
+    const repeated = next.message === group.title;
+    if (!repeated) lines.push(`  ${next.message}`);
+    lines.push(`${repeated ? '  ' : '    '}Fix: ${next.fix}`);
   }
   return lines.join('\n');
 }
