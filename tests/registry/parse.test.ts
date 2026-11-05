@@ -1,7 +1,7 @@
 import { stringify } from 'yaml';
 import { describe, expect, it } from 'vitest';
 import { AgentInitError } from '../../src/errors.js';
-import { getSections, parseFragment } from '../../src/registry/parse.js';
+import { getSections, omitSection, parseFragment } from '../../src/registry/parse.js';
 import type { FragmentMeta } from '../../src/registry/schema.js';
 import { ERROR } from '../../src/exit-codes.js';
 
@@ -455,6 +455,36 @@ describe('getSections', () => {
     expect([...sections.keys()]).toEqual(['Summary', 'Map']);
     expect(sections.get('Summary')).toBe('later body');
     expect(sections.get('Map')).toBe('src/features');
+  });
+});
+
+describe('omitSection', () => {
+  it('drops the named section and keeps neighbors and preamble', () => {
+    const body = [
+      'preamble',
+      '## Map',
+      '| Path | Responsibility |',
+      '| `app/` | Routes. |',
+      '## Boundary',
+      'Scoped rules.',
+      '## Directives',
+      '- **ALWAYS** keep boundaries.',
+    ].join('\n');
+
+    expect(omitSection(body, 'Map')).toBe(
+      ['preamble', '## Boundary', 'Scoped rules.', '## Directives', '- **ALWAYS** keep boundaries.'].join('\n'),
+    );
+  });
+
+  it('keeps a ## Map heading that sits inside a fence', () => {
+    const body = ['## Boundary', '```md', '## Map', 'table', '```', '## Directives', 'Keep.'].join('\n');
+
+    expect(omitSection(body, 'Map')).toBe(body);
+  });
+
+  it('returns the body unchanged when the section is missing', () => {
+    const body = ['## Boundary', 'Scoped rules.'].join('\n');
+    expect(omitSection(body, 'Map')).toBe(body);
   });
 });
 

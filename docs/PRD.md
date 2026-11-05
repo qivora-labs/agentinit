@@ -345,7 +345,7 @@ Every rule fragment follows the **3-Part Rule Formula**:
 
 `check-registry` enforces the formula mechanically: every rule fragment contains at least one directive keyword (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`, `DEFAULT`) and at least one fenced code block.
 
-Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Framework fragments may include an optional `## Map` section in the same table format; when present, `ARCHITECTURE.md` merges those rows with the architecture map when matching detected folders. Workflow fragments follow the structure in §5.5.
+Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Framework fragments may include an optional `## Map` section in the same table format; when present, `ARCHITECTURE.md` merges those rows with the architecture map when matching detected folders. Agent rule files omit framework `## Map` so the folder table is not duplicated outside `ARCHITECTURE.md`. Workflow fragments follow the structure in §5.5.
 
 **Frontmatter schema** (validated with zod at build time and in CI):
 

@@ -27,7 +27,7 @@ backups/
   },
   "files": {
     ".claude/rules/agentinit-react-vite.md": {
-      "sha256": "b487c1228c8a660ba900fc7c89def51d184fd3a3026f480a35c94aacf2b60ef5"
+      "sha256": "a1768e0653ab95f4d7a1d97166f1cc92399ec4b96b8da229de4be309d3891163"
     },
     ".claude/skills/new-feature/SKILL.md": {
       "sha256": "2c1b764058cd8e4cdbd1cce7c713116addd846fedca5047ebe146b5d7ffb0e7e"
@@ -54,13 +54,13 @@ backups/
       "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
     },
     ".cursor/rules/agentinit-react-vite.mdc": {
-      "sha256": "13e32832007d3031ecd55b4467aa8fdcce831bedde45a2314c7ece2c8e17b136"
+      "sha256": "fe15ff0aefc7478ccfaddc954e17cd05e68d32d382b6371b0d6b4640e946d242"
     },
     ".github/copilot-instructions.md#copilot": {
       "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
     },
     ".github/instructions/agentinit-react-vite.instructions.md": {
-      "sha256": "39a8b99f11cba4aacd9067baf69cb4615810830a796d697af9a7b4437d5475ad"
+      "sha256": "f34313daff04723f601fbc6aa2d00ebc7e6db54d13aeb8241108038f0ec58dc1"
     },
     ".github/prompts/new-feature.prompt.md": {
       "sha256": "ba431f5d0492e4f904ca59baf86d1f0422211ce4bcbd2b17f213045bdc945df1"
@@ -75,7 +75,7 @@ backups/
       "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
     },
     ".windsurf/rules/agentinit-react-vite.md": {
-      "sha256": "4b4cae55c351a3f19f8dbe7e1a21294d80f288ad12e9147a4d5b7ee90994f816"
+      "sha256": "d637d3562e0122275f87a1e779c712bb44a97b48968785dfabbe0dd9623a69fe"
     },
     ".windsurf/workflows/new-feature.md": {
       "sha256": "1703238a125f061c0b8ad2f44b0f8c135d1fe8b8c36a759c3f52af1cd2c4dbbe"
@@ -106,12 +106,6 @@ backups/
 paths:
   - "src/**/*.tsx"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/components/` | React components. |
-| `src/hooks/` | React hooks. |
 
 ## Boundary
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
@@ -354,12 +348,6 @@ description: React 19 actions and use, public Vite env vars, and lazy-loaded com
 alwaysApply: false
 ---
 
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/components/` | React components. |
-| `src/hooks/` | React hooks. |
-
 ## Boundary
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
 
@@ -405,12 +393,6 @@ Scoped rules are in `.github/instructions/`.
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
 applyTo: "src/**/*.tsx"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/components/` | React components. |
-| `src/hooks/` | React hooks. |
 
 ## Boundary
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.
@@ -557,12 +539,6 @@ List the tests written, what each one covers, and the result of the test command
 trigger: model_decision
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/components/` | React components. |
-| `src/hooks/` | React hooks. |
 
 ## Boundary
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.

@@ -27,7 +27,7 @@ backups/
   },
   "files": {
     ".claude/rules/agentinit-nextjs-app-router.md": {
-      "sha256": "1e3d8ef68f0f3d920e0e14f5da4f7202bf5631ad1830bcc4035d5d3f514f28fa"
+      "sha256": "9af400564da84b363900619664a1ae6a584af15764ff971831bd65f3a4293e0a"
     },
     ".claude/skills/new-feature/SKILL.md": {
       "sha256": "2c1b764058cd8e4cdbd1cce7c713116addd846fedca5047ebe146b5d7ffb0e7e"
@@ -54,13 +54,13 @@ backups/
       "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
     },
     ".cursor/rules/agentinit-nextjs-app-router.mdc": {
-      "sha256": "ef02b3b9c4c133ab3eb2cb766f868be4960980f3da67a59a34fc70ca5958a00b"
+      "sha256": "9c1d12fa4f2357c1cc4a229714187e7a2fe66ceb3eabf40a11b44a82c49fdd87"
     },
     ".github/copilot-instructions.md#copilot": {
       "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
     },
     ".github/instructions/agentinit-nextjs-app-router.instructions.md": {
-      "sha256": "588be869b2210a7b1f55226e7e79892bd0d4c68dbbcb1c4e04c844208609ac29"
+      "sha256": "01eb136a141627655230072b9f8f3808d0514370c3867a613420b526be7de97a"
     },
     ".github/prompts/new-feature.prompt.md": {
       "sha256": "ba431f5d0492e4f904ca59baf86d1f0422211ce4bcbd2b17f213045bdc945df1"
@@ -75,7 +75,7 @@ backups/
       "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
     },
     ".windsurf/rules/agentinit-nextjs-app-router.md": {
-      "sha256": "bb13a4d5f229ae6ded5b529f021c83a8cca236010b816809f03c92547458e250"
+      "sha256": "69fd4b08ca9fba70fde9f555a25de742772087c3858ffade99d4f62c23acaff1"
     },
     ".windsurf/workflows/new-feature.md": {
       "sha256": "1703238a125f061c0b8ad2f44b0f8c135d1fe8b8c36a759c3f52af1cd2c4dbbe"
@@ -107,12 +107,6 @@ paths:
   - "src/app/**/*.ts"
   - "src/app/**/*.tsx"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/app/` | App Router route segments (layout, page, loading, error). |
-| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
@@ -358,12 +352,6 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 alwaysApply: false
 ---
 
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/app/` | App Router route segments (layout, page, loading, error). |
-| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
-
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
 
@@ -411,12 +399,6 @@ Scoped rules are in `.github/instructions/`.
 description: Server Components by default, validated Server Actions, and Next.js 16 caching.
 applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/app/` | App Router route segments (layout, page, loading, error). |
-| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
@@ -565,12 +547,6 @@ List the tests written, what each one covers, and the result of the test command
 trigger: glob
 globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/app/` | App Router route segments (layout, page, loading, error). |
-| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.

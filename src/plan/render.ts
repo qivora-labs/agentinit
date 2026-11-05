@@ -3,6 +3,7 @@ import { AgentInitError } from '../errors.js';
 import type { ResolvedSelection } from '../registry/resolve.js';
 import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../registry/schema.js';
 import type { FragmentScope, ProjectProfile } from '../types.js';
+import { omitSection } from '../registry/parse.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
 import type { RenderedFragment, RenderedWorkflow, ScopedFragments, TargetContext } from './types.js';
 
@@ -64,6 +65,15 @@ export function architectureFragment(ctx: TargetContext): RenderedFragment {
 /** `scope: always` fragments other than the architecture summary, in `order` then `id`. */
 export function nonArchitectureAlways(ctx: TargetContext): readonly RenderedFragment[] {
   return ctx.fragments.always.filter((fragment) => fragment.category !== 'architecture');
+}
+
+/**
+ * Body written into agent rule files. Framework `## Map` is for
+ * `ARCHITECTURE.md` only (PRD §4.4), so scoped rules omit it.
+ */
+export function agentRuleBody(fragment: RenderedFragment): string {
+  if (fragment.category !== 'framework') return fragment.body;
+  return omitSection(fragment.body, 'Map');
 }
 
 function renderRule(fragment: Fragment & { meta: RuleFragmentMeta }, placeholders: PlaceholderContext): RenderedFragment {

@@ -27,7 +27,7 @@ backups/
   },
   "files": {
     ".claude/rules/agentinit-express.md": {
-      "sha256": "c2ec6d98d767b3a55e9c314f77f64e35616018bcd47dfca6bef0f1180396b0b0"
+      "sha256": "9636a7b782dd9b7459c3aa10d268c200491594a068fc40d2a1929d4502769c5d"
     },
     ".claude/skills/new-feature/SKILL.md": {
       "sha256": "336f6e365ec5e25e3a24c44a4389a2dcd761a5dfa8239a0f5fda49182f6b3ddd"
@@ -54,13 +54,13 @@ backups/
       "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
     },
     ".cursor/rules/agentinit-express.mdc": {
-      "sha256": "d929f55c2d192711581d307dc7e361b6955fcbd73c6873d9eb5acda99b4a3806"
+      "sha256": "58a5d6dba53c268582570bcc7131e2655c1ff9b014027a082cb96dc469d3f7bb"
     },
     ".github/copilot-instructions.md#copilot": {
       "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
     },
     ".github/instructions/agentinit-express.instructions.md": {
-      "sha256": "2586127a99e0e257b7b0a8faa74b585dc5e36953ea11062abb155d91a2cd0c5a"
+      "sha256": "e9abf6968018c2064bc61d7f44ac56b6486e804354184ef77fbf1e60f8e90106"
     },
     ".github/prompts/new-feature.prompt.md": {
       "sha256": "5cb09f9928e3b337629f0cf3d53c529459f8eab69682749f36fb69a7b5cb17e7"
@@ -75,7 +75,7 @@ backups/
       "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
     },
     ".windsurf/rules/agentinit-express.md": {
-      "sha256": "256b9ef50a2df481577d74e1e8aaa754ec7585c1265bbb5531075f04d221bc7b"
+      "sha256": "ac3add01d5a88e47298d1e3f432db1f9c5a5169e7a0065a77384f61022160aec"
     },
     ".windsurf/workflows/new-feature.md": {
       "sha256": "8b60123155f28bfeb0c958111c7fa0224b014c97c731666b5f9e4ebb4422aeba"
@@ -111,13 +111,6 @@ paths:
   - "src/**/*.controller.ts"
   - "src/**/*.middleware.ts"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/routes/` | Express routers and route modules. |
-| `src/middleware/` | Express middleware. |
-| `src/controllers/` | Handlers extracted from routers. |
 
 ## Boundary
 These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
@@ -356,13 +349,6 @@ description: Express 5 async errors, boundary validation, and modular routers.
 alwaysApply: false
 ---
 
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/routes/` | Express routers and route modules. |
-| `src/middleware/` | Express middleware. |
-| `src/controllers/` | Handlers extracted from routers. |
-
 ## Boundary
 These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
 
@@ -404,13 +390,6 @@ Scoped rules are in `.github/instructions/`.
 description: Express 5 async errors, boundary validation, and modular routers.
 applyTo: "src/routes/**/*.ts,src/controllers/**/*.ts,src/middleware/**/*.ts,src/**/*.routes.ts,src/**/*.controller.ts,src/**/*.middleware.ts"
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/routes/` | Express routers and route modules. |
-| `src/middleware/` | Express middleware. |
-| `src/controllers/` | Handlers extracted from routers. |
 
 ## Boundary
 These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
@@ -553,13 +532,6 @@ List the tests written, what each one covers, and the result of the test command
 trigger: model_decision
 description: Express 5 async errors, boundary validation, and modular routers.
 ---
-
-## Map
-| Path | Responsibility |
-| :--- | :--- |
-| `src/routes/` | Express routers and route modules. |
-| `src/middleware/` | Express middleware. |
-| `src/controllers/` | Handlers extracted from routers. |
 
 ## Boundary
 These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.
