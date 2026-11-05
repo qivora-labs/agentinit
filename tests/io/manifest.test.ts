@@ -195,7 +195,7 @@ describe('readManifest', () => {
       expect(error).toBeInstanceOf(AgentInitError);
       if (!(error instanceof AgentInitError)) return false;
       expect(error.message).toContain(key);
-      expect(error.message).toMatch(/not a file agentinit writes|empty, "\.", or "\.\."/);
+      expect(error.message).toContain('not a file agentinit writes');
       expect(error.hint).toContain('agentinit init');
       return true;
     });

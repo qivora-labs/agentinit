@@ -135,9 +135,9 @@ function fileKeyProblem(key: string): string | undefined {
   if (key.startsWith('/') || key.includes('\n') || key.includes('\r')) return 'must be a relative path';
   const hash = key.indexOf('#');
   if (hash === -1) {
-    const segmentProblem = pathSegmentProblem(key);
-    if (segmentProblem !== undefined) return segmentProblem;
-    if (!isOwnedPath(key)) return `"${key}" is not a file agentinit writes`;
+    if (hasBadPathSegment(key) || !isOwnedPath(key)) {
+      return `"${key}" is not a file agentinit writes`;
+    }
     return undefined;
   }
   if (key.slice(hash + 1).includes('#')) return 'must contain at most one #';
@@ -146,21 +146,17 @@ function fileKeyProblem(key: string): string | undefined {
   if (filePath.length === 0) return 'path before # must not be empty';
   // Same charset as managed-block ids: no whitespace, `#`, `\`, or `>`.
   if (blockId.length === 0 || /[\s>#\\]/.test(blockId)) return 'block id after # is not valid';
-  const segmentProblem = pathSegmentProblem(filePath);
-  if (segmentProblem !== undefined) return segmentProblem;
-  if (!isOwnedBlockKey(filePath, blockId)) {
+  if (hasBadPathSegment(filePath) || !isOwnedBlockKey(filePath, blockId)) {
     return `"${key}" is not a file agentinit writes`;
   }
   return undefined;
 }
 
-function pathSegmentProblem(filePath: string): string | undefined {
+function hasBadPathSegment(filePath: string): boolean {
   for (const segment of filePath.split('/')) {
-    if (segment.length === 0 || segment === '.' || segment === '..') {
-      return 'must not contain empty, ".", or ".." path segments';
-    }
+    if (segment.length === 0 || segment === '.' || segment === '..') return true;
   }
-  return undefined;
+  return false;
 }
 
 function formatIssues(error: ZodError): string {
