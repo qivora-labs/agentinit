@@ -19,6 +19,7 @@ appliesTo:
   zod: ">=4"
 compatibleWith:
   - nextjs-app-router
+  - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
 sources:

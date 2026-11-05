@@ -3,7 +3,11 @@ import * as path from 'node:path';
 import { AgentInitError } from '../errors.js';
 import { ERROR } from '../exit-codes.js';
 import type { Registry } from '../registry/load.js';
-import { suggestFragments, type RegistryNotice } from '../registry/resolve.js';
+import {
+  filterCompatibleLibraries,
+  suggestFragments,
+  type RegistryNotice,
+} from '../registry/resolve.js';
 import type { AgentTarget, ProjectProfile } from '../types.js';
 import { findExistingAgentFiles, findLegacyFiles, preselectAgents } from './existing-agents.js';
 import {
@@ -30,10 +34,10 @@ import {
 import { findGitRoot, isMonorepoRoot, type MonorepoTool } from './workspace.js';
 
 /**
- * Both Next.js fragments match the `next` package alone. Router directories
- * decide which ids stay: App, Pages, or both (PRD §3.3).
+ * Next.js App Router fragments share detect packages and differ by `appliesTo`.
+ * Router directories decide which ids stay: App, Pages, or both (PRD §3.3).
  */
-const NEXT_APP_ROUTER = 'nextjs-app-router';
+const NEXT_APP_ROUTERS = new Set(['nextjs-app-router', 'nextjs-app-router-15']);
 const NEXT_PAGES_ROUTER = 'nextjs-pages-router';
 
 /**
@@ -97,6 +101,8 @@ export function detectProject(root: string, registry: Registry): DetectionResult
   const folders = listFolders(projectRoot, srcDir);
   const routers = detectNextRouters(projectRoot, srcDir);
   const suggestion = suggestFragments(registry, { packages: versions, files });
+  const frameworks = frameworksForRouters(suggestion.frameworks, routers);
+  const compatible = filterCompatibleLibraries(registry, suggestion.libraries, frameworks);
   const existingAgentFiles = findExistingAgentFiles(projectRoot);
   const git = gitLocation(projectRoot);
 
@@ -111,15 +117,15 @@ export function detectProject(root: string, registry: Registry): DetectionResult
       language: suggestLanguage(tsconfig),
       packages: knownVersions(versions),
       scripts: detectScripts(pkgJson),
-      frameworks: frameworksForRouters(suggestion.frameworks, routers),
-      libraries: [...suggestion.libraries],
+      frameworks,
+      libraries: compatible.libraries,
       architecture: inferArchitecture(folders),
       folders,
       existingAgentFiles,
       suggestedAgents: preselectAgents(existingAgentFiles),
       isMonorepo: monorepo.isRoot,
     },
-    notices: [...suggestion.notices],
+    notices: [...suggestion.notices, ...compatible.notices],
     warnings: [...tsconfigWarnings(tsconfig), ...legacyWarnings(projectRoot)],
     gitRoot: git.gitRoot,
     belowGitRoot: git.belowGitRoot,
@@ -200,7 +206,7 @@ function knownVersions(versions: Readonly<Record<string, string | null>>): Recor
 
 function frameworksForRouters(frameworks: readonly string[], routers: NextRouters): string[] {
   return frameworks.filter((id) => {
-    if (id === NEXT_APP_ROUTER) return routers.app;
+    if (NEXT_APP_ROUTERS.has(id)) return routers.app;
     if (id === NEXT_PAGES_ROUTER) return routers.pages;
     return true;
   });

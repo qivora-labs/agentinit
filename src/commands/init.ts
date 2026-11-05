@@ -708,13 +708,14 @@ function factsFor(detection: DetectionResult): ProjectFacts {
 }
 
 function manifestBody(profile: ProjectProfile, resolved: ResolvedSelection): Omit<Manifest, 'files'> {
+  const resolvedIds = new Set(resolved.fragments.map((fragment) => fragment.meta.id));
   return {
     cliVersion: pkg.version,
     mode: profile.mode,
     selections: {
       language: profile.language,
-      frameworks: [...profile.frameworks],
-      libraries: [...profile.libraries],
+      frameworks: profile.frameworks.filter((id) => resolvedIds.has(id)),
+      libraries: profile.libraries.filter((id) => resolvedIds.has(id)),
       architecture: profile.architecture.id,
       agents: [...profile.agents],
     },

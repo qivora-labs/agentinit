@@ -270,10 +270,25 @@ describe('detectProject', () => {
     expect(result.notices).toEqual([]);
   });
 
-  it('does not select the App Router fragment when next is below its range', async () => {
+  it('selects the Next.js 15 App Router fragment for next 15.x', async () => {
     const root = await writeProject({
       'package.json': packageJson({
         dependencies: { next: '15.0.0' },
+        devDependencies: { typescript: '5.9.0' },
+      }),
+      'tsconfig.json': TSCONFIG,
+      'src/app/page.ts': 'export {};\n',
+    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.frameworks).toEqual(['nextjs-app-router-15']);
+    expect(result.notices).toEqual([]);
+  });
+
+  it('emits one unsupported-version notice when next is below every framework range', async () => {
+    const root = await writeProject({
+      'package.json': packageJson({
+        dependencies: { next: '12.3.4' },
         devDependencies: { typescript: '5.9.0' },
       }),
       'tsconfig.json': TSCONFIG,
@@ -286,13 +301,86 @@ describe('detectProject', () => {
       {
         kind: 'unsupported-version',
         package: 'next',
-        version: '15.0.0',
+        version: '12.3.4',
         fragmentId: 'nextjs-app-router',
       },
     ]);
   });
 
-  it('suggests a fragment from a registry marker file', async () => {
+  it('drops a compatibleWith library when no framework was selected', async () => {
+    const root = await writeProject({
+      'package.json': packageJson({
+        dependencies: { next: '12.3.4' },
+        devDependencies: { typescript: '5.9.0', tailwindcss: '4.1.0' },
+      }),
+      'tsconfig.json': TSCONFIG,
+      'src/app/page.ts': 'export {};\n',
+    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.frameworks).toEqual([]);
+    expect(result.draft.libraries).not.toContain('tailwind');
+    expect(result.notices).toContainEqual({
+      kind: 'incompatible',
+      fragmentId: 'tailwind',
+      cause: 'no-framework',
+    });
+    expect(
+      result.notices.filter(
+        (notice) => notice.kind === 'incompatible' && notice.cause === 'different-framework',
+      ),
+    ).toEqual([]);
+  });
+
+  it('selects Express 4 for express 4.x', async () => {
+    const root = await copyFixture('express4-ts');
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.frameworks).toEqual(['express-4']);
+    expect(result.notices).toEqual([]);
+  });
+
+  it('selects Next 15 App Router and Tailwind on the next15-app fixture', async () => {
+    const root = await copyFixture('next15-app');
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.frameworks).toEqual(['nextjs-app-router-15']);
+    expect(result.draft.libraries).toEqual(['tailwind']);
+    expect(result.notices).toEqual(
+      expect.arrayContaining([
+        {
+          kind: 'unsupported-version',
+          package: 'zustand',
+          version: '4.5.5',
+          fragmentId: 'zustand',
+        },
+        {
+          kind: 'unsupported-version',
+          package: 'vitest',
+          version: '2.1.9',
+          fragmentId: 'vitest',
+        },
+      ]),
+    );
+  });
+
+  it('suggests a fragment from a registry marker file when a compatible framework is present', async () => {
+    const root = await writeProject({
+      'package.json': packageJson({
+        dependencies: { next: '16.3.0' },
+        devDependencies: { typescript: '5.9.0' },
+      }),
+      'tsconfig.json': TSCONFIG,
+      'src/app/page.ts': 'export {};\n',
+      'components.json': '{}\n',
+    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.frameworks).toEqual(['nextjs-app-router']);
+    expect(result.draft.libraries).toContain('shadcn');
+  });
+
+  it('drops a marker-file library when no compatible framework is selected', async () => {
     const root = await writeProject({
       'package.json': typescriptProject(),
       'tsconfig.json': TSCONFIG,
@@ -300,7 +388,12 @@ describe('detectProject', () => {
     });
     const result = asExisting(detectProject(root, await detectionRegistry()));
 
-    expect(result.draft.libraries).toContain('shadcn');
+    expect(result.draft.libraries).not.toContain('shadcn');
+    expect(result.notices).toContainEqual({
+      kind: 'incompatible',
+      fragmentId: 'shadcn',
+      cause: 'no-framework',
+    });
   });
 
   it('passes an unknown version to suggestion and omits it from the draft', async () => {
@@ -315,10 +408,22 @@ describe('detectProject', () => {
     const result = asExisting(detectProject(root, await detectionRegistry()));
 
     expect(result.draft.packages).toEqual({ typescript: '5.9.0' });
-    expect(result.draft.frameworks).toEqual(['nextjs-app-router']);
+    // App Router siblings are omitted when next's version is unknown; Pages is
+    // filtered out by the app/ layout, so no framework is preselected.
+    expect(result.draft.frameworks).toEqual([]);
     expect(result.notices).toEqual([
-      { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
-      { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+      {
+        kind: 'unknown-version',
+        package: 'next',
+        fragmentId: 'nextjs-app-router',
+        included: false,
+      },
+      {
+        kind: 'unknown-version',
+        package: 'next',
+        fragmentId: 'nextjs-pages-router',
+        included: true,
+      },
     ]);
   });
 

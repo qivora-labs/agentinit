@@ -199,9 +199,12 @@ Every prompt has a defined non-interactive answer:
 ### 3.6 Projects Without a Supported Framework
 TypeScript libraries, CLIs, scripts, and projects using a framework the registry doesn't cover yet are **supported with base rules**:
 - Generated: architecture, language, compatible libraries, workflows, `ARCHITECTURE.md`, and project commands.
-- Libraries with `compatibleWith` are dropped (they target specific frameworks); libraries without it (e.g., Vitest) are kept.
+- Libraries with `compatibleWith` are dropped during detection when no compatible framework is selected, so the saved selections, resolve step, and manifest stay aligned. Libraries without `compatibleWith` (e.g., Vitest) are kept.
+- When a library is dropped because no framework was selected, the notice names what it needs: *"Tailwind CSS needs a supported framework (Next.js, React + Vite); none was selected."* When a framework was selected but is outside that library's `compatibleWith`, the notice is *"… was skipped — it targets a different framework."*
+- An unsupported package version produces **one** *"pkg@version detected — no matching rules yet."* notice per package. That notice is omitted when another fragment for the same package matched.
 - The summary shows *"Framework: none detected"* and a notice: *"No framework rules matched; generating base rules."* With `--yes`, this is not an error.
 - `doctor` doesn't report a missing framework as an issue.
+- Manifest `selections.frameworks` and `selections.libraries` list only ids that remain in the resolved fragments.
 
 ---
 
@@ -258,7 +261,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 ├── registry/                        # COMMUNITY CONTRIBUTION ZONE
 │   ├── architectures/   feature-based.md · layered.md · atomic-design.md · flat.md
 │   ├── languages/       typescript-strict.md · typescript.md
-│   ├── frameworks/      nextjs-app-router.md · nextjs-pages-router.md · react-vite.md · express.md · fastify.md
+│   ├── frameworks/      nextjs-app-router.md · nextjs-app-router-15.md · nextjs-pages-router.md · react-vite.md · express.md · express-4.md · fastify.md
 │   ├── libraries/       tailwind.md · shadcn.md · tanstack-query.md · zustand.md · react-hook-form-zod.md · vitest.md · playwright.md
 │   ├── workflows/       new-feature.md · review-arch.md · refactor.md · write-tests.md
 │   └── meta/            customize.md (v0.2)
@@ -357,7 +360,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 | `globs` | if `glob`/`auto` | YAML list; `{{src}}` placeholder (`src/` or empty); **no brace patterns** like `{ts,tsx}`; **no commas** |
 | `detect.packages` | | Package names that trigger auto-selection; **all** listed packages must be present |
 | `detect.files` | | Marker files that trigger auto-selection (e.g., `components.json`); **all** listed files must exist |
-| `appliesTo` | | Package → semver range, e.g. `{ next: ">=15" }` |
+| `appliesTo` | | Package → semver range, e.g. `{ next: ">=16.3.0" }`. Ranges for version-split siblings (same `detect.packages` and globs) must not overlap; `check-registry` rejects overlaps. |
 | `requires` | | Fragment ids auto-selected alongside this one (with a notice) |
 | `conflictsWith` | | Fragment ids that can't be manually selected together (warn + ask) |
 | `compatibleWith` | | Framework ids this library supports (wizard filtering) |
@@ -375,7 +378,7 @@ Example (`registry/frameworks/nextjs-app-router.md`):
 ````markdown
 ---
 id: nextjs-app-router
-name: Next.js App Router
+name: Next.js App Router 16
 category: framework
 version: 1.0.0
 order: 30
@@ -598,7 +601,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 **M2 — Registry (8 days)**
 - [ ] zod schema, loader, resolver (compatibility, `appliesTo`, requires/conflicts), placeholders.
 - [ ] `scripts/check-registry.ts` for CI: schema, 120-line budget, required sections, no brace globs, `verifiedAt` older than 6 months warns.
-- [ ] Author and verify fragments against official docs: 4 architectures, 2 languages, 5 frameworks, 7 libraries, 4 workflows (§4.2, §5.5).
+- [ ] Author and verify fragments against official docs: 4 architectures, 2 languages, 7 frameworks, 7 libraries, 4 workflows (§4.2, §5.5).
 
 **M3 — Detection (3 days)**
 - [ ] TypeScript gate, packages and versions, marker files, package manager, scripts, tsconfig (JSONC + extends).
@@ -680,7 +683,7 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 ### 8.2 Fixture Repositories
 `tests/fixtures/`, each minimal but realistic. Full generated trees, covering every target, are snapshotted for `next15-src`, `vite-react`, and `express-ts` under `tests/__snapshots__/e2e/`.
 
-`next15-src` · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
+`next15-src` (Next 16.3 App Router) · `next15-app` (Next 15.5 App Router + Tailwind 4) · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` (Express 5) · `express4-ts` (Express 4) · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
 
@@ -696,6 +699,8 @@ The registry is **bundled in the npm package** rather than fetched at runtime:
 - Output is reproducible for a given CLI version (recorded in the manifest).
 - Works offline and in CI.
 - Fragments are reviewed in PRs and published with npm provenance, with no runtime supply-chain path.
+
+**Version coverage:** each framework is covered for its current major and the previous one. When guidance differs across that span, a new fragment id is added per range (published ids are never renamed). v0.1 ships `nextjs-app-router` (`next >=16.3.0`), `nextjs-app-router-15` (`>=15.0.0 <16.3.0`), `express` (`>=5`), and `express-4` (`>=4 <5`), alongside `nextjs-pages-router`, `react-vite`, and `fastify`.
 
 Rule fixes ship as patch releases via changesets. Team fragments (v0.2) and opt-in remote registries (v0.4+) provide extensibility.
 

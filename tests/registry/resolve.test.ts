@@ -96,12 +96,6 @@ const suggestCases: readonly SuggestCase[] = [
           version: '14.2.5',
           fragmentId: 'nextjs-app-router',
         },
-        {
-          kind: 'unsupported-version',
-          package: 'next',
-          version: '14.2.5',
-          fragmentId: 'nextjs-pages-router',
-        },
       ],
     },
   },
@@ -112,8 +106,18 @@ const suggestCases: readonly SuggestCase[] = [
       frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
       libraries: [],
       notices: [
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
-        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-app-router',
+          included: true,
+        },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-pages-router',
+          included: true,
+        },
       ],
     },
   },
@@ -123,7 +127,9 @@ const suggestCases: readonly SuggestCase[] = [
     expected: {
       frameworks: [],
       libraries: ['zustand'],
-      notices: [{ kind: 'unknown-version', package: 'zustand', fragmentId: 'zustand' }],
+      notices: [
+        { kind: 'unknown-version', package: 'zustand', fragmentId: 'zustand', included: true },
+      ],
     },
   },
   {
@@ -294,7 +300,7 @@ const resolveCases: readonly ResolveCase[] = [
       },
     }),
     fragmentIds: ['layered', 'typescript-strict', 'nextjs-pages-router'],
-    notices: [{ kind: 'incompatible', fragmentId: 'zustand' }],
+    notices: [{ kind: 'incompatible', fragmentId: 'zustand', cause: 'different-framework' }],
     conflicts: [],
   },
   {
@@ -306,10 +312,7 @@ const resolveCases: readonly ResolveCase[] = [
       origin: detected('typescript', 'layered', 'nextjs-pages-router', 'forms'),
     }),
     fragmentIds: ['layered', 'typescript', 'nextjs-pages-router'],
-    notices: [
-      { kind: 'incompatible', fragmentId: 'forms' },
-      { kind: 'incompatible', fragmentId: 'zustand' },
-    ],
+    notices: [{ kind: 'incompatible', fragmentId: 'forms', cause: 'different-framework' }],
     conflicts: [],
   },
   {
@@ -322,7 +325,7 @@ const resolveCases: readonly ResolveCase[] = [
     fragmentIds: ['layered', 'typescript-strict', 'vitest'],
     notices: [
       { kind: 'no-framework' },
-      { kind: 'incompatible', fragmentId: 'zustand' },
+      { kind: 'incompatible', fragmentId: 'zustand', cause: 'no-framework' },
     ],
     conflicts: [],
   },
@@ -498,6 +501,97 @@ function registryFrom(fragments: readonly Fragment[]): Registry {
 describe('suggestFragments', () => {
   it.each(suggestCases)('$name', async (testCase) => {
     const registry = await registryPromise;
+    expect(
+      suggestFragments(registry, {
+        packages: testCase.packages,
+        files: testCase.files ?? [],
+      }),
+    ).toEqual(testCase.expected);
+  });
+});
+
+const bundledSuggestCases: readonly SuggestCase[] = [
+  {
+    name: 'suggests Next.js App Router 15 for next 15.x (bundled registry)',
+    packages: { next: '15.5.2' },
+    expected: {
+      frameworks: ['nextjs-app-router-15', 'nextjs-pages-router'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Next.js App Router 16 for next 16.3+ (bundled registry)',
+    packages: { next: '16.3.0' },
+    expected: {
+      frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Express 4 for express 4.x (bundled registry)',
+    packages: { express: '4.21.2' },
+    expected: {
+      frameworks: ['express-4'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Express 5 for express 5.x (bundled registry)',
+    packages: { express: '5.1.0' },
+    expected: {
+      frameworks: ['express'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'omits version-split App Router siblings when next version is unknown',
+    packages: { next: null },
+    expected: {
+      frameworks: ['nextjs-pages-router'],
+      libraries: [],
+      notices: [
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-app-router',
+          included: false,
+        },
+        {
+          kind: 'unknown-version',
+          package: 'next',
+          fragmentId: 'nextjs-pages-router',
+          included: true,
+        },
+      ],
+    },
+  },
+  {
+    name: 'omits version-split Express siblings when express version is unknown',
+    packages: { express: null },
+    expected: {
+      frameworks: [],
+      libraries: [],
+      notices: [
+        {
+          kind: 'unknown-version',
+          package: 'express',
+          fragmentId: 'express',
+          included: false,
+        },
+      ],
+    },
+  },
+];
+
+describe('suggestFragments (bundled registry)', () => {
+  const bundledPromise = loadRegistry();
+
+  it.each(bundledSuggestCases)('$name', async (testCase) => {
+    const registry = await bundledPromise;
     expect(
       suggestFragments(registry, {
         packages: testCase.packages,

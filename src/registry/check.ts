@@ -1,6 +1,8 @@
+import { intersects } from 'semver';
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import { findPlaceholders, isKnownPlaceholder } from '../plan/placeholders.js';
-import { getSections, type Fragment } from './parse.js';
+import { getSections, type Fragment, type RuleFragmentMeta } from './parse.js';
 import { PICKER_HINT_LIMIT } from './hint.js';
 
 const LINE_LIMIT = 120;
@@ -56,7 +58,94 @@ export function checkFragments(fragments: readonly Fragment[], today: string): R
   for (const fragment of fragments) {
     problems.push(...checkFragment(fragment, today));
   }
+  problems.push(...overlappingFrameworkRangeProblems(fragments));
   return problems;
+}
+
+/**
+ * Version-split framework siblings share detect packages and globs. Their
+ * `appliesTo` ranges for those packages must not overlap (App vs Pages keep
+ * different globs so they may both cover `next`).
+ */
+function overlappingFrameworkRangeProblems(fragments: readonly Fragment[]): RegistryProblem[] {
+  const frameworks = fragments.filter((fragment) => fragment.meta.category === 'framework');
+  const problems: RegistryProblem[] = [];
+
+  for (let i = 0; i < frameworks.length; i += 1) {
+    const left = frameworks[i];
+    if (left === undefined) continue;
+    const leftMeta = ruleMeta(left);
+    if (leftMeta === undefined) continue;
+
+    for (let j = i + 1; j < frameworks.length; j += 1) {
+      const right = frameworks[j];
+      if (right === undefined) continue;
+      const rightMeta = ruleMeta(right);
+      if (rightMeta === undefined) continue;
+      const detectPackages = leftMeta.detect?.packages;
+      if (detectPackages === undefined || detectPackages.length === 0) continue;
+      if (!sameStringList(detectPackages, rightMeta.detect?.packages)) continue;
+      if (!sameStringList(leftMeta.globs, rightMeta.globs)) continue;
+
+      const overlap = overlappingAppliesToPackage(leftMeta, rightMeta);
+      if (overlap === undefined) continue;
+      problems.push(
+        problem(
+          left,
+          'error',
+          `appliesTo.${overlap} overlaps ${right.sourcePath} (${leftMeta.appliesTo?.[overlap] ?? '*'} ∩ ${rightMeta.appliesTo?.[overlap] ?? '*'})`,
+        ),
+      );
+      problems.push(
+        problem(
+          right,
+          'error',
+          `appliesTo.${overlap} overlaps ${left.sourcePath} (${rightMeta.appliesTo?.[overlap] ?? '*'} ∩ ${leftMeta.appliesTo?.[overlap] ?? '*'})`,
+        ),
+      );
+    }
+  }
+
+  return problems;
+}
+
+function overlappingAppliesToPackage(
+  left: RuleFragmentMeta,
+  right: RuleFragmentMeta,
+): string | undefined {
+  const packages = new Set([
+    ...(left.detect?.packages ?? []),
+    ...Object.keys(left.appliesTo ?? {}),
+    ...Object.keys(right.appliesTo ?? {}),
+  ]);
+  const names = [...packages].sort(compareText);
+  for (const name of names) {
+    const leftRange = left.appliesTo?.[name] ?? '*';
+    const rightRange = right.appliesTo?.[name] ?? '*';
+    if (rangesOverlap(leftRange, rightRange)) return name;
+  }
+  return undefined;
+}
+
+function rangesOverlap(left: string, right: string): boolean {
+  if (left === '*' || right === '*') return true;
+  try {
+    return intersects(left, right, true);
+  } catch {
+    return false;
+  }
+}
+
+function sameStringList(left: readonly string[] | undefined, right: readonly string[] | undefined): boolean {
+  const a = [...(left ?? [])].sort(compareText);
+  const b = [...(right ?? [])].sort(compareText);
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function ruleMeta(fragment: Fragment): RuleFragmentMeta | undefined {
+  if (fragment.meta.category === 'workflow') return undefined;
+  return fragment.meta;
 }
 
 /** `loadRegistry` throws one message per line. Directory-level lines use path `.`. */

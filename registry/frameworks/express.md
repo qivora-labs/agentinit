@@ -1,11 +1,11 @@
 ---
 id: express
-name: Express
+name: Express 5
 category: framework
 version: 1.0.0
 order: 30
 description: Express 5 async errors, boundary validation, and modular routers.
-hint: Async errors, validation, modular routers
+hint: express ≥5 · async errors, routers
 scope: auto
 globs:
   - "{{src}}routes/**/*.ts"
