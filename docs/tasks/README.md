@@ -70,6 +70,11 @@ graph LR
   T34 & T36 --> T37
   T35 --> T38 & T39
   T34 & T35 & T36 & T37 & T38 & T39 --> T40
+  T41 & T42 --> T43
+  T42 --> T45
+  T41 & T43 --> T46
+  T43 & T44 & T45 --> T47
+  T42 & T43 & T46 & T47 --> T48
 ```
 
 **Parallel waves** (tasks in the same wave can run in separate sessions at the same time):
@@ -89,6 +94,10 @@ graph LR
 | 11 | T35, T37 |
 | 12 | T38, T39 |
 | 13 | T40 |
+| 14 | T41, T42, T44 |
+| 15 | T43, T45 |
+| 16 | T46, T47 |
+| 17 | T48 |
 
 Running tasks in parallel is optional. When working solo, follow the ID order; it respects every dependency.
 
@@ -139,8 +148,20 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | done |
 | [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
 | [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
+| [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | todo |
+| [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | todo |
+| [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | todo |
+| [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | todo |
+| [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | todo |
+| [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | todo |
+| [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | todo |
+| [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | todo |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
+
+**M8 — Launch readiness** comes from the pre-launch product review on 2026-11-05. These tasks block publishing `0.1.0`. Most have a **Decisions (owner, before starting)** section: an agent running `/implement-task` must stop and ask for those decisions before writing code. Several move behavior into v0.1 or change it, so the PRD is updated in the same PR. Content tasks (T42, T45, T47) follow the Content Tasks checklist above.
+
+**After launch:** Phase 1–3 plans (v0.1.x patches, v0.2 lifecycle, v0.3+ breadth) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
 
 ## Task File Template
 Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.
