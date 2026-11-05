@@ -23,6 +23,7 @@ import {
   formatWarning,
 } from './format.js';
 import type { MultiSelectPrompt, PromptOption, Prompter } from './prompter.js';
+import { updateExcluded } from './saved-selection.js';
 import { countSetupSteps, withStep } from './steps.js';
 import type { Theme } from './theme.js';
 
@@ -38,6 +39,13 @@ export interface SummaryExtras {
    */
   readonly summary?: string;
   readonly title?: string;
+  /** Previous `selections.excluded`. *Customize* updates it; *Use* keeps it. */
+  readonly excluded?: readonly string[];
+  /**
+   * Framework/library ids detection suggested (before applying `excluded`).
+   * *Customize* uses these to decide what joins `excluded`.
+   */
+  readonly detectedIds?: readonly string[];
 }
 
 interface ChosenFragments {
@@ -109,7 +117,18 @@ export async function confirmDetected(
     agentInput(draft, extras.agents),
     agentStepInfo(chosen),
   );
-  return { selection: toSelection(draft, chosen, choice), agents };
+  const selection = toSelection(draft, chosen, choice);
+  const previousExcluded = extras.excluded ?? [];
+  const detectedIds = extras.detectedIds ?? [...draft.frameworks, ...draft.libraries];
+  const excluded =
+    choice === 'customize'
+      ? updateExcluded({
+          previous: previousExcluded,
+          detected: detectedIds,
+          selected: [...selection.frameworks, ...selection.libraries],
+        })
+      : [...previousExcluded];
+  return { selection, agents, excluded };
 }
 
 /**
@@ -121,7 +140,7 @@ export async function changeExistingSetup(
   draft: ProjectDraft,
   registry: Registry,
   current: PromptedSetup,
-  extras?: { readonly agents?: readonly AgentTarget[] },
+  extras?: { readonly agents?: readonly AgentTarget[]; readonly excluded?: readonly string[] },
 ): Promise<PromptedSetup> {
   const askAgents = extras?.agents === undefined;
   const chosen = await customize(
@@ -141,7 +160,17 @@ export async function changeExistingSetup(
     agentInput(draft, extras?.agents, current.agents),
     agentStepInfo(chosen),
   );
-  return { selection: toSelection(draft, chosen, 'customize'), agents };
+  const selection = toSelection(draft, chosen, 'customize');
+  const previousExcluded = extras?.excluded ?? current.excluded ?? [];
+  return {
+    selection,
+    agents,
+    excluded: updateExcluded({
+      previous: previousExcluded,
+      detected: [...draft.frameworks, ...draft.libraries],
+      selected: [...selection.frameworks, ...selection.libraries],
+    }),
+  };
 }
 
 async function acceptDetected(

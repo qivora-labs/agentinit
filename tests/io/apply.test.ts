@@ -27,6 +27,7 @@ const META: Omit<Manifest, 'files'> = {
     libraries: [],
     architecture: 'flat',
     agents: [],
+    excluded: [],
   },
   fragments: {},
 };

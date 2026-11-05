@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ZodError } from 'zod';
 import * as z from 'zod';
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import { isOwnedBlockKey, isOwnedPath } from '../owned-paths.js';
 import type { AgentTarget, Language } from '../types.js';
@@ -16,11 +17,33 @@ const LANGUAGES = ['typescript-strict', 'typescript'] as const satisfies readonl
 const AGENT_TARGETS = ['cursor', 'claude', 'windsurf', 'copilot'] as const satisfies readonly AgentTarget[];
 const MODES = ['existing', 'greenfield'] as const;
 
+/** Same kebab-case rule as registry fragment ids (PRD §4.4 / §6.2). */
+const FRAGMENT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 const nonEmpty = z.string().min(1, { error: 'must not be empty' });
 
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/, {
   error: 'must be a lowercase sha256 hex digest',
 });
+
+const fragmentIdSchema = z.string().regex(FRAGMENT_ID, { error: 'must be kebab-case' });
+
+const excludedSchema = z
+  .array(fragmentIdSchema)
+  .superRefine((ids, ctx) => {
+    const seen = new Set<string>();
+    for (let index = 0; index < ids.length; index += 1) {
+      const id = ids[index];
+      if (id === undefined) continue;
+      if (seen.has(id)) {
+        ctx.addIssue({ code: 'custom', message: 'must be unique', path: [index] });
+        continue;
+      }
+      seen.add(id);
+    }
+  })
+  .optional()
+  .default([]);
 
 const fileKeySchema = z.string().superRefine((key, ctx) => {
   const problem = fileKeyProblem(key);
@@ -36,6 +59,8 @@ const selectionsSchema = z
     libraries: z.array(nonEmpty),
     architecture: nonEmpty,
     agents: z.array(z.enum(AGENT_TARGETS)),
+    /** Opted-out detected fragment ids. Optional on read; always written. */
+    excluded: excludedSchema,
   })
   .strict();
 
@@ -81,6 +106,7 @@ export function serializeManifest(manifest: Manifest): string {
       libraries: [...manifest.selections.libraries],
       architecture: manifest.selections.architecture,
       agents: [...manifest.selections.agents],
+      excluded: [...manifest.selections.excluded].sort(compareText),
     },
     fragments: sortedRecord(manifest.fragments),
     files: sortedFiles(manifest.files),

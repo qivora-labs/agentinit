@@ -84,6 +84,12 @@ describe('formatClose', () => {
     expect(line.split('Not a directory')).toHaveLength(2);
     expect(line).toContain('\u001b[31m');
   });
+
+  it('paints a warning close in yellow when color is on', () => {
+    const line = formatClose(createTheme(true, true, true), '1 warning found.', 'warn');
+    expect(line).toContain('1 warning found.');
+    expect(line).toContain('\u001b[33m');
+  });
 });
 
 describe('underRail', () => {

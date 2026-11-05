@@ -79,15 +79,17 @@ export function paintDoctorChecks(
   checks: readonly {
     readonly label: string;
     readonly ok: boolean;
-    readonly issues: readonly { readonly message: string; readonly fix: string }[];
+    readonly issues: readonly {
+      readonly message: string;
+      readonly fix: string;
+      readonly severity?: 'error' | 'warning';
+    }[];
   }[],
   theme: Theme,
 ): string {
   const blocks: string[] = [];
   for (const check of checks) {
-    const icon = check.ok
-      ? theme.success(theme.glyphs.success)
-      : theme.error(theme.glyphs.error);
+    const icon = doctorCheckIcon(check, theme);
     const lines = [`${icon}  ${check.label}`];
     if (!check.ok) {
       for (const issue of check.issues) {
@@ -98,4 +100,17 @@ export function paintDoctorChecks(
     blocks.push(lines.join('\n'));
   }
   return blocks.join('\n');
+}
+
+function doctorCheckIcon(
+  check: {
+    readonly ok: boolean;
+    readonly issues: readonly { readonly severity?: 'error' | 'warning' }[];
+  },
+  theme: Theme,
+): string {
+  if (check.ok) return theme.success(theme.glyphs.success);
+  const hasError = check.issues.some((issue) => issue.severity !== 'warning');
+  if (hasError) return theme.error(theme.glyphs.error);
+  return theme.warn(theme.glyphs.warn);
 }

@@ -16,6 +16,9 @@ const directories: string[] = [];
 
 const FIX = 'npx @agentinit/cli init';
 
+const EDITED_FIX =
+  'Move your text outside the agentinit markers, then run `npx @agentinit/cli init`, or exclude the fragment with *Customize*.';
+
 const doctorIssueSchema = z
   .object({
     kind: z.enum([
@@ -31,6 +34,7 @@ const doctorIssueSchema = z
       'always-on-tokens',
       'legacy-file',
     ]),
+    severity: z.enum(['error', 'warning']),
     path: z.string().optional(),
     message: z.string().min(1),
     fix: z.string().min(1),
@@ -44,8 +48,9 @@ const doctorReportSchema = z
   })
   .strict()
   .superRefine((report, ctx) => {
-    if (report.ok !== (report.issues.length === 0)) {
-      ctx.addIssue({ code: 'custom', message: 'ok must be true only when issues is empty' });
+    const hasError = report.issues.some((issue) => issue.severity === 'error');
+    if (report.ok !== !hasError) {
+      ctx.addIssue({ code: 'custom', message: 'ok must be true only when there are no errors' });
     }
   });
 
@@ -163,7 +168,7 @@ describe('doctor', () => {
     expect(stdout).toContain('manifest');
     expect(stdout).toContain('Not initialized');
     expect(stdout).toContain(`Fix: ${FIX}`);
-    expect(stdout).toContain('1 issue found.');
+    expect(stdout).toContain('1 error found.');
     // Later checks never ran without a manifest — do not paint them as passes.
     expect(stdout).not.toContain('managed files');
     expect(stdout).not.toContain('detected packages');
@@ -232,6 +237,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'missing',
+      severity: 'error',
       path: file,
       message: `${file} is missing.`,
       fix: FIX,
@@ -248,9 +254,10 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'edited',
+      severity: 'error',
       path: file,
       message: `${file} was edited by hand.`,
-      fix: FIX,
+      fix: EDITED_FIX,
     });
   });
 
@@ -264,6 +271,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'missing',
+      severity: 'error',
       path: 'AGENTS.md#core',
       message: 'AGENTS.md is missing managed block "core".',
       fix: FIX,
@@ -297,6 +305,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'package-removed',
+      severity: 'error',
       message: 'Tailwind CSS (tailwind) is selected, but tailwindcss is not in the project.',
       fix: FIX,
     });
@@ -312,6 +321,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'package-removed',
+      severity: 'error',
       message: 'Next.js App Router 16 (nextjs-app-router) is selected, but next is not in the project.',
       fix: FIX,
     });
@@ -328,32 +338,71 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'unsupported-version',
+      severity: 'error',
       message: 'Next.js App Router 16 (nextjs-app-router) is selected, but next@15.0.0 is outside >=16.3.0.',
       fix: FIX,
     });
   });
 
-  it('reports legacy rule files', async () => {
+  it('reports legacy rule files as warnings and exits 0', async () => {
     const dir = await initYes('next15-src');
     await writeFile(path.join(dir, '.cursorrules'), 'legacy\n');
     await writeFile(path.join(dir, '.windsurfrules'), 'legacy\n');
     const result = await runCli(['doctor', '--json', '--cwd', dir]);
-    expect(result.code).toBe(2);
+    expect(result.code).toBe(0);
     const report = parseReport(result.stdout);
+    expect(report.ok).toBe(true);
     expect(report.issues).toEqual([
       {
         kind: 'legacy-file',
+        severity: 'warning',
         path: '.cursorrules',
         message: '.cursorrules still loads alongside the new rules.',
         fix: 'Remove .cursorrules if you no longer need it.',
       },
       {
         kind: 'legacy-file',
+        severity: 'warning',
         path: '.windsurfrules',
         message: '.windsurfrules still loads alongside the new rules.',
         fix: 'Remove .windsurfrules if you no longer need it.',
       },
     ]);
+  });
+
+  it('shows a warning icon for legacy files on a terminal', async () => {
+    const dir = await initYes('next15-src');
+    await writeFile(path.join(dir, '.cursorrules'), 'legacy\n');
+    const result = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    const stdout = stripAnsi(result.stdout);
+    expect(result.code).toBe(0);
+    expect(stdout).toContain('.cursorrules still loads alongside the new rules.');
+    expect(stdout).toContain('1 warning found.');
+  });
+
+  it('skips unselected for excluded fragments and keeps them out of init --yes', async () => {
+    const dir = await initYes('next15-src');
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      selections: { libraries: string[]; excluded: string[] };
+    };
+    const pkg = await readPackage(dir);
+    pkg.dependencies = { ...pkg.dependencies, zustand: '5.0.0' };
+    await writePackage(dir, pkg);
+    saved.selections.excluded = ['zustand'];
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const doctor = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(doctor.code).toBe(0);
+    expect(parseReport(doctor.stdout)).toEqual({ ok: true, issues: [] });
+
+    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(again.code).toBe(0);
+    const after = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      selections: { libraries: string[]; excluded: string[] };
+    };
+    expect(after.selections.libraries).not.toContain('zustand');
+    expect(after.selections.excluded).toEqual(['zustand']);
   });
 
   it('validates --json against the doctor report schema', async () => {
@@ -370,6 +419,7 @@ describe('doctor', () => {
     expect(report.ok).toBe(false);
     expect(report.issues[0]).toMatchObject({
       kind: 'not-initialized',
+      severity: 'error',
       message: 'Not initialized',
       fix: FIX,
     });

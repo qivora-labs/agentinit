@@ -8,4 +8,10 @@ import type { AgentTarget } from '../types.js';
 export interface PromptedSetup {
   readonly selection: Selection;
   readonly agents: readonly AgentTarget[];
+  /**
+   * Opted-out detected fragment ids. Set by existing-project confirm/customize;
+   * greenfield and `--yes` paths leave this undefined so the caller keeps the
+   * previous list.
+   */
+  readonly excluded?: readonly string[];
 }

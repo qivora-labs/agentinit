@@ -45,6 +45,7 @@ import {
 import {
   draftWithSavedSelections,
   formatSelectionChanges,
+  pruneExcluded,
   selectionsMatchDetection,
   type SavedSelections,
 } from '../ui/saved-selection.js';
@@ -70,6 +71,9 @@ interface Setup {
   readonly selection: Selection;
   readonly agents: readonly AgentTarget[];
   readonly notices: readonly LowConfidenceNotice[];
+  readonly excluded: readonly string[];
+  /** Ids dropped from `excluded` because they left the registry. */
+  readonly excludedNotices: readonly string[];
 }
 
 const UP_TO_DATE = 'Already up to date.';
@@ -89,7 +93,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
 
   if (manifest !== null && canTakeUpToDateShortcut(detection, manifest)) {
-    const savedSetup = setupFromManifest(ctx, detection, manifest);
+    const savedSetup = setupFromManifest(ctx, detection, manifest, registry);
     const savedPrepared = await prepareWrite(root, registry, detection, savedSetup, manifest, ctx, prompts);
     if (!hasWork(savedPrepared.changes)) {
       return handleUpToDateShortcut({
@@ -115,9 +119,13 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const notices = () =>
     noticeLines(registry, detection, prepared.resolved, setup.notices, {
       legacyWarnings: shownLegacyOnCard ? 'omit' : 'include',
+      excludedNotices: setup.excludedNotices,
     });
   const jsonNotices = () =>
-    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'include' });
+    noticeLines(registry, detection, prepared.resolved, setup.notices, {
+      legacyWarnings: 'include',
+      excludedNotices: setup.excludedNotices,
+    });
   const greenfieldSteps = () =>
     prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
 
@@ -151,6 +159,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     options,
     root,
     prepared,
+    excluded: setup.excluded,
     notices: ctx.json ? jsonNotices() : notices(),
     greenfieldSteps: greenfieldSteps(),
     prompts,
@@ -174,7 +183,10 @@ async function handleUpToDateShortcut(input: {
   const { ctx, logger, options, registry, detection, manifest, prompts, root, spin } = input;
   let { setup, prepared } = input;
   const allNotices = () =>
-    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'include' });
+    noticeLines(registry, detection, prepared.resolved, setup.notices, {
+      legacyWarnings: 'include',
+      excludedNotices: setup.excludedNotices,
+    });
 
   if (!ctx.isInteractive || ctx.yes) {
     return reportUpToDate(ctx, logger, options, prepared.plan, allNotices());
@@ -196,7 +208,10 @@ async function handleUpToDateShortcut(input: {
   setup = await changeSetup(ctx, registry, detection, setup, prompts);
   prepared = await prepareWrite(root, registry, detection, setup, manifest, ctx, prompts);
   const notices = () =>
-    noticeLines(registry, detection, prepared.resolved, setup.notices, { legacyWarnings: 'omit' });
+    noticeLines(registry, detection, prepared.resolved, setup.notices, {
+      legacyWarnings: 'omit',
+      excludedNotices: setup.excludedNotices,
+    });
   const greenfieldSteps = () =>
     prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
 
@@ -231,6 +246,7 @@ async function handleUpToDateShortcut(input: {
     options,
     root,
     prepared,
+    excluded: setup.excluded,
     notices: notices(),
     greenfieldSteps: greenfieldSteps(),
     prompts,
@@ -244,12 +260,14 @@ async function applyPreparedWrite(input: {
   readonly options: InitOptions;
   readonly root: string;
   readonly prepared: PreparedWrite;
+  readonly excluded: readonly string[];
   readonly notices: readonly string[];
   readonly greenfieldSteps: readonly string[];
   readonly prompts: () => Prompter;
   readonly spin: boolean;
 }): Promise<number> {
-  const { ctx, logger, options, root, prepared, notices, greenfieldSteps, prompts, spin } = input;
+  const { ctx, logger, options, root, prepared, excluded, notices, greenfieldSteps, prompts, spin } =
+    input;
   const { profile, resolved, plan, changes } = prepared;
   const hadConflicts = needsConflictPrompt(changes);
   const writing = spin && !hadConflicts
@@ -259,7 +277,7 @@ async function applyPreparedWrite(input: {
   try {
     applied = await applyChanges(root, changes, {
       now: options.now ?? new Date(),
-      manifest: manifestBody(profile, resolved),
+      manifest: manifestBody(profile, resolved, excluded),
       yes: ctx.yes,
       force: ctx.force,
       dryRun: ctx.dryRun,
@@ -295,14 +313,20 @@ async function applyPreparedWrite(input: {
 function canTakeUpToDateShortcut(detection: DetectionResult, manifest: Manifest): boolean {
   if (detection.mode === 'greenfield') return true;
   return selectionsMatchDetection(
-    manifest.selections,
+    asSavedSelections(manifest.selections),
     detection.draft,
     manifest.mode === 'greenfield',
   );
 }
 
-function setupFromManifest(ctx: RunContext, detection: DetectionResult, manifest: Manifest): Setup {
-  const saved = manifest.selections;
+function setupFromManifest(
+  ctx: RunContext,
+  detection: DetectionResult,
+  manifest: Manifest,
+  registry: Registry,
+): Setup {
+  const saved = asSavedSelections(manifest.selections);
+  const { excluded, excludedNotices } = resolveExcluded(saved.excluded, registry);
   if (detection.mode === 'greenfield') {
     return {
       selection: {
@@ -314,10 +338,12 @@ function setupFromManifest(ctx: RunContext, detection: DetectionResult, manifest
       },
       agents: ctx.agents ?? [...saved.agents],
       notices: [],
+      excluded,
+      excludedNotices,
     };
   }
 
-  const draft = draftWithSavedSelections(detection.draft, saved);
+  const draft = draftWithSavedSelections(detection.draft, { ...saved, excluded });
   const agents = agentOverride(ctx, saved) ?? [...saved.agents];
   return {
     selection: {
@@ -329,6 +355,8 @@ function setupFromManifest(ctx: RunContext, detection: DetectionResult, manifest
     },
     agents: [...agents],
     notices: [],
+    excluded,
+    excludedNotices,
   };
 }
 
@@ -423,9 +451,10 @@ async function previewChanges(
       .map((change) => change.path),
   );
   // `--yes` defaults so conflicts are not prompted; the label replaces the action.
+  // Dry-run never writes the manifest; excluded is empty here on purpose.
   const applied = await applyChanges(root, changes, {
     now: options.now ?? new Date(),
-    manifest: manifestBody(profile, resolved),
+    manifest: manifestBody(profile, resolved, []),
     yes: true,
     dryRun: true,
   });
@@ -463,7 +492,12 @@ async function changeSetup(
         agents: current.agents,
       },
     });
-    return { ...wizard, notices: current.notices };
+    return {
+      ...wizard,
+      notices: current.notices,
+      excluded: current.excluded,
+      excludedNotices: current.excludedNotices,
+    };
   }
 
   const agents = ctx.agents;
@@ -471,10 +505,18 @@ async function changeSetup(
     prompts(),
     detection.draft,
     registry,
-    { selection: current.selection, agents: current.agents },
-    agents === undefined ? {} : { agents },
+    { selection: current.selection, agents: current.agents, excluded: current.excluded },
+    {
+      ...(agents === undefined ? {} : { agents }),
+      excluded: current.excluded,
+    },
   );
-  return { ...changed, notices: current.notices };
+  return {
+    ...changed,
+    notices: current.notices,
+    excluded: changed.excluded ?? current.excluded,
+    excludedNotices: current.excludedNotices,
+  };
 }
 
 function prompterFor(options: InitOptions, theme: Theme): () => Prompter {
@@ -588,24 +630,32 @@ async function chooseSetup(
   prompts: () => Prompter,
   theme: Theme,
 ): Promise<Setup> {
+  const previousExcluded = manifest?.selections.excluded ?? [];
+  const { excluded: prunedExcluded, excludedNotices } = resolveExcluded(previousExcluded, registry);
+
   if (detection.mode === 'greenfield') {
     if (ctx.yes) {
       const rejected = nonInteractiveSelection({ kind: 'greenfield' });
       if (!isNonInteractiveSetup(rejected)) throw rejected;
     }
-    const initial = manifest === null ? undefined : greenfieldInitial(manifest.selections);
+    const initial =
+      manifest === null ? undefined : greenfieldInitial(asSavedSelections(manifest.selections));
     // Manifest agents skip the prompt (same as `--agents`); Change setup only preselects.
     const skipAgents = ctx.agents ?? initial?.agents;
     const wizard = await runGreenfieldWizard(prompts(), registry, {
       ...(skipAgents === undefined ? {} : { agents: skipAgents }),
       ...(initial === undefined ? {} : { initial }),
     });
-    return { ...wizard, notices: [] };
+    return { ...wizard, notices: [], excluded: prunedExcluded, excludedNotices };
   }
 
-  const saved = manifest?.selections;
+  const saved =
+    manifest === null
+      ? undefined
+      : { ...asSavedSelections(manifest.selections), excluded: prunedExcluded };
   const fromGreenfield = manifest?.mode === 'greenfield';
-  const draft = saved === undefined ? detection.draft : draftWithSavedSelections(detection.draft, saved);
+  const draft =
+    saved === undefined ? detection.draft : draftWithSavedSelections(detection.draft, saved);
   const agents = agentOverride(ctx, saved);
 
   if (ctx.yes) {
@@ -614,13 +664,22 @@ async function chooseSetup(
       agents === undefined ? {} : { agents },
     );
     if (!isNonInteractiveSetup(selected)) throw selected;
-    return { selection: selected.selection, agents: selected.agents, notices: selected.notices };
+    // `--yes` never changes excluded (PRD §3.5).
+    return {
+      selection: selected.selection,
+      agents: selected.agents,
+      notices: selected.notices,
+      excluded: prunedExcluded,
+      excludedNotices,
+    };
   }
 
   const confirmed = await confirmDetected(prompts(), draft, registry, {
     theme,
     notices: detection.notices,
     warnings: detection.warnings,
+    excluded: prunedExcluded,
+    detectedIds: [...detection.draft.frameworks, ...detection.draft.libraries],
     ...(agents === undefined ? {} : { agents }),
     ...(saved === undefined
       ? {}
@@ -635,7 +694,12 @@ async function chooseSetup(
           title: 'What changed',
         }),
   });
-  return { ...confirmed, notices: [] };
+  return {
+    ...confirmed,
+    notices: [],
+    excluded: confirmed.excluded ?? prunedExcluded,
+    excludedNotices,
+  };
 }
 
 function agentOverride(
@@ -653,6 +717,30 @@ function greenfieldInitial(saved: SavedSelections): GreenfieldInitial {
     frameworks: saved.frameworks,
     libraries: saved.libraries,
     agents: saved.agents,
+  };
+}
+
+function asSavedSelections(selections: Manifest['selections']): SavedSelections {
+  return {
+    language: selections.language,
+    frameworks: selections.frameworks,
+    libraries: selections.libraries,
+    architecture: selections.architecture,
+    agents: selections.agents,
+    excluded: selections.excluded,
+  };
+}
+
+function resolveExcluded(
+  previous: readonly string[],
+  registry: Registry,
+): { readonly excluded: string[]; readonly excludedNotices: string[] } {
+  const { excluded, dropped } = pruneExcluded(previous, registry);
+  return {
+    excluded,
+    excludedNotices: dropped.map(
+      (id) => `Dropped excluded fragment "${id}" — it is no longer in the registry.`,
+    ),
   };
 }
 
@@ -707,7 +795,11 @@ function factsFor(detection: DetectionResult): ProjectFacts {
   return { packages, files: [] };
 }
 
-function manifestBody(profile: ProjectProfile, resolved: ResolvedSelection): Omit<Manifest, 'files'> {
+function manifestBody(
+  profile: ProjectProfile,
+  resolved: ResolvedSelection,
+  excluded: readonly string[],
+): Omit<Manifest, 'files'> {
   const resolvedIds = new Set(resolved.fragments.map((fragment) => fragment.meta.id));
   return {
     cliVersion: pkg.version,
@@ -718,6 +810,7 @@ function manifestBody(profile: ProjectProfile, resolved: ResolvedSelection): Omi
       libraries: profile.libraries.filter((id) => resolvedIds.has(id)),
       architecture: profile.architecture.id,
       agents: [...profile.agents],
+      excluded: [...excluded],
     },
     fragments: fragmentVersions(resolved),
   };
@@ -740,7 +833,10 @@ function noticeLines(
   detection: DetectionResult,
   resolved: ResolvedSelection,
   lowConfidence: readonly LowConfidenceNotice[],
-  options: { readonly legacyWarnings: 'include' | 'omit' } = { legacyWarnings: 'include' },
+  options: {
+    readonly legacyWarnings: 'include' | 'omit';
+    readonly excludedNotices?: readonly string[];
+  } = { legacyWarnings: 'include' },
 ): string[] {
   const lines: string[] = [];
   if (detection.mode === 'existing') {
@@ -752,6 +848,7 @@ function noticeLines(
   }
   for (const notice of resolved.notices) lines.push(formatRegistryNotice(notice, registry));
   for (const notice of lowConfidence) lines.push(formatLowConfidence(notice, registry));
+  for (const notice of options.excludedNotices ?? []) lines.push(notice);
   return unique(lines);
 }
 

@@ -6,7 +6,10 @@ import {
   checkLegacy,
   checkUnselected,
   collectDoctorIssues,
+  countBySeverity,
   doctorChecklist,
+  doctorReport,
+  EDITED_FIX,
   formatDoctorReport,
   issuesFoundMessage,
   notInitializedIssue,
@@ -34,7 +37,9 @@ describe('collectDoctorIssues', () => {
         warnings: [{ kind: 'always-on-tokens', tokens: 2000, limit: 1500 }],
         legacyFiles: ['.cursorrules'],
       }),
-    ).toEqual([{ kind: 'not-initialized', message: 'Not initialized', fix: FIX }]);
+    ).toEqual([
+      { kind: 'not-initialized', severity: 'error', message: 'Not initialized', fix: FIX },
+    ]);
   });
 
   it('does not report a project with no supported framework', () => {
@@ -53,12 +58,13 @@ describe('collectDoctorIssues', () => {
 });
 
 describe('checkChanges', () => {
-  it.each<[string, DriftChange, { kind: string; path: string; message: string; fix: string }]>([
+  it.each<[string, DriftChange, { kind: string; severity: string; path: string; message: string; fix: string }]>([
     [
       'missing file',
       { kind: 'create', path: '.cursor/rules/agentinit-zustand.mdc' },
       {
         kind: 'missing',
+        severity: 'error',
         path: '.cursor/rules/agentinit-zustand.mdc',
         message: '.cursor/rules/agentinit-zustand.mdc is missing.',
         fix: FIX,
@@ -69,6 +75,7 @@ describe('checkChanges', () => {
       { kind: 'create', path: 'AGENTS.md', blockId: 'core' },
       {
         kind: 'missing',
+        severity: 'error',
         path: 'AGENTS.md#core',
         message: 'AGENTS.md is missing.',
         fix: FIX,
@@ -79,6 +86,7 @@ describe('checkChanges', () => {
       { kind: 'conflict-edited', path: 'AGENTS.md', blockId: 'core', blockMissing: true },
       {
         kind: 'missing',
+        severity: 'error',
         path: 'AGENTS.md#core',
         message: 'AGENTS.md is missing managed block "core".',
         fix: FIX,
@@ -89,9 +97,10 @@ describe('checkChanges', () => {
       { kind: 'conflict-edited', path: '.cursor/rules/agentinit-zustand.mdc' },
       {
         kind: 'edited',
+        severity: 'error',
         path: '.cursor/rules/agentinit-zustand.mdc',
         message: '.cursor/rules/agentinit-zustand.mdc was edited by hand.',
-        fix: FIX,
+        fix: EDITED_FIX,
       },
     ],
     [
@@ -99,9 +108,10 @@ describe('checkChanges', () => {
       { kind: 'conflict-edited', path: 'AGENTS.md', blockId: 'core' },
       {
         kind: 'edited',
+        severity: 'error',
         path: 'AGENTS.md#core',
         message: 'AGENTS.md managed block "core" was edited by hand.',
-        fix: FIX,
+        fix: EDITED_FIX,
       },
     ],
     [
@@ -109,6 +119,7 @@ describe('checkChanges', () => {
       { kind: 'update', path: 'AGENTS.md', blockId: 'core' },
       {
         kind: 'outdated',
+        severity: 'error',
         path: 'AGENTS.md#core',
         message: 'AGENTS.md managed block "core" does not match the generated rules.',
         fix: FIX,
@@ -119,6 +130,7 @@ describe('checkChanges', () => {
       { kind: 'conflict-unmanaged', path: 'CLAUDE.md', blockId: 'claude' },
       {
         kind: 'unmanaged',
+        severity: 'error',
         path: 'CLAUDE.md#claude',
         message: 'CLAUDE.md managed block "claude" is not managed.',
         fix: FIX,
@@ -129,6 +141,7 @@ describe('checkChanges', () => {
       { kind: 'delete-stale', path: '.cursor/rules/agentinit-zustand.mdc' },
       {
         kind: 'stale',
+        severity: 'error',
         path: '.cursor/rules/agentinit-zustand.mdc',
         message: '.cursor/rules/agentinit-zustand.mdc is no longer generated.',
         fix: FIX,
@@ -148,6 +161,7 @@ describe('checkUnselected', () => {
     expect(checkUnselected([{ id: 'zustand', name: 'Zustand' }])).toEqual([
       {
         kind: 'unselected',
+        severity: 'error',
         message: 'Zustand (zustand) matches this project and is not selected.',
         fix: FIX,
       },
@@ -160,6 +174,7 @@ describe('checkFragmentPackages', () => {
     expect(checkFragmentPackages([zustand], {})).toEqual([
       {
         kind: 'package-removed',
+        severity: 'error',
         message: 'Zustand (zustand) is selected, but zustand is not in the project.',
         fix: FIX,
       },
@@ -170,6 +185,7 @@ describe('checkFragmentPackages', () => {
     expect(checkFragmentPackages([zustand], { zustand: '4.5.0' })).toEqual([
       {
         kind: 'unsupported-version',
+        severity: 'error',
         message: 'Zustand (zustand) is selected, but zustand@4.5.0 is outside >=5.',
         fix: FIX,
       },
@@ -199,6 +215,7 @@ describe('checkFragmentPackages', () => {
     ).toEqual([
       {
         kind: 'unsupported-version',
+        severity: 'error',
         message: 'Tailwind CSS (tailwind) is selected, but typescript@4.9.0 is outside >=5.',
         fix: FIX,
       },
@@ -217,6 +234,7 @@ describe('checkAlwaysOn', () => {
     expect(checkAlwaysOn([{ kind: 'always-on-tokens', tokens: 1501, limit: 1500 }])).toEqual([
       {
         kind: 'always-on-tokens',
+        severity: 'warning',
         message: 'Always-on content is 1,501 tokens, over the 1,500 token budget.',
         fix: 'Reduce always-on rules below 1,500 tokens.',
       },
@@ -233,11 +251,24 @@ describe('checkLegacy', () => {
     expect(checkLegacy([filePath])).toEqual([
       {
         kind: 'legacy-file',
+        severity: 'warning',
         path: filePath,
         message: `${filePath} still loads alongside the new rules.`,
         fix: `Remove ${filePath} if you no longer need it.`,
       },
     ]);
+  });
+});
+
+describe('doctorReport', () => {
+  it('is ok when there are only warnings', () => {
+    const issues = checkLegacy(['.cursorrules']);
+    expect(doctorReport(issues)).toEqual({ ok: true, issues });
+  });
+
+  it('is not ok when any issue is an error', () => {
+    const issues = [...checkLegacy(['.cursorrules']), notInitializedIssue()];
+    expect(doctorReport(issues).ok).toBe(false);
   });
 });
 
@@ -267,6 +298,7 @@ describe('doctorChecklist', () => {
   it('attaches failing issues under the matching check', () => {
     const missing = {
       kind: 'missing' as const,
+      severity: 'error' as const,
       path: 'AGENTS.md',
       message: 'AGENTS.md is missing.',
       fix: FIX,
@@ -282,10 +314,27 @@ describe('doctorChecklist', () => {
 
 describe('issuesFoundMessage', () => {
   it.each([
-    [1, '1 issue found.'],
-    [2, '2 issues found.'],
-  ])('formats %i issues', (count, message) => {
-    expect(issuesFoundMessage(count)).toBe(message);
+    [1, 0, '1 error found.'],
+    [2, 0, '2 errors found.'],
+    [0, 1, '1 warning found.'],
+    [0, 2, '2 warnings found.'],
+    [1, 1, '1 error, 1 warning found.'],
+    [2, 3, '2 errors, 3 warnings found.'],
+    [0, 0, 'No issues found.'],
+  ])('formats %i errors and %i warnings', (errors, warnings, message) => {
+    expect(issuesFoundMessage(errors, warnings)).toBe(message);
+  });
+});
+
+describe('countBySeverity', () => {
+  it('counts errors and warnings separately', () => {
+    expect(
+      countBySeverity([
+        notInitializedIssue(),
+        ...checkLegacy(['.cursorrules']),
+        ...checkAlwaysOn([{ kind: 'always-on-tokens', tokens: 1501, limit: 1500 }]),
+      ]),
+    ).toEqual({ errors: 1, warnings: 2 });
   });
 });
 
@@ -321,6 +370,6 @@ describe('formatDoctorReport', () => {
 
 Edited
   .cursor/rules/agentinit-zustand.mdc was edited by hand.
-    Fix: ${FIX}`);
+    Fix: ${EDITED_FIX}`);
   });
 });

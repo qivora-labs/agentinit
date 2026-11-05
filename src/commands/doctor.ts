@@ -6,6 +6,7 @@ import { readPackageJson, resolveVersions } from '../detect/packages.js';
 import { findGitRoot } from '../detect/workspace.js';
 import {
   collectDoctorIssues,
+  countBySeverity,
   doctorChecklist,
   doctorReport,
   formatDoctorReport,
@@ -54,13 +55,15 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
       : await issuesForManifest(root, registry, manifest);
 
   const report = doctorReport(issues);
+  const { errors, warnings } = countBySeverity(issues);
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);
   else if (logger.theme.tty) {
     const checks = doctorChecklist(issues);
     logger.info(underRail(paintDoctorChecks(checks, logger.theme), logger.theme, logger.columns));
-    if (report.ok) logger.close(NO_ISSUES);
-    else logger.close(issuesFoundMessage(issues.length), { tone: 'error' });
-  } else if (report.ok) {
+    if (errors === 0 && warnings === 0) logger.close(NO_ISSUES);
+    else if (errors === 0) logger.close(issuesFoundMessage(errors, warnings), { tone: 'warn' });
+    else logger.close(issuesFoundMessage(errors, warnings), { tone: 'error' });
+  } else if (errors === 0 && warnings === 0) {
     logger.close(NO_ISSUES);
   } else {
     logger.info(paintDoctorReport(formatDoctorReport(issues), logger.theme));
@@ -189,10 +192,11 @@ function installedPackages(root: string): Record<string, string | null> {
 function unselectedFragments(registry: Registry, detection: DetectionResult, manifest: Manifest): NamedFragment[] {
   if (detection.mode !== 'existing') return [];
   const selected = new Set([...manifest.selections.frameworks, ...manifest.selections.libraries]);
+  const excluded = new Set(manifest.selections.excluded);
   const detected = [...detection.draft.frameworks, ...detection.draft.libraries];
   const fragments: NamedFragment[] = [];
   for (const id of detected) {
-    if (selected.has(id)) continue;
+    if (selected.has(id) || excluded.has(id)) continue;
     const meta = registry.byId.get(id)?.meta;
     fragments.push({ id, name: meta?.name ?? id });
   }

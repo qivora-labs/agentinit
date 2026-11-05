@@ -17,7 +17,8 @@ backups/
       "claude",
       "windsurf",
       "copilot"
-    ]
+    ],
+    "excluded": []
   },
   "fragments": {
     "express": "1.0.0",
