@@ -102,6 +102,7 @@ describe('init', () => {
     const result = await runCli(['init', '--yes', '--cwd', dir]);
     expect(result.code).toBe(0);
     expect(result.stderr).not.toContain('This is a bug');
+    expect(result.stderr).toMatch(/Architecture confidence is 0\.625, below 0\.7\. Using Flat \/ Minimal\./);
     expect(result.stdout).toContain('Always-on tokens:');
     expect(result.stdout).not.toContain('Context cost');
     expect(result.stdout).not.toContain('Next steps');
@@ -500,7 +501,11 @@ describe('init', () => {
       }
       return out;
     };
-    const inner = recordingPrompter([{ type: 'select', value: 'use' }, WRITE]);
+    const inner = recordingPrompter([
+      { type: 'select', value: 'use' },
+      { type: 'select', value: 'flat' },
+      WRITE,
+    ]);
     let filesAtCard: string[] | undefined;
     const prompter = {
       select: inner.prompter.select.bind(inner.prompter),
@@ -536,6 +541,7 @@ describe('init', () => {
     const before = await treeDigest(dir);
     const recorded = recordingPrompter([
       { type: 'select', value: 'use' },
+      { type: 'select', value: 'flat' },
       { type: 'select', value: 'preview' },
       WRITE,
       { type: 'select', value: 'adopt' },
@@ -569,6 +575,7 @@ describe('init', () => {
       (
         await runCli(['init', '--agents', 'cursor', '--cwd', interactiveDir], interactive([
           { type: 'select', value: 'use' },
+          { type: 'select', value: 'flat' },
           WRITE,
         ]))
       ).code,
@@ -654,7 +661,10 @@ describe('init', () => {
     const dry = await runCli(['init', '--dry-run', '--agents', 'cursor', '--cwd', dryDir], {
       stdinTTY: true,
       stdoutTTY: true,
-      prompter: createFakePrompter([{ type: 'select', value: 'use' }]),
+      prompter: createFakePrompter([
+        { type: 'select', value: 'use' },
+        { type: 'select', value: 'flat' },
+      ]),
     });
     expect(dry.code).toBe(0);
     expect(dry.stdout).not.toContain('Ready to write');
@@ -665,6 +675,7 @@ describe('init', () => {
     const dir = await copyFixture('existing-claude-md');
     const recorded = recordingPrompter([
       { type: 'select', value: 'use' },
+      { type: 'select', value: 'flat' },
       WRITE,
       { type: 'select', value: 'adopt' },
     ]);
@@ -692,6 +703,7 @@ describe('init', () => {
     const digest = await treeDigest(dir);
     const result = await runCli(['init', '--agents', 'cursor', '--cwd', dir], interactive([
       { type: 'select', value: 'use' },
+      { type: 'select', value: 'flat' },
       { type: 'cancel' },
     ]));
     expect(result.code).toBe(130);

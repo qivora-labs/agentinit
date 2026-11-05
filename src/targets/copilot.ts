@@ -1,4 +1,5 @@
 import { AgentInitError } from '../errors.js';
+import { agentRuleBody } from '../plan/render.js';
 import type { RenderedFragment, RenderedWorkflow, TargetAdapter } from '../plan/types.js';
 import type { FileOp } from '../types.js';
 
@@ -58,7 +59,7 @@ function instructionFile(fragment: RenderedFragment, globs: readonly string[]): 
   if (globs.length > 0) lines.push(`applyTo: ${applyTo(globs)}`);
   return fileOp(
     `.github/instructions/agentinit-${fragment.id}.instructions.md`,
-    document(frontmatter(lines), fragment.body),
+    document(frontmatter(lines), agentRuleBody(fragment)),
   );
 }
 
@@ -114,7 +115,7 @@ function workflowPromptPath(id: string): string {
 function manualPromptOp(fragment: RenderedFragment): FileOp {
   return fileOp(
     manualPromptPath(fragment.id),
-    document(frontmatter([`description: ${yamlScalar(fragment.description)}`]), fragment.body),
+    document(frontmatter([`description: ${yamlScalar(fragment.description)}`]), agentRuleBody(fragment)),
   );
 }
 

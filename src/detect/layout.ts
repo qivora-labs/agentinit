@@ -44,6 +44,10 @@ const ATOMIC_NAMES = ['atoms', 'molecules', 'organisms', 'templates'] as const;
  * - ≤ 4 top-level and ≤ 6 nested → 0.875
  * - ≤ 8 top-level and ≤ 12 nested → 0.75
  * - larger → 0.5
+ * Flat reaches ≥ 0.7 only when at least one Map folder from the flat
+ * architecture fragment exists (`components`, `hooks`, `utils`, `types`, or
+ * `features`). Otherwise the score is capped at 0.625 so the low-confidence
+ * path in PRD §3.3 step 4 applies.
  *
  * The winner's weight is reduced by every other positive weight. The result
  * is clamped to [0.125, 1] so a total cancellation stays positive and still
@@ -55,6 +59,9 @@ const ATOMIC_WEIGHT = [0, 0.25, 0.75, 0.875, 0.875] as const;
 const FLAT_SMALL = 0.875;
 const FLAT_MEDIUM = 0.75;
 const FLAT_LARGE = 0.5;
+const FLAT_MAP_ROOTS = new Set(['components', 'hooks', 'utils', 'types', 'features']);
+const FLAT_WITHOUT_MAP = 0.625;
+const LIKELY_CONFIDENCE = 0.7;
 const MIN_CONFIDENCE = 0.125;
 const MAX_FOLDER_DEPTH = 2;
 const FLAT_SMALL_TOP = 4;
@@ -125,7 +132,7 @@ export function inferArchitecture(folders: readonly string[]): ArchitectureInfer
   if (winner === undefined) {
     return {
       id: 'flat',
-      confidence: clampConfidence(flatWeight(folders) - competingWeight(signals, undefined)),
+      confidence: flatConfidence(folders, competingWeight(signals, undefined)),
     };
   }
   return {
@@ -204,6 +211,22 @@ function flatWeight(folders: readonly string[]): number {
   if (topLevel <= FLAT_SMALL_TOP && nested <= FLAT_SMALL_NESTED) return FLAT_SMALL;
   if (topLevel <= FLAT_MEDIUM_TOP && nested <= FLAT_MEDIUM_NESTED) return FLAT_MEDIUM;
   return FLAT_LARGE;
+}
+
+function flatConfidence(folders: readonly string[], competing: number): number {
+  const confidence = clampConfidence(flatWeight(folders) - competing);
+  if (confidence < LIKELY_CONFIDENCE || hasFlatMapFolder(folders)) return confidence;
+  return FLAT_WITHOUT_MAP;
+}
+
+/** True when a flat Map root (or a child under `features/`) exists. */
+function hasFlatMapFolder(folders: readonly string[]): boolean {
+  for (const folder of folders) {
+    const slash = folder.indexOf('/');
+    const root = slash === -1 ? folder : folder.slice(0, slash);
+    if (FLAT_MAP_ROOTS.has(root)) return true;
+  }
+  return false;
 }
 
 function clampConfidence(value: number): number {

@@ -77,6 +77,7 @@ describe('safety', () => {
     const confirmed = await temp.copyFixture('existing-workflow-file');
     const answers: readonly FakeAnswer[] = [
       { type: 'select', value: 'use' },
+      { type: 'select', value: 'flat' },
       { type: 'select', value: 'write' },
       { type: 'select', value: 'backup-replace' },
     ];

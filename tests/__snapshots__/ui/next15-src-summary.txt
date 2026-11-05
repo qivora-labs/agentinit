@@ -1,5 +1,5 @@
 Detected next15-src
 Framework     Next.js App Router 16  next 16.3
 Language      TypeScript · strict  typescript 5.9
-Architecture  Flat / Minimal  likely
+Architecture  Flat / Minimal  unsure (0.625)
 Tooling       pnpm · src/

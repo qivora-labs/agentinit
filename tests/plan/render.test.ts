@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
 import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
-import { renderTargetContext } from '../../src/plan/render.js';
+import { agentRuleBody, renderTargetContext } from '../../src/plan/render.js';
 import { layeredFragment, profile, resolved, ruleFragment, workflowFragment } from './helpers.js';
 
 const sampleDir = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
@@ -117,5 +117,57 @@ describe('renderTargetContext', () => {
     expect(ctx.fragments.auto.map((fragment) => fragment.globs)).toEqual([['src/a.ts'], ['src/b.ts']]);
     expect(ctx.fragments.manual.map((fragment) => fragment.id)).toEqual(['mentioned']);
     expect(ctx.workflows.map((workflow) => workflow.id)).toEqual(['first', 'second']);
+  });
+});
+
+describe('agentRuleBody', () => {
+  it('omits framework Map and leaves other categories unchanged', () => {
+    const framework = renderTargetContext(
+      profile(),
+      resolved([
+        layeredFragment(),
+        ruleFragment({
+          id: 'nextjs-app-router',
+          name: 'Next.js App Router',
+          category: 'framework',
+          scope: 'glob',
+          order: 30,
+          globs: ['{{src}}app/**/*.ts'],
+          body: [
+            '## Map',
+            '| Path | Responsibility |',
+            '| `{{src}}app/` | Route segments. |',
+            '',
+            '## Boundary',
+            'Server Components by default.',
+          ].join('\n'),
+        }),
+      ]),
+    ).fragments.glob[0];
+    const library = renderTargetContext(
+      profile(),
+      resolved([
+        layeredFragment(),
+        ruleFragment({
+          id: 'zustand',
+          name: 'Zustand',
+          category: 'library',
+          scope: 'auto',
+          order: 40,
+          globs: ['{{src}}**/*.ts'],
+          body: ['## Map', 'Keep this for libraries.', '## Boundary', 'Client state.'].join('\n'),
+        }),
+      ]),
+    ).fragments.auto[0];
+
+    expect(framework).toBeDefined();
+    expect(library).toBeDefined();
+    if (framework === undefined || library === undefined) return;
+
+    expect(framework.body).toContain('## Map');
+    expect(agentRuleBody(framework)).not.toContain('## Map');
+    expect(agentRuleBody(framework)).toContain('## Boundary');
+    expect(agentRuleBody(framework)).toContain('Server Components by default.');
+    expect(agentRuleBody(library)).toBe(library.body);
   });
 });

@@ -21,7 +21,7 @@ backups/
     "excluded": []
   },
   "fragments": {
-    "express": "1.0.0",
+    "express": "1.0.1",
     "flat": "1.0.0",
     "typescript-strict": "1.0.0"
   },
@@ -30,7 +30,7 @@ backups/
       "sha256": "9636a7b782dd9b7459c3aa10d268c200491594a068fc40d2a1929d4502769c5d"
     },
     ".claude/skills/new-feature/SKILL.md": {
-      "sha256": "13a07e27a94352bb7d561c1d533f672d087453ecafa79c386507bbabc8d81274"
+      "sha256": "336f6e365ec5e25e3a24c44a4389a2dcd761a5dfa8239a0f5fda49182f6b3ddd"
     },
     ".claude/skills/refactor/SKILL.md": {
       "sha256": "17d44de6072b8feee422218d65479df77c36d02997096dd4dc5b90afade840be"
@@ -42,7 +42,7 @@ backups/
       "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
     },
     ".cursor/commands/new-feature.md": {
-      "sha256": "691e2997b7e6263c2e57467f1bc101f5bb2e38594b785e7e88bad8c5b57ea854"
+      "sha256": "005ce24b31fc9552204cfb46b72527db96891767dd8cf45216781aa23edc08e3"
     },
     ".cursor/commands/refactor.md": {
       "sha256": "8d5dbd1e0c9c7f8ae1b072c0954664fafea9256d1026ab4cddeb575f6af2d5b5"
@@ -63,7 +63,7 @@ backups/
       "sha256": "e9abf6968018c2064bc61d7f44ac56b6486e804354184ef77fbf1e60f8e90106"
     },
     ".github/prompts/new-feature.prompt.md": {
-      "sha256": "4c770c8fb5be0bd0b508e9ff83b2b737d5e1d547c40b3229f0f696f1adb89002"
+      "sha256": "5cb09f9928e3b337629f0cf3d53c529459f8eab69682749f36fb69a7b5cb17e7"
     },
     ".github/prompts/refactor.prompt.md": {
       "sha256": "8d878901290cafcf7750bca939105b47e3d52d7fde058b33dd5158ce6ebe03a8"
@@ -78,7 +78,7 @@ backups/
       "sha256": "ac3add01d5a88e47298d1e3f432db1f9c5a5169e7a0065a77384f61022160aec"
     },
     ".windsurf/workflows/new-feature.md": {
-      "sha256": "e851e8ca4faa06627556506b26bfe858c598e445fd988c65ce546d1625161dd4"
+      "sha256": "8b60123155f28bfeb0c958111c7fa0224b014c97c731666b5f9e4ebb4422aeba"
     },
     ".windsurf/workflows/refactor.md": {
       "sha256": "33b6907113c51c734db67bcf76561e55522d2077345594371805652da8fce11f"
@@ -93,7 +93,7 @@ backups/
       "sha256": "bb7d982753a2c2b772c5d739c4b35c27ee23e9152f29036f494e25f114d889d0"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "5b0190de0ed8e252e9888e0cdc9988de3b4217eec7e5bd4ce30632f45a35ac1f"
+      "sha256": "20dade9227c0d9142e00f5b2ad7d79825081c173cd95dde14df6bf08e29ddcb1"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
@@ -160,7 +160,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `npm run lint`.
+5. Run `npm run lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -268,7 +268,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `npm run lint`.
+5. Run `npm run lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -437,7 +437,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `npm run lint`.
+5. Run `npm run lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -578,7 +578,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `npm run lint`.
+5. Run `npm run lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -762,14 +762,10 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 ## Layout
 
-None of the detected folders match a row in the architecture map.
-
-## Other existing folders
-
-These folders are already in the project:
-
-- `src/middleware`
-- `src/routes`
+| Folder | Responsibility |
+| :--- | :--- |
+| `src/middleware` | Express middleware. |
+| `src/routes` | Express routers and route modules. |
 
 ## Conventions for new code
 

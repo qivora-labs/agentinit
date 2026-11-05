@@ -1,3 +1,4 @@
+import { agentRuleBody } from '../plan/render.js';
 import type { RenderedFragment, RenderedWorkflow, TargetAdapter } from '../plan/types.js';
 import type { FileOp } from '../types.js';
 
@@ -30,7 +31,7 @@ function ruleOp(fragment: RenderedFragment, scope: CursorRuleScope): FileOp {
     lines.push(`globs: ${yamlScalar(fragment.globs.join(','))}`);
   }
   lines.push('alwaysApply: false');
-  return fileOp(`.cursor/rules/agentinit-${fragment.id}.mdc`, document(frontmatter(lines), fragment.body));
+  return fileOp(`.cursor/rules/agentinit-${fragment.id}.mdc`, document(frontmatter(lines), agentRuleBody(fragment)));
 }
 
 function workflowOp(workflow: RenderedWorkflow): FileOp {

@@ -135,6 +135,28 @@ describe('checkFragments', () => {
     ]);
   });
 
+  it('accepts a framework fragment with an optional Map table', () => {
+    const body = [
+      '## Map',
+      '| Path | Responsibility |',
+      '| :--- | :--- |',
+      '| `{{src}}app/` | Route segments. |',
+      '',
+      VALID_RULE,
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body, category: 'framework', id: 'nextjs' })], TODAY)).toEqual([]);
+  });
+
+  it('rejects a framework Map that is not a Path/Responsibility table', () => {
+    const body = ['## Map', 'app holds routes', '', VALID_RULE].join('\n');
+    expect(checkFragments([ruleFragment({ body, category: 'framework', id: 'nextjs' })], TODAY)).toEqual([
+      error(
+        '## Map must be a markdown table with Path and Responsibility columns',
+        'frameworks/nextjs.md',
+      ),
+    ]);
+  });
+
   it.each(WORKFLOW_SECTIONS)('rejects a workflow missing ## %s', (name) => {
     expect(checkFragments([workflowFragment(workflowBody(name))], TODAY)).toEqual([
       error(`missing "## ${name}" section`, 'workflows/sample.md'),

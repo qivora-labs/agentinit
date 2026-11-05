@@ -1,4 +1,5 @@
 import { AgentInitError } from '../errors.js';
+import { agentRuleBody } from '../plan/render.js';
 import type { RenderedFragment, RenderedWorkflow, TargetAdapter } from '../plan/types.js';
 import type { FileOp } from '../types.js';
 
@@ -49,7 +50,7 @@ function workflowOp(workflow: RenderedWorkflow): FileOp {
 }
 
 function ruleFile(fragment: RenderedFragment, lines: readonly string[]): FileOp {
-  const content = document(frontmatter(lines), fragment.body);
+  const content = document(frontmatter(lines), agentRuleBody(fragment));
   if (content.length >= RULE_CHAR_LIMIT) {
     throw new AgentInitError(
       `Windsurf rule for fragment "${fragment.id}" is ${String(content.length)} characters. ` +

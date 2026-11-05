@@ -56,6 +56,38 @@ export function getSections(body: string): Map<string, string> {
   return sections;
 }
 
+/**
+ * Drop a `##` section (heading and body). Headings inside fences stay. Other
+ * sections and any preamble keep their relative order.
+ */
+export function omitSection(body: string, title: string): string {
+  const kept: string[] = [];
+  let skipping = false;
+  let inFence = false;
+
+  for (const line of body.split(/\r?\n/u)) {
+    if (CODE_FENCE.test(line)) {
+      inFence = !inFence;
+      if (!skipping) kept.push(line);
+      continue;
+    }
+    if (!inFence) {
+      const match = SECTION_HEADING.exec(line);
+      if (match !== null) {
+        const name = (match[1] ?? '').trim();
+        if (name.length > 0) {
+          skipping = name === title;
+          if (!skipping) kept.push(line);
+          continue;
+        }
+      }
+    }
+    if (!skipping) kept.push(line);
+  }
+
+  return kept.join('\n').trim();
+}
+
 export function parseFragment(text: string, sourcePath: string): Fragment {
   const normalized = text.replace(/^\uFEFF/, '');
   const split = splitFrontmatter(normalized, sourcePath);

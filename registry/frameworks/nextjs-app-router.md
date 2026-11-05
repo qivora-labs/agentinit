@@ -2,7 +2,7 @@
 id: nextjs-app-router
 name: Next.js App Router 16
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Server Components by default, validated Server Actions, and Next.js 16 caching.
 hint: next ≥16.3 · RSC, Server Actions, cache
@@ -28,6 +28,12 @@ sources:
   - https://nextjs.org/docs/app/guides/upgrading/version-16
 verifiedAt: 2026-10-28
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}app/` | App Router route segments (layout, page, loading, error). |
+| `{{src}}app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.

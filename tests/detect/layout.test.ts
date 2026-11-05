@@ -342,22 +342,28 @@ describe('inferArchitecture', () => {
       confidence: 'low',
     },
     {
-      behavior: 'scores a small unstructured tree as flat at or above 0.7',
+      behavior: 'scores a small tree with flat Map folders at or above 0.7',
       folders: ['components', 'lib', 'hooks'],
       id: 'flat',
       confidence: 'high',
     },
     {
-      behavior: 'scores an empty folder list as flat at or above 0.7',
+      behavior: 'scores an empty folder list as flat below 0.7',
       folders: [],
       id: 'flat',
-      confidence: 'high',
+      confidence: 'low',
     },
     {
-      behavior: 'scores eight top-level folders as flat at or above 0.7',
+      behavior: 'scores only app as flat below 0.7',
+      folders: ['app'],
+      id: 'flat',
+      confidence: 'low',
+    },
+    {
+      behavior: 'scores eight top-level folders without Map evidence below 0.7',
       folders: namedFolders(8),
       id: 'flat',
-      confidence: 'high',
+      confidence: 'low',
     },
     {
       behavior: 'scores nine top-level folders as flat below 0.7',

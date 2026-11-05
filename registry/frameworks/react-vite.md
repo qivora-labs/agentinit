@@ -2,7 +2,7 @@
 id: react-vite
 name: React + Vite
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
 hint: React 19 actions/use, Vite env, lazy load
@@ -23,6 +23,12 @@ sources:
   - https://vite.dev/config/shared-options
 verifiedAt: 2026-10-28
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}components/` | React components. |
+| `{{src}}hooks/` | React hooks. |
 
 ## Boundary
 These rules apply to React components bundled by Vite. Hooks other than `use` stay at the top level of a component. `use` may run inside a condition or a loop. A name that starts with `VITE_` is inlined into the client bundle as a string. `lazy` loads a component's default export the first time that component renders.

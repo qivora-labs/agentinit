@@ -417,7 +417,7 @@ describe('applyChanges safety', () => {
     expect(calls[0]?.method === 'diff' ? calls[0].unified : '').toContain('rules');
     expect(calls[0]?.method === 'diff' ? calls[0].unified : '').toContain('Index:');
     expect(choicePrompt(calls[1]).message).toBe(
-      "the agentinit section of AGENTS.md already exists and agentinit doesn't manage it yet. What should we do?",
+      'AGENTS.md already exists and has no agentinit section yet. What should we do?',
     );
     expect(choicePrompt(calls[1]).initialValue).toBe('adopt');
     expect(reportAction(result, 'AGENTS.md')).toBe('adopted');
@@ -450,9 +450,34 @@ describe('applyChanges safety', () => {
 
     const result = await applyChanges(root, changes, applyOptions({ yes: false, prompter }));
 
-    expect(choicePrompt(calls.find((call) => call.method === 'select')).initialValue).toBe('skip');
+    const ask = choicePrompt(calls.find((call) => call.method === 'select'));
+    expect(ask.message).toBe(`${RULE} already exists and agentinit didn't create it. What should we do?`);
+    expect(ask.initialValue).toBe('skip');
     expect(reportAction(result, RULE)).toBe('skipped');
     expect(await readFile(path.join(root, RULE), 'utf8')).toBe('user\n');
+  });
+
+  it('names the managed block when asking about an edited section', async () => {
+    const root = await tempDir();
+    const text = `# Notes\n\n${createWithBlock('core', 'edited by hand\n')}`;
+    await writeFile(path.join(root, 'AGENTS.md'), text);
+    const changes = await planChanges(
+      root,
+      [block('AGENTS.md', 'core', 'next rules\n')],
+      manifest({ 'AGENTS.md#core': contentHash('rules\n') }),
+    );
+    const { prompter, calls } = recordingPrompter([{ type: 'select', value: 'skip' }]);
+
+    const result = await applyChanges(root, changes, applyOptions({ yes: false, prompter }));
+
+    expect(changes[0]?.kind).toBe('conflict-edited');
+    const ask = choicePrompt(calls.find((call) => call.method === 'select'));
+    expect(ask.message).toBe(
+      'the agentinit section of AGENTS.md was edited after agentinit wrote it. What should we do?',
+    );
+    expect(ask.initialValue).toBe('skip');
+    expect(reportAction(result, 'AGENTS.md')).toBe('skipped');
+    expect(await readFile(path.join(root, 'AGENTS.md'), 'utf8')).toBe(text);
   });
 
   it('refuses a conflict when there is no prompter and --yes was not passed', async () => {

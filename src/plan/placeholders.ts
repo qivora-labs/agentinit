@@ -63,6 +63,7 @@ export function renderBody(text: string, ctx: PlaceholderContext): string {
   const { lines, endedWithNewline } = splitLines(text);
   const dropped = unresolvableLines(lines, ctx);
   for (const index of emptiedSectionLines(lines, dropped)) dropped.add(index);
+  renumberOrderedLists(lines, dropped);
   const rendered = lines
     .filter((_, index) => !dropped.has(index))
     .map((line) => renderResolved(line, ctx));
@@ -326,4 +327,50 @@ function headingLevel(line: string): number | null {
   const match = /^ {0,3}(#{1,6})(?:[ \t]+.*)?$/u.exec(line);
   const hashes = match?.[1];
   return hashes === undefined ? null : hashes.length;
+}
+
+const ORDERED_ITEM = /^(\s*)(\d+)(\.[ \t]+)(.*)$/u;
+
+/**
+ * After drops, renumber each ordered list that lost an item. A list is a run of
+ * consecutive `N.` lines at the same indent, outside fences. The first item's
+ * number is kept; lists that lost nothing stay as written.
+ */
+function renumberOrderedLists(lines: string[], dropped: ReadonlySet<number>): void {
+  const inFence = fenceMask(lines, findFenceSpans(lines));
+  let index = 0;
+  while (index < lines.length) {
+    if (inFence[index] === true) {
+      index += 1;
+      continue;
+    }
+    const first = ORDERED_ITEM.exec(lines[index] ?? '');
+    if (first === null) {
+      index += 1;
+      continue;
+    }
+    const indent = first[1] ?? '';
+    const startNumber = Number(first[2]);
+    const listIndices: number[] = [];
+    let cursor = index;
+    while (cursor < lines.length) {
+      if (inFence[cursor] === true) break;
+      const item = ORDERED_ITEM.exec(lines[cursor] ?? '');
+      if (item === null || (item[1] ?? '') !== indent) break;
+      listIndices.push(cursor);
+      cursor += 1;
+    }
+
+    const survivors = listIndices.filter((lineIndex) => !dropped.has(lineIndex));
+    if (survivors.length > 0 && survivors.length < listIndices.length) {
+      let next = startNumber;
+      for (const lineIndex of survivors) {
+        const item = ORDERED_ITEM.exec(lines[lineIndex] ?? '');
+        if (item === null) continue;
+        lines[lineIndex] = `${indent}${String(next)}${item[3] ?? '. '}${item[4] ?? ''}`;
+        next += 1;
+      }
+    }
+    index = cursor;
+  }
 }

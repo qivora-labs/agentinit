@@ -190,6 +190,9 @@ function checkFragment(fragment: Fragment, today: string): RegistryProblem[] {
     if (fragment.meta.category === 'architecture') {
       problems.push(...architectureProblems(fragment));
     }
+    if (fragment.meta.category === 'framework') {
+      problems.push(...frameworkMapProblems(fragment));
+    }
   }
 
   problems.push(...placeholderProblems(fragment));
@@ -254,6 +257,49 @@ function architectureProblems(fragment: Fragment): RegistryProblem[] {
     problems.push(problem(fragment, 'error', 'missing "## Map" section'));
   }
   return problems;
+}
+
+/** Framework `## Map` is optional; when present it must be a Path/Responsibility table. */
+function frameworkMapProblems(fragment: Fragment): RegistryProblem[] {
+  const map = getSections(fragment.body).get('Map');
+  if (map === undefined) return [];
+  if (!isMapTable(map)) {
+    return [
+      problem(
+        fragment,
+        'error',
+        '## Map must be a markdown table with Path and Responsibility columns',
+      ),
+    ];
+  }
+  return [];
+}
+
+function isMapTable(map: string): boolean {
+  let sawHeader = false;
+  let sawSeparator = false;
+  let dataRows = 0;
+  for (const line of map.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) continue;
+    const cells = trimmed
+      .split('|')
+      .slice(1, -1)
+      .map((cell) => cell.replace(/\*\*/gu, '').trim().replace(/^`([^`]+)`$/u, '$1').trim());
+    const path = cells[0];
+    if (path === undefined || cells.length < 2) continue;
+    if (/^:?-{3,}:?$/u.test(path)) {
+      sawSeparator = true;
+      continue;
+    }
+    if (path.toLowerCase() === 'path') {
+      sawHeader = true;
+      continue;
+    }
+    const responsibility = cells.slice(1).join(' ').trim();
+    if (path.length > 0 && responsibility.length > 0) dataRows += 1;
+  }
+  return sawHeader && sawSeparator && dataRows > 0;
 }
 
 function workflowSectionProblems(fragment: Fragment): RegistryProblem[] {

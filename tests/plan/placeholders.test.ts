@@ -94,6 +94,41 @@ describe('renderBody', () => {
     );
   });
 
+  it('renumbers an ordered list that lost items and keeps the first number', () => {
+    const source = [
+      '1. Read the docs.',
+      '2. Propose a plan.',
+      '3. Run `{{scripts.typecheck}}`.',
+      '4. Run `{{scripts.lint}}`.',
+      '5. Run `{{scripts.test}}`.',
+    ].join('\n');
+
+    expect(renderBody(source, context({ scripts: { lint: 'eslint .' } }))).toBe(
+      ['1. Read the docs.', '2. Propose a plan.', '3. Run `pnpm lint`.'].join('\n'),
+    );
+  });
+
+  it('leaves an ordered list untouched when nothing was dropped', () => {
+    const source = ['1. First.', '3. Kept gap.', '4. Last.'].join('\n');
+    expect(renderBody(source, context())).toBe(source);
+  });
+
+  it('does not renumber ordered items inside a fence', () => {
+    const source = [
+      '1. Outside.',
+      '2. Run `{{scripts.typecheck}}`.',
+      '```',
+      '1. Keep.',
+      '2. {{scripts.typecheck}}',
+      '3. Stay.',
+      '```',
+    ].join('\n');
+
+    expect(renderBody(source, context())).toBe(
+      ['1. Outside.', '```', '1. Keep.', '3. Stay.', '```'].join('\n'),
+    );
+  });
+
   it('keeps a wrapped list continuation that does not contain the placeholder', () => {
     const source = ['- Run `{{scripts.lint}}`', '  before pushing.', '- Stay.'].join('\n');
 

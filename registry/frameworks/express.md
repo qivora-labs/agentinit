@@ -2,7 +2,7 @@
 id: express
 name: Express 5
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Express 5 async errors, boundary validation, and modular routers.
 hint: express ≥5 · async errors, routers
@@ -25,6 +25,13 @@ sources:
   - https://expressjs.com/en/5x/guide/routing.html
 verifiedAt: 2026-10-28
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}routes/` | Express routers and route modules. |
+| `{{src}}middleware/` | Express middleware. |
+| `{{src}}controllers/` | Handlers extracted from routers. |
 
 ## Boundary
 These rules apply to Express route modules, controllers, and middleware. An `async` handler, or a handler that returns a rejected promise, forwards that rejection to error-handling middleware. A promise that is not returned never reaches Express. Error-handling middleware takes four parameters and is registered after the routes.

@@ -23,6 +23,7 @@ const WIDTHS = [72, 120] as const;
 
 const existingKeys: readonly PtyKey[] = [
   enterWhen(/Use this configuration/),
+  enterWhen(/Not sure about the architecture/),
   enterWhen(/Which agents/),
   enterWhen(/What next\?/),
 ];
@@ -38,6 +39,7 @@ const greenfieldKeys: readonly PtyKey[] = [
 
 const conflictKeys: readonly PtyKey[] = [
   enterWhen(/Use this configuration/),
+  enterWhen(/Not sure about the architecture/),
   enterWhen(/What next\?/),
   enterWhen(/Adopt|already exists/),
 ];
@@ -85,12 +87,17 @@ describe.skipIf(skipWindows)('terminal screens', () => {
       keys: existingKeys,
     });
     expect(result.exitCode).toBe(0);
-    expect(result.screens.length).toBe(4);
+    expect(result.screens.length).toBe(5);
 
-    const [detection, agents, review, report] = result.screens;
+    const [detection, architecture, agents, review, report] = result.screens;
     expect(detection).toMatch(/Detected next15-src/);
     expect(detection).toMatch(/Use this configuration/);
+    expect(detection).toMatch(/unsure/);
+    expect(detection).not.toMatch(/likely/);
     await snapshot('existing-detection', cols, detection ?? '');
+
+    expect(architecture).toMatch(/Not sure about the architecture/);
+    await snapshot('existing-architecture', cols, architecture ?? '');
 
     expect(agents).toMatch(/Which agents/);
     await snapshot('existing-agents', cols, agents ?? '');

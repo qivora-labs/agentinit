@@ -2,7 +2,7 @@ import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import { escapeMarkdownText, markdownDocument, markdownInlineCode } from '../plan/markdown.js';
 import { architectureFragment } from '../plan/render.js';
-import type { TargetAdapter } from '../plan/types.js';
+import type { TargetAdapter, TargetContext } from '../plan/types.js';
 import { getSections } from '../registry/parse.js';
 import type { ProjectProfile } from '../types.js';
 
@@ -31,10 +31,11 @@ export const architectureMdAdapter: TargetAdapter = (ctx) => {
     throw new AgentInitError(`Fragment "${fragment.id}" is missing a "## Map" section.`);
   }
   const directives = sections.get('Directives')?.trim() ?? '';
-  const rows = parseMapRows(map);
+  const architectureRows = parseMapRows(map);
+  const rows = [...frameworkMapRows(ctx), ...architectureRows];
   const content =
     ctx.profile.mode === 'greenfield'
-      ? greenfieldDocument(map, rows, directives)
+      ? greenfieldDocument(map, architectureRows, directives)
       : existingDocument(ctx.profile, rows, directives);
 
   return [
@@ -47,6 +48,23 @@ export const architectureMdAdapter: TargetAdapter = (ctx) => {
     },
   ];
 };
+
+function frameworkMapRows(ctx: TargetContext): MapRow[] {
+  const fragments = [
+    ...ctx.fragments.always,
+    ...ctx.fragments.glob,
+    ...ctx.fragments.auto,
+    ...ctx.fragments.manual,
+  ];
+  const rows: MapRow[] = [];
+  for (const fragment of fragments) {
+    if (fragment.category !== 'framework') continue;
+    const map = getSections(fragment.body).get('Map')?.trim() ?? '';
+    if (map.length === 0) continue;
+    rows.push(...parseMapRows(map));
+  }
+  return rows;
+}
 
 function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], directives: string): string {
   const folders = uniqueFolders(profile.folders);
@@ -68,14 +86,21 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
         )
       : folders.length === 0
         ? 'No folders were detected under the source root.'
-        : 'None of the detected folders match a row in the architecture map.';
+        : [
+            'No detected folder matches the architecture map. Follow the conventions below for new code.',
+            '',
+            'These folders are already in the project:',
+            '',
+            ...unmatched.map((folder) => `- ${markdownInlineCode(folder)}`),
+          ].join('\n');
 
   const blocks = [
     '# ARCHITECTURE.md',
     'Describes the folders that exist today and the conventions for new code. Existing files stay where they are.',
     `## Layout\n\n${layout}`,
   ];
-  if (unmatched.length > 0) {
+  // When nothing matched, existing folders are already listed under Layout.
+  if (unmatched.length > 0 && matched.length > 0) {
     const listed = unmatched.map((folder) => `- ${markdownInlineCode(folder)}`).join('\n');
     blocks.push(`## Other existing folders\n\nThese folders are already in the project:\n\n${listed}`);
   }

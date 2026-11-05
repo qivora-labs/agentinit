@@ -2,7 +2,7 @@
 id: nextjs-pages-router
 name: Next.js Pages Router
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Pages Router data fetching, API routes, and coexistence with the App Router.
 hint: Pages data fetching, API routes, coexistence
@@ -23,6 +23,12 @@ sources:
   - https://nextjs.org/docs/app/getting-started/route-handlers
 verifiedAt: 2026-10-28
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}pages/` | Pages Router page modules. |
+| `{{src}}pages/api/` | API routes under pages/api. |
 
 ## Boundary
 These rules apply to files under `pages/`. A page module may export `getServerSideProps` or `getStaticProps` when it reads data on the server, and `getStaticPaths` when `getStaticProps` serves a dynamic route. Files in `pages/api` are HTTP endpoints, not pages. The `app` directory can serve other URLs in the same project. Navigation from one router to the other is a full page load.

@@ -151,6 +151,47 @@ describe('cursorAdapter', () => {
     });
   });
 
+  it('omits framework Map from the rule body while ARCHITECTURE.md still merges it', () => {
+    const frameworkBody = [
+      '## Map',
+      '| Path | Responsibility |',
+      '| :--- | :--- |',
+      '| `{{src}}app/` | App Router route segments. |',
+      '',
+      '## Boundary',
+      'Server Components by default.',
+      '',
+      '## Directives',
+      '- **ALWAYS** keep boundaries.',
+      '',
+      '```ts',
+      'const ok = true;',
+      '```',
+    ].join('\n');
+    const plan = buildPlan(
+      profile({ agents: ['cursor'], folders: ['app'] }),
+      resolved([
+        layeredFragment(),
+        ruleFragment({
+          id: 'nextjs-app-router',
+          name: 'Next.js App Router',
+          category: 'framework',
+          scope: 'glob',
+          order: 30,
+          description: 'App Router rules.',
+          globs: ['{{src}}app/**/*.ts'],
+          body: frameworkBody,
+        }),
+      ]),
+    );
+    const rule = content(plan.ops, '.cursor/rules/agentinit-nextjs-app-router.mdc');
+    const architecture = plan.ops.find((op) => op.path === 'ARCHITECTURE.md')?.content ?? '';
+
+    expect(rule).not.toContain('## Map');
+    expect(rule).toContain('## Boundary');
+    expect(architecture).toContain('| `src/app` | App Router route segments. |');
+  });
+
   it.each([
     {
       behavior: 'quotes a glob list that starts with *',

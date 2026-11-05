@@ -2,7 +2,7 @@
 id: nextjs-app-router-15
 name: Next.js App Router 15
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Server Components by default, async request APIs, and validated Server Actions for Next.js 15.
 hint: next 15.x · RSC, async params, actions
@@ -26,6 +26,12 @@ sources:
   - https://nextjs.org/docs/15/app/getting-started/route-handlers
 verifiedAt: 2026-11-05
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}app/` | App Router route segments (layout, page, loading, error). |
+| `{{src}}app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. In Next.js 15, `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.

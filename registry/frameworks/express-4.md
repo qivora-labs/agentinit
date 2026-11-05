@@ -2,7 +2,7 @@
 id: express-4
 name: Express 4
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Express 4 routers, boundary validation, and explicit async error forwarding.
 hint: express 4.x · catch async, routers
@@ -26,6 +26,13 @@ sources:
   - https://expressjs.com/en/guide/migrating-5/
 verifiedAt: 2026-11-05
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}routes/` | Express routers and route modules. |
+| `{{src}}middleware/` | Express middleware. |
+| `{{src}}controllers/` | Handlers extracted from routers. |
 
 ## Boundary
 These rules apply to Express 4 route modules, controllers, and middleware. Express 4 does not forward rejected promises from `async` handlers to error middleware. A rejection that is not passed to `next` is unhandled. Error-handling middleware takes four parameters and is registered after the routes.

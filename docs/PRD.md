@@ -345,7 +345,7 @@ Every rule fragment follows the **3-Part Rule Formula**:
 
 `check-registry` enforces the formula mechanically: every rule fragment contains at least one directive keyword (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`, `DEFAULT`) and at least one fenced code block.
 
-Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Workflow fragments follow the structure in §5.5.
+Architecture fragments additionally contain a `## Summary` section (≤ 10 lines, copied into `AGENTS.md`) and a `## Map` section (used for `ARCHITECTURE.md`). Framework fragments may include an optional `## Map` section in the same table format; when present, `ARCHITECTURE.md` merges those rows with the architecture map when matching detected folders. Agent rule files omit framework `## Map` so the folder table is not duplicated outside `ARCHITECTURE.md`. Workflow fragments follow the structure in §5.5.
 
 **Frontmatter schema** (validated with zod at build time and in CI):
 
@@ -372,7 +372,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 
 **Default scope by category:** architecture and language → `always`; framework and library → `glob` or `auto`; workflows have no scope.
 
-**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner). A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, and a heading left with no content is dropped too. Unknown placeholders are an error.
+**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner). A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
 
 **Workflows** are always included; there is no per-workflow selection in v0.1.
 
@@ -566,7 +566,7 @@ For each existing file AgentInit wants to write that it doesn't already own:
 
 Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules, once per run.
 
-The conflict prompt names the file by its path (a managed block is "the agentinit section of `CLAUDE.md`", not a block id) and shows only the diff hunks, without `Index:`, `===`, `---`, or `+++` header lines. On a TTY, added lines are green, removed lines red, and hunk headers gray. The product is written "agentinit" in every message.
+The conflict prompt names the file by its path. For an unmanaged shared file that needs a managed block: "`CLAUDE.md` already exists and has no agentinit section yet." For an unmanaged non-shared file: "`.cursor/commands/new-feature.md` already exists and agentinit didn't create it." Edited managed content uses "the agentinit section of `CLAUDE.md`" (never a block id). The prompt shows only the diff hunks, without `Index:`, `===`, `---`, or `+++` header lines. On a TTY, added lines are green, removed lines red, and hunk headers gray. The product is written "agentinit" in every message.
 
 ### 6.4 Write Guarantees
 - All files are written to a temp path and renamed (atomic); Ctrl-C leaves no partial output.

@@ -190,7 +190,7 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
   if (change.kind === 'conflict-unmanaged' && change.opKind === 'managed-block') {
     return choose(
       prompter,
-      `${label} already exists and agentinit doesn't manage it yet. What should we do?`,
+      `${change.path} already exists and has no agentinit section yet. What should we do?`,
       'adopt',
       [
         { value: 'adopt', label: 'Adopt', hint: 'Keep your content and add the managed block' },
@@ -202,7 +202,7 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
   if (change.kind === 'conflict-unmanaged') {
     return choose(
       prompter,
-      `${label} already exists and agentinit doesn't manage it yet. What should we do?`,
+      `${change.path} already exists and agentinit didn't create it. What should we do?`,
       'skip',
       [
         { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },

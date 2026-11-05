@@ -1,3 +1,4 @@
+import { agentRuleBody } from '../plan/render.js';
 import type { RenderedFragment, RenderedWorkflow, TargetAdapter } from '../plan/types.js';
 import type { FileOp } from '../types.js';
 
@@ -42,7 +43,7 @@ function pathRuleOp(fragment: RenderedFragment): FileOp | undefined {
   const paths = fragment.globs.filter((glob) => glob.length > 0);
   if (paths.length === 0) return undefined;
   const lines = ['paths:', ...paths.map((glob) => `  - ${quoted(glob)}`)];
-  return fileOp(`.claude/rules/agentinit-${fragment.id}.md`, document(frontmatter(lines), fragment.body));
+  return fileOp(`.claude/rules/agentinit-${fragment.id}.md`, document(frontmatter(lines), agentRuleBody(fragment)));
 }
 
 function manualSkillOp(fragment: RenderedFragment): FileOp {
@@ -53,7 +54,7 @@ function manualSkillOp(fragment: RenderedFragment): FileOp {
   ];
   return fileOp(
     `.claude/skills/agentinit-${fragment.id}/SKILL.md`,
-    document(frontmatter(lines), fragment.body),
+    document(frontmatter(lines), agentRuleBody(fragment)),
   );
 }
 
