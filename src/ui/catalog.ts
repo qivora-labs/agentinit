@@ -11,8 +11,11 @@ import type { PromptOption, SelectPrompt } from './prompter.js';
  */
 const FRAMEWORK_GROUPS: readonly { readonly label: string; readonly ids: readonly string[] }[] = [
   { label: 'Web frontend', ids: ['react-vite'] },
-  { label: 'Full-stack web', ids: ['nextjs-app-router', 'nextjs-pages-router'] },
-  { label: 'Backend / API', ids: ['express', 'fastify'] },
+  {
+    label: 'Full-stack web',
+    ids: ['nextjs-app-router', 'nextjs-app-router-15', 'nextjs-pages-router'],
+  },
+  { label: 'Backend / API', ids: ['express', 'express-4', 'fastify'] },
 ];
 
 const LIBRARY_GROUPS: readonly { readonly label: string; readonly ids: readonly string[] }[] = [

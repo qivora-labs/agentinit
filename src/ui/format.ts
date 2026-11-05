@@ -78,10 +78,53 @@ export function formatRegistryNotice(notice: RegistryNotice, registry: Registry)
     case 'required-by':
       return `${fragmentName(registry, notice.fragmentId)} was added because ${fragmentName(registry, notice.requiredBy)} requires it.`;
     case 'incompatible':
-      return `${fragmentName(registry, notice.fragmentId)} was skipped — it targets a different framework.`;
+      return formatIncompatibleNotice(notice, registry);
     case 'no-framework':
       return NO_FRAMEWORK_NOTICE;
   }
+}
+
+function formatIncompatibleNotice(
+  notice: Extract<RegistryNotice, { kind: 'incompatible' }>,
+  registry: Registry,
+): string {
+  const name = fragmentName(registry, notice.fragmentId);
+  if (notice.cause === 'different-framework') {
+    return `${name} was skipped — it targets a different framework.`;
+  }
+  const families = compatibleFrameworkFamilies(registry, notice.fragmentId);
+  if (families === undefined) {
+    return `${name} needs a supported framework; none was selected.`;
+  }
+  return `${name} needs a supported framework (${families}); none was selected.`;
+}
+
+/**
+ * Maps `compatibleWith` ids to short product labels, de-duplicating Next.js
+ * App/Pages variants so the notice reads "Next.js, React + Vite".
+ */
+function compatibleFrameworkFamilies(registry: Registry, libraryId: string): string | undefined {
+  const meta = registry.byId.get(libraryId)?.meta;
+  if (meta === undefined || meta.category === 'workflow') return undefined;
+  const ids = meta.compatibleWith;
+  if (ids === undefined || ids.length === 0) return undefined;
+  const families: string[] = [];
+  const seen = new Set<string>();
+  for (const id of ids) {
+    const family = frameworkFamilyLabel(id);
+    if (seen.has(family)) continue;
+    seen.add(family);
+    families.push(family);
+  }
+  return families.length === 0 ? undefined : families.join(', ');
+}
+
+function frameworkFamilyLabel(id: string): string {
+  if (id.startsWith('nextjs-')) return 'Next.js';
+  if (id === 'react-vite') return 'React + Vite';
+  if (id.startsWith('express')) return 'Express';
+  if (id === 'fastify') return 'Fastify';
+  return id;
 }
 
 export function formatWarning(warning: DetectionWarning): string {

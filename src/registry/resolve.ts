@@ -54,6 +54,11 @@ export type RegistryNotice =
   | {
       kind: 'incompatible';
       fragmentId: string;
+      /**
+       * `no-framework` when nothing was selected; `different-framework` when a
+       * framework was selected but is outside this library's `compatibleWith`.
+       */
+      cause: 'no-framework' | 'different-framework';
     }
   | {
       kind: 'no-framework';
@@ -84,13 +89,15 @@ interface Expanded {
 
 /**
  * Suggest framework and library fragments from detected packages and marker files.
- * Both Next.js fragments can be returned together; router filtering happens later.
+ * Both Next.js router fragments can be returned together; router filtering happens later.
+ * Version-split siblings that share detect packages and globs collapse to one id when
+ * the version is unknown. An `unsupported-version` notice is emitted once per package
+ * when no fragment for that package matched.
  */
 export function suggestFragments(registry: Registry, facts: ProjectFacts): Suggestion {
   const files = new Set(facts.files);
-  const frameworks: string[] = [];
-  const libraries: string[] = [];
-  const notices: RegistryNotice[] = [];
+  const matched: Fragment[] = [];
+  const unsupportedByPackage = new Map<string, RegistryNotice>();
 
   for (const fragment of registry.fragments) {
     const meta = detectableMeta(fragment);
@@ -99,16 +106,67 @@ export function suggestFragments(registry: Registry, facts: ProjectFacts): Sugge
     const versionNotices = versionNoticesFor(meta, facts.packages);
     const unsupported = versionNotices.filter((notice) => notice.kind === 'unsupported-version');
     if (unsupported.length > 0) {
-      notices.push(...unsupported);
+      for (const notice of unsupported) {
+        if (!unsupportedByPackage.has(notice.package)) {
+          unsupportedByPackage.set(notice.package, notice);
+        }
+      }
       continue;
     }
 
-    notices.push(...versionNotices);
+    matched.push(fragment);
+  }
+
+  const collapsed = collapseVersionSiblings(matched);
+  const frameworks: string[] = [];
+  const libraries: string[] = [];
+  const notices: RegistryNotice[] = [];
+  const matchedPackages = new Set<string>();
+
+  for (const fragment of collapsed) {
+    const meta = detectableMeta(fragment);
+    if (meta === undefined) continue;
+    for (const name of meta.detect?.packages ?? []) matchedPackages.add(name);
+    for (const notice of versionNoticesFor(meta, facts.packages)) notices.push(notice);
     if (meta.category === 'framework') frameworks.push(meta.id);
     else libraries.push(meta.id);
   }
 
+  for (const [name, notice] of unsupportedByPackage) {
+    if (matchedPackages.has(name)) continue;
+    notices.push(notice);
+  }
+
   return { frameworks, libraries, notices };
+}
+
+/**
+ * Keep libraries whose `compatibleWith` lists a selected framework (or that have
+ * no `compatibleWith`). Emit an `incompatible` notice for each dropped id.
+ */
+export function filterCompatibleLibraries(
+  registry: Registry,
+  libraryIds: readonly string[],
+  frameworkIds: readonly string[],
+): { libraries: string[]; notices: RegistryNotice[] } {
+  const libraries: string[] = [];
+  const notices: RegistryNotice[] = [];
+  const cause = frameworkIds.length === 0 ? 'no-framework' : 'different-framework';
+
+  for (const id of libraryIds) {
+    const meta = ruleMeta(registry.byId.get(id));
+    if (meta?.category !== 'library') {
+      libraries.push(id);
+      continue;
+    }
+    if (isLibraryCompatible(meta, frameworkIds)) {
+      libraries.push(id);
+      continue;
+    }
+    notices.push({ kind: 'incompatible', fragmentId: id, cause });
+  }
+
+  return { libraries, notices };
 }
 
 /**
@@ -155,9 +213,14 @@ export function resolveSelection(
     notices.push({ kind: 'no-framework' });
   }
 
+  const incompatibleCause = frameworkIds.length === 0 ? 'no-framework' : 'different-framework';
   for (const fragment of expanded.fragments) {
     if (dropped.has(fragment.meta.id)) {
-      notices.push({ kind: 'incompatible', fragmentId: fragment.meta.id });
+      notices.push({
+        kind: 'incompatible',
+        fragmentId: fragment.meta.id,
+        cause: incompatibleCause,
+      });
     }
   }
 
@@ -327,6 +390,65 @@ function isLibraryCompatible(meta: RuleFragmentMeta, frameworkIds: readonly stri
 }
 
 /**
+ * Version-split siblings share detect packages and globs (e.g. `express` /
+ * `express-4`). When more than one matched because the version was unknown,
+ * keep the current-major id (no trailing `-<digits>` suffix).
+ */
+function collapseVersionSiblings(fragments: readonly Fragment[]): Fragment[] {
+  const groups = new Map<string, Fragment[]>();
+  const order: string[] = [];
+
+  for (const fragment of fragments) {
+    const meta = ruleMeta(fragment);
+    if (meta?.category !== 'framework') {
+      const key = `solo:${fragment.meta.id}`;
+      groups.set(key, [fragment]);
+      order.push(key);
+      continue;
+    }
+    const key = versionSiblingKey(meta);
+    const existing = groups.get(key);
+    if (existing === undefined) {
+      groups.set(key, [fragment]);
+      order.push(key);
+    } else {
+      existing.push(fragment);
+    }
+  }
+
+  const collapsed: Fragment[] = [];
+  for (const key of order) {
+    const group = groups.get(key);
+    if (group === undefined) continue;
+    if (group.length === 1) {
+      const only = group[0];
+      if (only !== undefined) collapsed.push(only);
+      continue;
+    }
+    collapsed.push(preferCurrentMajor(group));
+  }
+  return collapsed;
+}
+
+function versionSiblingKey(meta: RuleFragmentMeta): string {
+  const packages = [...(meta.detect?.packages ?? [])].sort(compareText).join('\0');
+  const globs = [...(meta.globs ?? [])].sort(compareText).join('\0');
+  return `${packages}\0${globs}`;
+}
+
+/** Prefer `express` over `express-4`, `nextjs-app-router` over `nextjs-app-router-15`. */
+function preferCurrentMajor(fragments: readonly Fragment[]): Fragment {
+  const current = fragments.find((fragment) => !/-\d+$/u.test(fragment.meta.id));
+  if (current !== undefined) return current;
+  const sorted = [...fragments].sort((left, right) => compareText(left.meta.id, right.meta.id));
+  const first = sorted[0];
+  if (first === undefined) {
+    throw new AgentInitError('preferCurrentMajor requires at least one fragment.');
+  }
+  return first;
+}
+
+/**
  * Detected pairs are kept and not listed. A pair is reported only when at
  * least one side was chosen manually (PRD §3.5). Required fragments inherit
  * the origin of the fragment that pulled them in.
@@ -379,8 +501,8 @@ function orderPair(left: string, right: string): FragmentConflict {
   return compareText(left, right) <= 0 ? { a: left, b: right } : { a: right, b: left };
 }
 
-function ruleMeta(fragment: Fragment): RuleFragmentMeta | undefined {
-  if (fragment.meta.category === 'workflow') return undefined;
+function ruleMeta(fragment: Fragment | undefined): RuleFragmentMeta | undefined {
+  if (fragment === undefined || fragment.meta.category === 'workflow') return undefined;
   return fragment.meta;
 }
 

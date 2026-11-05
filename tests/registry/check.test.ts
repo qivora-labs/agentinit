@@ -69,6 +69,34 @@ describe('checkFragments', () => {
     ]);
   });
 
+  it('rejects version-split frameworks whose appliesTo ranges overlap', () => {
+    const left = frameworkWithRange('express-a', '>=4');
+    const right = frameworkWithRange('express-b', '>=4.5 <6');
+    const problems = checkFragments([left, right], TODAY);
+    expect(problems).toEqual([
+      {
+        path: 'frameworks/express-a.md',
+        severity: 'error',
+        message: 'appliesTo.express overlaps frameworks/express-b.md (>=4 ∩ >=4.5 <6)',
+      },
+      {
+        path: 'frameworks/express-b.md',
+        severity: 'error',
+        message: 'appliesTo.express overlaps frameworks/express-a.md (>=4.5 <6 ∩ >=4)',
+      },
+    ]);
+  });
+
+  it('allows frameworks that share a package when globs differ', () => {
+    const app = frameworkWithRange('next-app', '>=15', {
+      globs: ['{{src}}app/**/*.ts'],
+    });
+    const pages = frameworkWithRange('next-pages', '>=13', {
+      globs: ['{{src}}pages/**/*.ts'],
+    });
+    expect(checkFragments([app, pages], TODAY)).toEqual([]);
+  });
+
   it('accepts a tilde fence and a fence indented by three spaces', () => {
     const tilde = ['ALWAYS keep the boundary.', '', '~~~ts', 'const ok = true;', '~~~'].join('\n');
     const indented = ['ALWAYS keep the boundary.', '', '   ```ts', 'const ok = true;', '   ```'].join('\n');
@@ -311,8 +339,10 @@ describe('runRegistryCheck', () => {
       'typescript',
       'typescript-strict',
       'express',
+      'express-4',
       'fastify',
       'nextjs-app-router',
+      'nextjs-app-router-15',
       'nextjs-pages-router',
       'react-vite',
       'playwright',
@@ -342,20 +372,29 @@ describe('runRegistryCheck', () => {
         sourced: fragment.meta.sources.length > 0,
       };
     });
+    const expressGlobs = [
+      '{{src}}routes/**/*.ts',
+      '{{src}}controllers/**/*.ts',
+      '{{src}}middleware/**/*.ts',
+      '{{src}}**/*.routes.ts',
+      '{{src}}**/*.controller.ts',
+      '{{src}}**/*.middleware.ts',
+    ];
     expect(frameworks).toEqual([
       {
         id: 'express',
         scope: 'auto',
-        globs: [
-          '{{src}}routes/**/*.ts',
-          '{{src}}controllers/**/*.ts',
-          '{{src}}middleware/**/*.ts',
-          '{{src}}**/*.routes.ts',
-          '{{src}}**/*.controller.ts',
-          '{{src}}**/*.middleware.ts',
-        ],
+        globs: expressGlobs,
         appliesTo: { express: '>=5' },
         verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'express-4',
+        scope: 'auto',
+        globs: expressGlobs,
+        appliesTo: { express: '>=4 <5' },
+        verifiedAt: '2026-11-05',
         sourced: true,
       },
       {
@@ -377,6 +416,14 @@ describe('runRegistryCheck', () => {
         globs: ['{{src}}app/**/*.ts', '{{src}}app/**/*.tsx'],
         appliesTo: { next: '>=16.3.0' },
         verifiedAt: '2026-10-28',
+        sourced: true,
+      },
+      {
+        id: 'nextjs-app-router-15',
+        scope: 'glob',
+        globs: ['{{src}}app/**/*.ts', '{{src}}app/**/*.tsx'],
+        appliesTo: { next: '>=15.0.0 <16.3.0' },
+        verifiedAt: '2026-11-05',
         sourced: true,
       },
       {
@@ -414,7 +461,7 @@ describe('runRegistryCheck', () => {
         sourced: fragment.meta.sources.length > 0,
       };
     });
-    const web = ['nextjs-app-router', 'nextjs-pages-router', 'react-vite'];
+    const web = ['nextjs-app-router', 'nextjs-app-router-15', 'nextjs-pages-router', 'react-vite'];
     expect(libraries).toEqual([
       {
         id: 'playwright',
@@ -847,6 +894,41 @@ const ok = true;
     );
   });
 });
+
+function frameworkWithRange(
+  id: string,
+  range: string,
+  options: { readonly globs?: readonly string[] } = {},
+): Fragment {
+  const globs = options.globs ?? [
+    '{{src}}routes/**/*.ts',
+    '{{src}}controllers/**/*.ts',
+    '{{src}}middleware/**/*.ts',
+  ];
+  return parseFragment(
+    `---
+id: ${id}
+name: Sample ${id}
+category: framework
+version: 1.0.0
+order: 30
+description: A sample framework.
+hint: Sample framework hint.
+scope: auto
+globs:
+${globs.map((glob) => `  - ${JSON.stringify(glob)}`).join('\n')}
+detect:
+  packages: ["express"]
+appliesTo:
+  express: "${range}"
+sources:
+  - https://example.com/docs
+verifiedAt: 2026-10-17
+---
+${VALID_RULE}`,
+    `frameworks/${id}.md`,
+  );
+}
 
 function ruleFragment(options: {
   body: string;

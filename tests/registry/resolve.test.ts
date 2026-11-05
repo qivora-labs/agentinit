@@ -96,12 +96,6 @@ const suggestCases: readonly SuggestCase[] = [
           version: '14.2.5',
           fragmentId: 'nextjs-app-router',
         },
-        {
-          kind: 'unsupported-version',
-          package: 'next',
-          version: '14.2.5',
-          fragmentId: 'nextjs-pages-router',
-        },
       ],
     },
   },
@@ -294,7 +288,7 @@ const resolveCases: readonly ResolveCase[] = [
       },
     }),
     fragmentIds: ['layered', 'typescript-strict', 'nextjs-pages-router'],
-    notices: [{ kind: 'incompatible', fragmentId: 'zustand' }],
+    notices: [{ kind: 'incompatible', fragmentId: 'zustand', cause: 'different-framework' }],
     conflicts: [],
   },
   {
@@ -307,8 +301,8 @@ const resolveCases: readonly ResolveCase[] = [
     }),
     fragmentIds: ['layered', 'typescript', 'nextjs-pages-router'],
     notices: [
-      { kind: 'incompatible', fragmentId: 'forms' },
-      { kind: 'incompatible', fragmentId: 'zustand' },
+      { kind: 'incompatible', fragmentId: 'forms', cause: 'different-framework' },
+      { kind: 'incompatible', fragmentId: 'zustand', cause: 'different-framework' },
     ],
     conflicts: [],
   },
@@ -322,7 +316,7 @@ const resolveCases: readonly ResolveCase[] = [
     fragmentIds: ['layered', 'typescript-strict', 'vitest'],
     notices: [
       { kind: 'no-framework' },
-      { kind: 'incompatible', fragmentId: 'zustand' },
+      { kind: 'incompatible', fragmentId: 'zustand', cause: 'no-framework' },
     ],
     conflicts: [],
   },

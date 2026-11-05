@@ -39,7 +39,7 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] `pnpm registry:check` passes.
 - [x] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28.
+T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05; human review of those two fragments is still required before merge.
 
 ## Dependency Graph
 
@@ -149,7 +149,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
 | [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
 | [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | done |
-| [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | todo |
+| [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | done |
 | [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | todo |
 | [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | todo |
 | [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | todo |

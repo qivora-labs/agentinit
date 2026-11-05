@@ -48,8 +48,13 @@ const notices: readonly { readonly name: string; readonly notice: RegistryNotice
   },
   {
     name: 'incompatible library',
-    notice: { kind: 'incompatible', fragmentId: 'zustand' },
+    notice: { kind: 'incompatible', fragmentId: 'zustand', cause: 'different-framework' },
     text: 'Zustand was skipped — it targets a different framework.',
+  },
+  {
+    name: 'library needs a framework',
+    notice: { kind: 'incompatible', fragmentId: 'tailwind', cause: 'no-framework' },
+    text: 'Tailwind CSS needs a supported framework (Next.js, React + Vite); none was selected.',
   },
   {
     name: 'missing framework',
@@ -64,7 +69,11 @@ describe('formatRegistryNotice', () => {
   });
 
   it('falls back to the fragment id when the registry has no name', async () => {
-    const notice: RegistryNotice = { kind: 'incompatible', fragmentId: 'missing' };
+    const notice: RegistryNotice = {
+      kind: 'incompatible',
+      fragmentId: 'missing',
+      cause: 'different-framework',
+    };
     expect(formatRegistryNotice(notice, await bundledRegistry())).toBe(
       'missing was skipped — it targets a different framework.',
     );

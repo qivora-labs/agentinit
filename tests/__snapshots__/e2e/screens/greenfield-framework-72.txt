@@ -17,8 +17,10 @@
 │  ● Web frontend · React + Vite (React 19 actions/use, Vite 
 │  env, lazy load)
 │  ○ Full-stack web · Next.js App Router
+│  ○                  Next.js App Router (15)
 │  ○                  Next.js Pages Router
 │  ○ Backend / API · Express
+│  ○                 Express 4
 │  ○                 Fastify
 │  ○ Other TypeScript project (library, CLI, scripts)
 │  ↑/↓ to navigate • Enter: confirm

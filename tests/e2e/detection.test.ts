@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { NO_FRAMEWORK_NOTICE } from '../../src/ui/format.js';
@@ -103,6 +103,74 @@ describe('detection', () => {
     expect(result.code).toBe(0);
     expect(result.stderr).toContain('tailwindcss@3.4.17 detected — no matching rules yet.');
     const files = await listFiles(dir);
+    expect(files.some((file) => file.includes('tailwind'))).toBe(false);
+  });
+
+  it('Next.js 15 App Router gets framework and Tailwind rules; manifest selections match fragments', async () => {
+    const dir = await temp.copyFixture('next15-app');
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('targets a different framework');
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-nextjs-app-router-15.mdc');
+    expect(files).toContain('.cursor/rules/agentinit-tailwind.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[]; libraries: string[] };
+      fragments: Record<string, string>;
+    };
+    expect(manifest.selections.frameworks).toEqual(['nextjs-app-router-15']);
+    expect(manifest.selections.libraries).toEqual(['tailwind']);
+    expect(Object.keys(manifest.fragments)).toEqual(
+      expect.arrayContaining(['nextjs-app-router-15', 'tailwind']),
+    );
+    expect(manifest.selections.libraries.every((id) => id in manifest.fragments)).toBe(true);
+    expect(manifest.selections.frameworks.every((id) => id in manifest.fragments)).toBe(true);
+
+    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(again.code).toBe(0);
+    expect(again.stdout).toContain('Already up to date.');
+  });
+
+  it('Express 4 gets Express 4 rules', async () => {
+    const dir = await temp.copyFixture('express4-ts');
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-express-4.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[] };
+    };
+    expect(manifest.selections.frameworks).toEqual(['express-4']);
+  });
+
+  it('An unsupported Next.js version gets one clear notice and no different-framework library skip', async () => {
+    const dir = await temp.copyFixture('next15-app');
+    const pkgPath = path.join(dir, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+      dependencies: Record<string, string>;
+      devDependencies: Record<string, string>;
+    };
+    pkg.dependencies.next = '12.3.4';
+    await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+    const lockPath = path.join(dir, 'package-lock.json');
+    const lock = JSON.parse(await readFile(lockPath, 'utf8')) as {
+      packages: Record<string, { version: string }>;
+    };
+    const nextPkg = lock.packages['node_modules/next'];
+    if (nextPkg !== undefined) nextPkg.version = '12.3.4';
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr.match(/next@12\.3\.4 detected — no matching rules yet\./g)).toEqual([
+      'next@12.3.4 detected — no matching rules yet.',
+    ]);
+    expect(result.stderr).toContain(
+      'Tailwind CSS needs a supported framework (Next.js, React + Vite); none was selected.',
+    );
+    expect(result.stderr).not.toContain('targets a different framework');
+    const files = await listFiles(dir);
+    expect(files.some((file) => file.includes('nextjs'))).toBe(false);
     expect(files.some((file) => file.includes('tailwind'))).toBe(false);
   });
 });

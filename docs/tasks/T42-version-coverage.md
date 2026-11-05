@@ -43,13 +43,13 @@ Record the answers under **Notes** and in the PRD.
 - The fragment budgets (120 lines) and the always-on budget still apply.
 
 ## Acceptance criteria
-- [ ] Owner decisions recorded under **Notes**, and the PRD updated.
-- [ ] `init --yes` on `next15-app` writes App Router rules and Tailwind rules. The manifest's `selections` and `fragments` agree.
-- [ ] `init --yes` on `express4-ts` writes Express 4 rules.
-- [ ] `next15-src` (Next 16.3) output is byte-for-byte unchanged.
-- [ ] A Next.js project with no supported version gets one clear notice, and no library is reported as "targets a different framework".
-- [ ] Re-running on `next15-app` prints "Already up to date."
-- [ ] `pnpm registry:check` passes and rejects overlapping `appliesTo` ranges in a test fixture.
+- [x] Owner decisions recorded under **Notes**, and the PRD updated.
+- [x] `init --yes` on `next15-app` writes App Router rules and Tailwind rules. The manifest's `selections` and `fragments` agree.
+- [x] `init --yes` on `express4-ts` writes Express 4 rules.
+- [x] `next15-src` (Next 16.3) output is byte-for-byte unchanged.
+- [x] A Next.js project with no supported version gets one clear notice, and no library is reported as "targets a different framework".
+- [x] Re-running on `next15-app` prints "Already up to date."
+- [x] `pnpm registry:check` passes and rejects overlapping `appliesTo` ranges in a test fixture.
 - [ ] A human reviewed the new fragment content (Content Tasks checklist in `docs/tasks/README.md`).
 
 ## Verify
@@ -64,3 +64,13 @@ node dist/cli.js init --yes --cwd /tmp/ai-t42   # expect "Already up to date."
 (If the resolve and manifest fixes land as a separate commit: `fix(registry): keep detected libraries in step with resolved fragments`.)
 
 ## Notes
+### Owner decisions (2026-11-05)
+1. Version policy: each framework covers its current major and the previous one; new fragment id per range when guidance differs.
+2. Next.js: keep `nextjs-app-router` for `>=16.3.0`; add `nextjs-app-router-15` for `>=15.0.0 <16.3.0`.
+3. Express: keep `express` for `>=5`; add `express-4` for `>=4 <5`.
+
+### Implementation clarifications
+- Overlapping `appliesTo` check requires the same `detect.packages` **and** the same globs, so App Router and Pages Router may both cover `next`.
+- Unsupported-version notices are deduped to one per package when no fragment for that package matched.
+- Version-split siblings collapse to the current-major id when the version is unknown.
+- Content Tasks mechanical checks (directives, sources, budgets, `registry:check`) done; human content review still required before merge.
