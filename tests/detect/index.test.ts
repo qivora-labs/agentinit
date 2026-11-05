@@ -196,7 +196,7 @@ describe('detectProject', () => {
       'react-dom': '19.0.0',
       typescript: '5.9.0',
     });
-    expect(result.draft.architecture).toEqual({ id: 'flat', confidence: 0.875 });
+    expect(result.draft.architecture).toEqual({ id: 'flat', confidence: 0.625 });
     expect(result.draft.root).toBe(root);
     expect(result.draft.mode).toBe('existing');
     expect(result.draft.isMonorepo).toBe(false);

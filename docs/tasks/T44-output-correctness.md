@@ -39,11 +39,11 @@ Fix the visible defects found in the pre-launch review: a gap in workflow step n
 - Changing step 5 changes interactive flow for small projects. Check `tests/e2e/screens.test.ts` cases that rely on "likely".
 
 ## Acceptance criteria
-- [ ] `/new-feature` on `next15-src` (only `build`, `dev`, `lint`) is numbered 1–5 with no gaps. Lists that dropped nothing are unchanged.
-- [ ] The `existing-claude-md` conflict question names `CLAUDE.md` as existing and says it has no agentinit section yet. The screen snapshots are updated.
-- [ ] `ARCHITECTURE.md` for `next15-src` maps `src/app` with a responsibility. For `express-ts` it maps `src/routes` and `src/middleware`.
-- [ ] A project whose only folder is `src/app` doesn't show "likely". `--yes` prints the low-confidence notice.
-- [ ] `pnpm registry:check` accepts framework Map sections and rejects a malformed one.
+- [x] `/new-feature` on `next15-src` (only `build`, `dev`, `lint`) is numbered 1–5 with no gaps. Lists that dropped nothing are unchanged.
+- [x] The `existing-claude-md` conflict question names `CLAUDE.md` as existing and says it has no agentinit section yet. The screen snapshots are updated.
+- [x] `ARCHITECTURE.md` for `next15-src` maps `src/app` with a responsibility. For `express-ts` it maps `src/routes` and `src/middleware`.
+- [x] A project whose only folder is `src/app` doesn't show "likely". `--yes` prints the low-confidence notice.
+- [x] `pnpm registry:check` accepts framework Map sections and rejects a malformed one.
 
 ## Verify
 ```bash
@@ -56,3 +56,6 @@ cat /tmp/ai-t44/ARCHITECTURE.md /tmp/ai-t44/.cursor/commands/new-feature.md
 `fix(plan): renumber workflow steps and map framework folders`
 
 ## Notes
+- Flat without Map evidence is capped at 0.625 (same band as one competing partial signal).
+- When no folder matches, Layout lists existing folders inline; "Other existing folders" is only used when some rows matched.
+- Framework Map responsibilities avoid backticks so `ARCHITECTURE.md` stays free of escaped `` \` `` (e2e output guard).

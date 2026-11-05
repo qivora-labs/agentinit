@@ -22,15 +22,15 @@ backups/
   },
   "fragments": {
     "flat": "1.0.0",
-    "nextjs-app-router": "1.0.0",
+    "nextjs-app-router": "1.0.1",
     "typescript-strict": "1.0.0"
   },
   "files": {
     ".claude/rules/agentinit-nextjs-app-router.md": {
-      "sha256": "9af400564da84b363900619664a1ae6a584af15764ff971831bd65f3a4293e0a"
+      "sha256": "1e3d8ef68f0f3d920e0e14f5da4f7202bf5631ad1830bcc4035d5d3f514f28fa"
     },
     ".claude/skills/new-feature/SKILL.md": {
-      "sha256": "a7801bf226f2da603ffae6027563e315c05b0d0f56811de2d5561909eb1b66cd"
+      "sha256": "2c1b764058cd8e4cdbd1cce7c713116addd846fedca5047ebe146b5d7ffb0e7e"
     },
     ".claude/skills/refactor/SKILL.md": {
       "sha256": "0942b08a3ced6c20ebd8ada7efb39674861bed31de67d078d95b82f800239540"
@@ -42,7 +42,7 @@ backups/
       "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
     },
     ".cursor/commands/new-feature.md": {
-      "sha256": "26132b7cfd01488b4bb5e06f66ac4c96b64bb62d7307f633dd16d48ece04a466"
+      "sha256": "a7b89b77046b588af556613665821f77332585ddd967e3487c646ba5af1caec2"
     },
     ".cursor/commands/refactor.md": {
       "sha256": "917eb341a23b94ffb83a54d0c39a81fc32716fa116dca0906ff368e336568a5a"
@@ -54,16 +54,16 @@ backups/
       "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
     },
     ".cursor/rules/agentinit-nextjs-app-router.mdc": {
-      "sha256": "9c1d12fa4f2357c1cc4a229714187e7a2fe66ceb3eabf40a11b44a82c49fdd87"
+      "sha256": "ef02b3b9c4c133ab3eb2cb766f868be4960980f3da67a59a34fc70ca5958a00b"
     },
     ".github/copilot-instructions.md#copilot": {
       "sha256": "7a639e5843589f1232e2b5e7f169e864e77301d0b5291cf12ab68e3b835669b9"
     },
     ".github/instructions/agentinit-nextjs-app-router.instructions.md": {
-      "sha256": "01eb136a141627655230072b9f8f3808d0514370c3867a613420b526be7de97a"
+      "sha256": "588be869b2210a7b1f55226e7e79892bd0d4c68dbbcb1c4e04c844208609ac29"
     },
     ".github/prompts/new-feature.prompt.md": {
-      "sha256": "365725572f80debba865aac34d9083362002c9a260bfe6a552eb18c13f531a70"
+      "sha256": "ba431f5d0492e4f904ca59baf86d1f0422211ce4bcbd2b17f213045bdc945df1"
     },
     ".github/prompts/refactor.prompt.md": {
       "sha256": "60d95b5e8e789fd97f4590af9c86bb38055e8d52eb4353b8fa5a18d0ccaac4c5"
@@ -75,10 +75,10 @@ backups/
       "sha256": "7840194c7c742547c16920d56515a004376e389cd81d9d772a5e05ca8f8ba50d"
     },
     ".windsurf/rules/agentinit-nextjs-app-router.md": {
-      "sha256": "69fd4b08ca9fba70fde9f555a25de742772087c3858ffade99d4f62c23acaff1"
+      "sha256": "bb13a4d5f229ae6ded5b529f021c83a8cca236010b816809f03c92547458e250"
     },
     ".windsurf/workflows/new-feature.md": {
-      "sha256": "381d4743ce68111f8aa6c9b31d6ee25b96868bdaa03b215b2ed035ee3057c6c1"
+      "sha256": "1703238a125f061c0b8ad2f44b0f8c135d1fe8b8c36a759c3f52af1cd2c4dbbe"
     },
     ".windsurf/workflows/refactor.md": {
       "sha256": "ec2fc4d04df95d2d07b3d31355a65380ba499cef1e3ceba9cdda87ace6946250"
@@ -93,7 +93,7 @@ backups/
       "sha256": "2fbeffce5f4065c3d636f97daddcd1215735bf51950b116dc80224c0def6f13f"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "572ee3ceebc4776b49f101ba5a0b4cf4fa2f16f58f2130edbd122df8a30830de"
+      "sha256": "67e5978cf3c2bd7dd932017e3e36ca996f3ceddf905f0adba57f99a678632930"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
@@ -107,6 +107,12 @@ paths:
   - "src/app/**/*.ts"
   - "src/app/**/*.tsx"
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `src/app/` | App Router route segments (layout, page, loading, error). |
+| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
@@ -162,7 +168,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `pnpm lint`.
+5. Run `pnpm lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -270,7 +276,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `pnpm lint`.
+5. Run `pnpm lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -352,6 +358,12 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 alwaysApply: false
 ---
 
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `src/app/` | App Router route segments (layout, page, loading, error). |
+| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
+
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
 
@@ -399,6 +411,12 @@ Scoped rules are in `.github/instructions/`.
 description: Server Components by default, validated Server Actions, and Next.js 16 caching.
 applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `src/app/` | App Router route segments (layout, page, loading, error). |
+| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
 
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
@@ -452,7 +470,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `pnpm lint`.
+5. Run `pnpm lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -548,6 +566,12 @@ trigger: glob
 globs: src/app/**/*.ts,src/app/**/*.tsx
 ---
 
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `src/app/` | App Router route segments (layout, page, loading, error). |
+| `src/app/api/` | Route Handlers (route.ts) for HTTP clients outside the React tree. |
+
 ## Boundary
 These rules apply to files under `app/`. `page` and `layout` modules are Server Components unless that file itself needs state, effects, or browser APIs. `params`, `searchParams`, `cookies()`, and `headers()` are promises. A file with `'use client'` pulls its imports into the client bundle. Props passed into that file must be serializable.
 
@@ -599,7 +623,7 @@ The user's input: a feature name and a short description. If either part is miss
 2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
 3. After the user confirms, implement only the confirmed plan. Follow the active rules.
 4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-6. Run `pnpm lint`.
+5. Run `pnpm lint`.
 
 ## Output
 List the files created or edited, the decisions you made, and the result of each check that ran.
@@ -783,13 +807,9 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 ## Layout
 
-None of the detected folders match a row in the architecture map.
-
-## Other existing folders
-
-These folders are already in the project:
-
-- `src/app`
+| Folder | Responsibility |
+| :--- | :--- |
+| `src/app` | App Router route segments (layout, page, loading, error). |
 
 ## Conventions for new code
 

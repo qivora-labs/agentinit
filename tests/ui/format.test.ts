@@ -155,7 +155,7 @@ describe('formatSummary', () => {
         typescript: '5.9.0',
       },
       language: 'typescript-strict',
-      architecture: { id: 'flat', confidence: 0.875 },
+      architecture: { id: 'flat', confidence: 0.625 },
       packageManager: 'pnpm',
       srcDir: 'src',
     });

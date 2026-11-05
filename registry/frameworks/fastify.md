@@ -2,7 +2,7 @@
 id: fastify
 name: Fastify
 category: framework
-version: 1.0.0
+version: 1.0.1
 order: 30
 description: Fastify 5 plugins, JSON schema validation, hooks, and decorators.
 hint: Plugins, JSON schema, hooks, decorators
@@ -25,6 +25,12 @@ sources:
   - https://fastify.dev/docs/v5.12.x/Reference/Decorators/
 verifiedAt: 2026-10-28
 ---
+
+## Map
+| Path | Responsibility |
+| :--- | :--- |
+| `{{src}}routes/` | Fastify route plugins. |
+| `{{src}}plugins/` | Shared Fastify plugins. |
 
 ## Boundary
 These rules apply to Fastify route and plugin modules. `register` creates an encapsulation context. Decorators, hooks, and schemas added there are visible to descendants, not to the parent. `onClose` is the hook that is not encapsulated. `decorate`, `decorateRequest`, and `decorateReply` run synchronously and fix the object shape before requests are served.

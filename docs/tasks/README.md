@@ -151,7 +151,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | done |
 | [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | done |
 | [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | done |
-| [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | todo |
+| [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | done |
 | [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | todo |
 | [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | todo |
 | [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | todo |

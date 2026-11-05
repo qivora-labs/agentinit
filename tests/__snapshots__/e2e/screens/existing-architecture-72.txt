@@ -1,0 +1,34 @@
+                 Q I V O R A   L A B S
+
+  █     ████  █████  █   █  █████    █  █   █  █  █████
+ █ █   █      █      ██  █    █      █  ██  █  █    █  
+█████  █ ███  ███    █ █ █    █      █  █ █ █  █    █  
+█   █  █   █  █      █  ██    █      █  █  ██  █    █  
+█   █   ████  █████  █   █    █      █  █   █  █    █  
+                   ────────◆────────
+           rules for the agents in this repo
+
+│
+◇  Read the project
+│
+◇  Detected next15-src ───────────────────────────────╮
+│                                                     │
+│  Framework     Next.js App Router 16  next 16.3     │
+│  Language      TypeScript · strict  typescript 5.9  │
+│  Architecture  Flat / Minimal  unsure (0.625)       │
+│  Tooling       pnpm · src/                          │
+│                                                     │
+├─────────────────────────────────────────────────────╯
+│
+◇  Use this configuration, or customize?
+│  Use this configuration
+│
+◆  Not sure about the architecture (0.625). Which one should 
+│  we use?
+│  ○ Feature-Based
+│  ○ Layered / Clean
+│  ○ Atomic Design
+│  ● Flat / Minimal (Group by type; add a feature folder as 
+│  you grow)
+│  ↑/↓ to navigate • Enter: confirm
+└
