@@ -31,7 +31,7 @@
 │                                                                 │
 │  Claude Code  6 files  .claude/                                 │
 │  Shared       AGENTS.md  ARCHITECTURE.md                        │
-│  Context cost  ~830 tokens loaded in every chat (budget 1,500)  │
+│  Context cost  ~854 tokens loaded in every chat (budget 1,500)  │
 │  1 existing file needs your decision                            │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────╯
@@ -62,7 +62,7 @@
 │  Wrote 8 files for 1 agent
 │  Claude Code  6 files · 1 adopted  .claude/
 │  Shared       AGENTS.md  ARCHITECTURE.md
-│  Context cost  ~830 tokens loaded in every chat (budget 1,500)
+│  Context cost  ~854 tokens loaded in every chat (budget 1,500)
 │  Next steps
 │  1.  Review the changes  git diff
 │  2.  Try a workflow      /new-feature

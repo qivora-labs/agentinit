@@ -282,6 +282,85 @@ describe('checkFragments', () => {
     expect(() => checkFragments([fragment], 'yesterday')).toThrow('today must be YYYY-MM-DD.');
   });
 
+  it('warns when a single-line export function in a ts fence lacks a return type', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '```ts',
+      'export function helper(input: string) {',
+      '  return input;',
+      '}',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      warning('missing return type on export function helper (heuristic; single-line signatures only)'),
+    ]);
+  });
+
+  it('accepts a single-line export function with a return type', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '```ts',
+      'export function helper(input: string): string {',
+      '  return input;',
+      '}',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('skips React components and framework entry exports without return types', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '```tsx',
+      'export function Title({ show }: { show: boolean }) {',
+      '  return show ? <h1>Hi</h1> : null;',
+      '}',
+      'export default async function Page() {',
+      '  return null;',
+      '}',
+      'export async function GET() {',
+      '  return new Response();',
+      '}',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('skips missing return types after an anti-pattern marker in a mixed fence', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '```ts',
+      'export function good(input: string): string {',
+      '  return input;',
+      '}',
+      '// ❌ Anti-pattern: missing return type',
+      'export function bad(input: string) {',
+      '  return input;',
+      '}',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('does not flag a multi-line export function signature', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '```ts',
+      'export function helper(',
+      '  input: string,',
+      ') {',
+      '  return input;',
+      '}',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
   it('warns when a rule fragment is missing a hint', () => {
     expect(checkFragments([ruleFragment({ body: VALID_RULE, hint: null })], TODAY)).toEqual([
       warning('missing hint; the picker will truncate description'),

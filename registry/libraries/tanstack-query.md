@@ -2,7 +2,7 @@
 id: tanstack-query
 name: TanStack Query
 category: library
-version: 1.0.0
+version: 1.0.1
 order: 40
 description: Query key factories, queryOptions, mutation invalidation, and Suspense.
 hint: Query keys, queryOptions, invalidation
@@ -44,14 +44,20 @@ TanStack Query caches server data. A query key is an array and must be serializa
 ## Contract
 ```tsx
 import { Suspense } from "react";
-import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+  type UseMutationResult,
+} from "@tanstack/react-query";
 
 export const todoKeys = {
   all: ["todos"],
   detail: (id: string) => [...todoKeys.all, id],
 };
 
-export function todoOptions(id: string) {
+export function todoOptions(id: string): ReturnType<typeof queryOptions> {
   return queryOptions({
     queryKey: todoKeys.detail(id),
     queryFn: () => fetchTodo(id),
@@ -71,7 +77,7 @@ function TodoBody({ id }: { id: string }) {
   return <p>{data.title}</p>;
 }
 
-export function useAddTodo() {
+export function useAddTodo(): UseMutationResult<unknown, Error, unknown> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: addTodo,

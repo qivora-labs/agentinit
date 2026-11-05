@@ -36,7 +36,7 @@
 │  Windsurf        5 files  .windsurf/                            │
 │  GitHub Copilot  6 files  .github/                              │
 │  Shared          AGENTS.md  ARCHITECTURE.md                     │
-│  Context cost  ~816 tokens loaded in every chat (budget 1,500)  │
+│  Context cost  ~841 tokens loaded in every chat (budget 1,500)  │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────╯
 │
@@ -50,7 +50,7 @@
 │  Windsurf        5 files  .windsurf/
 │  GitHub Copilot  6 files  .github/
 │  Shared          AGENTS.md  ARCHITECTURE.md
-│  Context cost  ~816 tokens loaded in every chat (budget 1,500)
+│  Context cost  ~841 tokens loaded in every chat (budget 1,500)
 │  Next steps
 │  1.  Scaffold the project, then run `npx @agentinit/cli` again.
 │  2.  pnpm create vite@latest

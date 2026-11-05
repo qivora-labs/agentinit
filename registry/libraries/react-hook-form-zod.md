@@ -2,7 +2,7 @@
 id: react-hook-form-zod
 name: React Hook Form + Zod
 category: library
-version: 1.0.0
+version: 1.0.1
 order: 40
 description: One Zod schema for field types, resolver errors, and server parsing.
 hint: One Zod schema for fields, errors, server
@@ -58,7 +58,7 @@ export const profileSchema = z.object({
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
-export function parseProfile(input: unknown) {
+export function parseProfile(input: unknown): ReturnType<typeof profileSchema.safeParse> {
   return profileSchema.safeParse(input);
 }
 

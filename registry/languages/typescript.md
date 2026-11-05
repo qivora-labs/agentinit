@@ -2,7 +2,7 @@
 id: typescript
 name: TypeScript
 category: language
-version: 1.0.0
+version: 1.0.1
 order: 20
 description: Avoid any, infer internal types, and narrow unknown at the boundary of every TypeScript file.
 hint: Avoid any; narrow unknown at boundaries
@@ -30,7 +30,7 @@ These rules apply to every `.ts` and `.tsx` file. Local variables and functions 
 // ✅ Good: external input is unknown, and a type-only import is erased
 import type { Invoice } from './invoice';
 
-export function amount(input: unknown) {
+export function amount(input: unknown): number {
   if (typeof input !== 'number') throw new Error('Expected a number');
   return input;
 }

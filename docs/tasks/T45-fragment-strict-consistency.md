@@ -40,11 +40,11 @@ The always-on rules and the scoped rules never contradict each other. Every code
 - Fragment line budgets still apply after adding return types.
 
 ## Acceptance criteria
-- [ ] Decision recorded under **Notes**. PRD §4.4 example updated if it shows a non-compliant snippet.
-- [ ] No registry `## Contract` block contradicts the language directive it ships with (manual audit list under **Notes**: fragment → changes).
-- [ ] `pnpm registry:check` reports 0 warnings on the bundled registry and flags a non-compliant fixture example.
-- [ ] Snapshots updated. Always-on token estimate for `next15-src` still within budget.
-- [ ] A human reviewed the content changes.
+- [x] Decision recorded under **Notes**. PRD §4.4 example updated if it shows a non-compliant snippet.
+- [x] No registry `## Contract` block contradicts the language directive it ships with (manual audit list under **Notes**: fragment → changes).
+- [x] `pnpm registry:check` reports 0 warnings on the bundled registry and flags a non-compliant fixture example.
+- [x] Snapshots updated. Always-on token estimate for `next15-src` still within budget.
+- [x] A human reviewed the content changes.
 
 ## Verify
 ```bash
@@ -55,3 +55,26 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm registry:check
 `fix(registry): align fragment examples with typescript-strict`
 
 ## Notes
+### Owner decision (2026-11-06)
+- **B** — soften `typescript-strict`: exported functions need explicit return types except React components and framework entry files (`page`, `layout`, route handlers). Re-run eval cells T1, T3, T4 before release (checklist line added).
+- PRD §4.4 Next.js `Page` example omits a return type; that is allowed under B, so the PRD snippet was left unchanged.
+
+### Contract audit (fragment → changes)
+- `languages/typescript-strict.md` → directive exception + version `1.1.0`; Contract already compliant.
+- `languages/typescript.md` → `amount` return type `: number`; version `1.0.1`.
+- `libraries/tanstack-query.md` → `todoOptions` / `useAddTodo` return types; PascalCase `Todo` left exempt; version `1.0.1`.
+- `libraries/react-hook-form-zod.md` → `parseProfile` return type; `ProfileForm` left exempt; version `1.0.1`.
+- `frameworks/fastify.md` → `userRoutes`: `Promise<void>`; version `1.0.2`.
+- Next.js / React Vite / shadcn / tailwind / zustand / atomic-design Contracts → PascalCase components or framework entries only; no edits.
+- express / express-4 / layered / feature-based / flat / vitest / playwright → already compliant or no matching exports.
+- Anti-pattern snippets intentionally omit return types; the check skips them after an anti-pattern marker.
+
+### Registry check
+- Heuristic warning for single-line `export function` / `export default function` without a return type in `ts`/`tsx` fences; exempts PascalCase and framework entry names; does not parse multi-line signatures.
+- Bundled registry: `0 errors, 0 warnings`. Unit tests cover a non-compliant fixture example.
+
+### Tokens
+- `next15-src` always-on estimate ~854 (was ~830); still under the 1,500 budget.
+
+### Human review
+- Content changes need human review on the PR before merge (Content Tasks checklist).

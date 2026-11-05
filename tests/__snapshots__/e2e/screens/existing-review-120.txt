@@ -37,7 +37,7 @@
 │  Windsurf        5 files  .windsurf/                            │
 │  GitHub Copilot  6 files  .github/                              │
 │  Shared          AGENTS.md  ARCHITECTURE.md                     │
-│  Context cost  ~830 tokens loaded in every chat (budget 1,500)  │
+│  Context cost  ~854 tokens loaded in every chat (budget 1,500)  │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────╯
 │

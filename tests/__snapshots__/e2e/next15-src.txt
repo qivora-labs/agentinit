@@ -23,7 +23,7 @@ backups/
   "fragments": {
     "flat": "1.0.0",
     "nextjs-app-router": "1.0.1",
-    "typescript-strict": "1.0.0"
+    "typescript-strict": "1.1.0"
   },
   "files": {
     ".claude/rules/agentinit-nextjs-app-router.md": {
@@ -90,7 +90,7 @@ backups/
       "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
     },
     "AGENTS.md#core": {
-      "sha256": "2fbeffce5f4065c3d636f97daddcd1215735bf51950b116dc80224c0def6f13f"
+      "sha256": "4cba78b8ba2524a952187af9c8ce012332ff22ef7c628ef8d2f07be977852faa"
     },
     "ARCHITECTURE.md#architecture": {
       "sha256": "67e5978cf3c2bd7dd932017e3e36ca996f3ceddf905f0adba57f99a678632930"
@@ -720,7 +720,7 @@ These rules apply to every `.ts` and `.tsx` file. The project typechecks with `s
 
 ### Directives
 - **NEVER** use the `any` type. **ALWAYS** hold an unchecked value as `unknown` and narrow it before property access, a call, or assignment to a specific type.
-- **ALWAYS** write an explicit return type on every exported function, including small helpers (`parse*`, `safeParse` wrappers, schema mappers, and React components). **PREFER** inference for a function that is not exported.
+- **ALWAYS** write an explicit return type on every exported function, including small helpers (`parse*`, `safeParse` wrappers, and schema mappers). **Exception:** React components and framework entry files (`page`, `layout`, route handlers) may omit a return type. **PREFER** inference for a function that is not exported.
 - **NEVER** use the postfix `!` non-null assertion. Narrow `null` and `undefined` with a check.
 - **ALWAYS** check a config object literal with `satisfies` when the variable should keep its specific property types.
 - **PREFER** a discriminated union (a shared literal field such as `status`) over a boolean plus optional fields.
