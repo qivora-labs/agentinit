@@ -50,7 +50,7 @@ Record the answers under **Notes** and in the PRD.
 - [x] A Next.js project with no supported version gets one clear notice, and no library is reported as "targets a different framework".
 - [x] Re-running on `next15-app` prints "Already up to date."
 - [x] `pnpm registry:check` passes and rejects overlapping `appliesTo` ranges in a test fixture.
-- [ ] A human reviewed the new fragment content (Content Tasks checklist in `docs/tasks/README.md`).
+- [x] A human reviewed the new fragment content (Content Tasks checklist in `docs/tasks/README.md`).
 
 ## Verify
 ```bash
@@ -73,4 +73,4 @@ node dist/cli.js init --yes --cwd /tmp/ai-t42   # expect "Already up to date."
 - Overlapping `appliesTo` check requires the same `detect.packages` **and** the same globs, so App Router and Pages Router may both cover `next`.
 - Unsupported-version notices are deduped to one per package when no fragment for that package matched.
 - Version-split siblings collapse to the current-major id when the version is unknown.
-- Content Tasks mechanical checks (directives, sources, budgets, `registry:check`) done; human content review still required before merge.
+- Content Tasks checklist completed; human reviewed `nextjs-app-router-15` and `express-4` on 2026-11-05.
