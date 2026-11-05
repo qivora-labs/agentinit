@@ -501,6 +501,71 @@ describe('suggestFragments', () => {
   });
 });
 
+const bundledSuggestCases: readonly SuggestCase[] = [
+  {
+    name: 'suggests Next.js App Router 15 for next 15.x (bundled registry)',
+    packages: { next: '15.5.2' },
+    expected: {
+      frameworks: ['nextjs-app-router-15', 'nextjs-pages-router'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Next.js App Router 16 for next 16.3+ (bundled registry)',
+    packages: { next: '16.3.0' },
+    expected: {
+      frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Express 4 for express 4.x (bundled registry)',
+    packages: { express: '4.21.2' },
+    expected: {
+      frameworks: ['express-4'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'suggests Express 5 for express 5.x (bundled registry)',
+    packages: { express: '5.1.0' },
+    expected: {
+      frameworks: ['express'],
+      libraries: [],
+      notices: [],
+    },
+  },
+  {
+    name: 'collapses version-split App Router siblings when next version is unknown',
+    packages: { next: null },
+    expected: {
+      frameworks: ['nextjs-app-router', 'nextjs-pages-router'],
+      libraries: [],
+      notices: [
+        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-app-router' },
+        { kind: 'unknown-version', package: 'next', fragmentId: 'nextjs-pages-router' },
+      ],
+    },
+  },
+];
+
+describe('suggestFragments (bundled registry)', () => {
+  const bundledPromise = loadRegistry();
+
+  it.each(bundledSuggestCases)('$name', async (testCase) => {
+    const registry = await bundledPromise;
+    expect(
+      suggestFragments(registry, {
+        packages: testCase.packages,
+        files: testCase.files ?? [],
+      }),
+    ).toEqual(testCase.expected);
+  });
+});
+
 describe('resolveSelection', () => {
   it.each(resolveCases)('$name', async (testCase) => {
     expectResolved(await registryPromise, testCase);

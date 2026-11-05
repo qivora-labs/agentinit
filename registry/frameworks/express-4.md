@@ -5,7 +5,7 @@ category: framework
 version: 1.0.0
 order: 30
 description: Express 4 routers, boundary validation, and explicit async error forwarding.
-hint: Routers, validation, catch async errors
+hint: express 4.x · catch async, routers
 scope: auto
 globs:
   - "{{src}}routes/**/*.ts"

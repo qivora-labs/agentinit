@@ -1,11 +1,11 @@
 ---
 id: nextjs-app-router-15
-name: Next.js App Router (15)
+name: Next.js App Router 15
 category: framework
 version: 1.0.0
 order: 30
 description: Server Components by default, async request APIs, and validated Server Actions for Next.js 15.
-hint: RSC, async params, Server Actions
+hint: next 15.x · RSC, async params, actions
 scope: glob
 globs:
   - "{{src}}app/**/*.ts"

@@ -378,7 +378,7 @@ Example (`registry/frameworks/nextjs-app-router.md`):
 ````markdown
 ---
 id: nextjs-app-router
-name: Next.js App Router
+name: Next.js App Router 16
 category: framework
 version: 1.0.0
 order: 30

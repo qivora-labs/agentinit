@@ -312,7 +312,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'package-removed',
-      message: 'Next.js App Router (nextjs-app-router) is selected, but next is not in the project.',
+      message: 'Next.js App Router 16 (nextjs-app-router) is selected, but next is not in the project.',
       fix: FIX,
     });
   });
@@ -328,7 +328,7 @@ describe('doctor', () => {
     const report = parseReport(result.stdout);
     expect(report.issues).toContainEqual({
       kind: 'unsupported-version',
-      message: 'Next.js App Router (nextjs-app-router) is selected, but next@15.0.0 is outside >=16.3.0.',
+      message: 'Next.js App Router 16 (nextjs-app-router) is selected, but next@15.0.0 is outside >=16.3.0.',
       fix: FIX,
     });
   });

@@ -1,11 +1,11 @@
 ---
 id: nextjs-app-router
-name: Next.js App Router
+name: Next.js App Router 16
 category: framework
 version: 1.0.0
 order: 30
 description: Server Components by default, validated Server Actions, and Next.js 16 caching.
-hint: RSC by default, Server Actions, Next cache
+hint: next ≥16.3 · RSC, Server Actions, cache
 scope: glob
 globs:
   - "{{src}}app/**/*.ts"
