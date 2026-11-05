@@ -547,6 +547,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 }
 ```
 - Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
+- Manifest keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
 - Hash matches → safe to regenerate silently.
 - Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report.
 

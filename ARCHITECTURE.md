@@ -28,6 +28,7 @@ detect ──► resolve ──► plan ──► apply
 | `src/ui/` | Logger, `Prompter`, wizard, summary, formatting | — | ✓ |
 | `src/types.ts`, `src/errors.ts`, `src/exit-codes.ts`, `src/context.ts` | Shared contracts | — | — |
 | `src/compare-text.ts` | Code-unit string order shared by resolve, plan, targets, and the summary | — | — |
+| `src/owned-paths.ts` | Which relative paths agentinit may write or delete (PRD §5.2); shared by manifest validation and apply | — | — |
 | `registry/` | Bundled rule and workflow fragments (content, not code) | — | — |
 | `scripts/` | Repo tooling run with `tsx` (`check-registry.ts`, `smoke.ts`) | ✓ | ✓ |
 | `tests/` | Unit tests mirroring `src/`, `tests/e2e/`, `tests/fixtures/` | ✓ (temp dirs) | — |
@@ -36,9 +37,9 @@ detect ──► resolve ──► plan ──► apply
 ## Dependency Rules
 - `commands/` → anything. Nothing imports from `commands/`.
 - `ui/` → `types`, `errors`, `compare-text`, `registry` types, `detect` result types. `ui/` never touches disk.
-- `plan/` and `targets/` → `types`, `registry` types, `plan/` helpers, `compare-text`. **Never** `detect/`, `io/`, `ui/`, `node:fs`, or `process`.
+- `plan/` and `targets/` → `types`, `registry` types, `plan/` helpers, `compare-text`, `owned-paths`. **Never** `detect/`, `io/`, `ui/`, `node:fs`, or `process`.
 - `targets/*` adapters are independent of each other; shared helpers go in `plan/`.
-- `io/` → `types`, `errors`, `ui/prompter` (interface only, for conflict questions).
+- `io/` → `types`, `errors`, `owned-paths`, `ui/prompter` (interface only, for conflict questions).
 - `detect/` → `types`, `errors`, `registry` (for `detect.files` candidates and `suggestFragments`).
 - Pure modules receive time, randomness, and environment as parameters.
 

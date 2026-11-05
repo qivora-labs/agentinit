@@ -148,7 +148,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | done |
 | [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
 | [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
-| [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | todo |
+| [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | done |
 | [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | todo |
 | [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | todo |
 | [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | todo |

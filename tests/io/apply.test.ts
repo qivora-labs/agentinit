@@ -15,6 +15,8 @@ import { choicePrompt, recordingPrompter } from '../ui/recording-prompter.js';
 const directories: string[] = [];
 const NOW = new Date('2026-11-02T01:10:00.000Z');
 const STAMP = '20261102T011000000Z';
+/** Owned whole-file path used by apply unit tests (PRD §5.2). */
+const RULE = '.cursor/rules/agentinit-demo.mdc';
 
 const META: Omit<Manifest, 'files'> = {
   cliVersion: '0.1.0',
@@ -81,6 +83,13 @@ async function treeDigest(root: string): Promise<string> {
   }
 }
 
+
+async function writeProject(root: string, relPath: string, body: string): Promise<void> {
+  const absolute = path.join(root, relPath);
+  await mkdir(path.dirname(absolute), { recursive: true });
+  await writeFile(absolute, body);
+}
+
 async function planChanges(root: string, ops: readonly FileOp[], files: Manifest | null): Promise<Change[]> {
   return computeChanges(root, { ops }, files);
 }
@@ -112,43 +121,43 @@ describe('applyChanges defaults', () => {
     const root = await tempDir();
     const user = 'user rule\n';
     await mkdir(path.join(root, 'rules'), { recursive: true });
-    await writeFile(path.join(root, 'rules/x.md'), user);
-    const changes = await planChanges(root, [file('rules/x.md', 'generated\n')], null);
+    await writeProject(root, RULE, user);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     const result = await applyChanges(root, changes, applyOptions());
 
-    expect(reportAction(result, 'rules/x.md')).toBe('skipped');
-    expect(await readFile(path.join(root, 'rules/x.md'), 'utf8')).toBe(user);
-    expect(result.manifestFiles['rules/x.md']).toBeUndefined();
+    expect(reportAction(result, RULE)).toBe('skipped');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe(user);
+    expect(result.manifestFiles[RULE]).toBeUndefined();
   });
 
   it('skips a hand-edited owned file and keeps the previous hash', async () => {
     const root = await tempDir();
     const owned = 'owned\n';
     const edited = 'edited by hand\n';
-    await writeFile(path.join(root, 'rule.md'), edited);
+    await writeProject(root, RULE, edited);
     const previous = contentHash(owned);
-    const changes = await planChanges(root, [file('rule.md', 'next\n')], manifest({ 'rule.md': previous }));
+    const changes = await planChanges(root, [file(RULE, 'next\n')], manifest({ [RULE]: previous }));
 
     const result = await applyChanges(root, changes, applyOptions());
 
     expect(changes[0]?.kind).toBe('conflict-edited');
-    expect(reportAction(result, 'rule.md')).toBe('skipped');
-    expect(await readFile(path.join(root, 'rule.md'), 'utf8')).toBe(edited);
-    expect(result.manifestFiles['rule.md']?.sha256).toBe(previous);
+    expect(reportAction(result, RULE)).toBe('skipped');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe(edited);
+    expect(result.manifestFiles[RULE]?.sha256).toBe(previous);
   });
 
   it('backs up before replacing when --force is set', async () => {
     const root = await tempDir();
     const user = 'user rule\n';
-    await writeFile(path.join(root, 'rule.md'), user);
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, user);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     const result = await applyChanges(root, changes, applyOptions({ force: true }));
 
-    expect(reportAction(result, 'rule.md')).toBe('backed-up');
-    expect(await readFile(path.join(root, 'rule.md'), 'utf8')).toBe('generated\n');
-    const backup = `.agentinit/backups/${STAMP}/rule.md`;
+    expect(reportAction(result, RULE)).toBe('backed-up');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe('generated\n');
+    const backup = `.agentinit/backups/${STAMP}/${RULE}`;
     expect(result.report[0]?.backupPath).toBe(backup);
     expect(await readFile(path.join(root, backup), 'utf8')).toBe(user);
     expect(await readFile(path.join(root, '.agentinit/.gitignore'), 'utf8')).toContain('backups/');
@@ -157,19 +166,19 @@ describe('applyChanges defaults', () => {
   it('backs up an edited file before --force replaces it', async () => {
     const root = await tempDir();
     const edited = 'edited\n';
-    await writeFile(path.join(root, 'rule.md'), edited);
+    await writeProject(root, RULE, edited);
     const changes = await planChanges(
       root,
-      [file('rule.md', 'generated\n')],
-      manifest({ 'rule.md': contentHash('owned\n') }),
+      [file(RULE, 'generated\n')],
+      manifest({ [RULE]: contentHash('owned\n') }),
     );
 
     const result = await applyChanges(root, changes, applyOptions({ force: true }));
 
-    expect(reportAction(result, 'rule.md')).toBe('backed-up');
-    expect(await readFile(path.join(root, 'rule.md'), 'utf8')).toBe('generated\n');
-    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/rule.md`), 'utf8')).toBe(edited);
-    expect(result.manifestFiles['rule.md']?.sha256).toBe(contentHash('generated\n'));
+    expect(reportAction(result, RULE)).toBe('backed-up');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe('generated\n');
+    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/${RULE}`), 'utf8')).toBe(edited);
+    expect(result.manifestFiles[RULE]?.sha256).toBe(contentHash('generated\n'));
   });
 
   it('backs up a shared file before --force replaces it with the managed block', async () => {
@@ -190,43 +199,43 @@ describe('applyChanges stale files', () => {
   it('deletes an unedited owned file that left the plan', async () => {
     const root = await tempDir();
     const owned = 'owned\n';
-    await writeFile(path.join(root, 'rule.md'), owned);
-    const changes = await planChanges(root, [], manifest({ 'rule.md': contentHash(owned) }));
+    await writeProject(root, RULE, owned);
+    const changes = await planChanges(root, [], manifest({ [RULE]: contentHash(owned) }));
 
     const result = await applyChanges(root, changes, applyOptions());
 
     expect(changes[0]?.kind).toBe('delete-stale');
-    expect(reportAction(result, 'rule.md')).toBe('deleted');
-    await expect(readFile(path.join(root, 'rule.md'))).rejects.toThrow();
-    expect(result.manifestFiles['rule.md']).toBeUndefined();
+    expect(reportAction(result, RULE)).toBe('deleted');
+    await expect(readFile(path.join(root, RULE))).rejects.toThrow();
+    expect(result.manifestFiles[RULE]).toBeUndefined();
   });
 
   it('keeps a stale file that was edited', async () => {
     const root = await tempDir();
     const edited = 'edited\n';
     const previous = contentHash('owned\n');
-    await writeFile(path.join(root, 'rule.md'), edited);
-    const changes = await planChanges(root, [], manifest({ 'rule.md': previous }));
+    await writeProject(root, RULE, edited);
+    const changes = await planChanges(root, [], manifest({ [RULE]: previous }));
 
     const result = await applyChanges(root, changes, applyOptions());
 
-    expect(reportAction(result, 'rule.md')).toBe('skipped');
-    expect(await readFile(path.join(root, 'rule.md'), 'utf8')).toBe(edited);
-    expect(result.manifestFiles['rule.md']?.sha256).toBe(previous);
+    expect(reportAction(result, RULE)).toBe('skipped');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe(edited);
+    expect(result.manifestFiles[RULE]?.sha256).toBe(previous);
   });
 
   it('backs up a stale edited file before --force deletes it', async () => {
     const root = await tempDir();
     const edited = 'edited\n';
-    await writeFile(path.join(root, 'rule.md'), edited);
-    const changes = await planChanges(root, [], manifest({ 'rule.md': contentHash('owned\n') }));
+    await writeProject(root, RULE, edited);
+    const changes = await planChanges(root, [], manifest({ [RULE]: contentHash('owned\n') }));
 
     const result = await applyChanges(root, changes, applyOptions({ force: true }));
 
-    expect(reportAction(result, 'rule.md')).toBe('deleted');
-    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/rule.md`), 'utf8')).toBe(edited);
-    await expect(readFile(path.join(root, 'rule.md'))).rejects.toThrow();
-    expect(result.manifestFiles['rule.md']).toBeUndefined();
+    expect(reportAction(result, RULE)).toBe('deleted');
+    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/${RULE}`), 'utf8')).toBe(edited);
+    await expect(readFile(path.join(root, RULE))).rejects.toThrow();
+    expect(result.manifestFiles[RULE]).toBeUndefined();
   });
 
   it('keeps a stale edited block', async () => {
@@ -282,16 +291,16 @@ describe('applyChanges writes', () => {
 
   it('preserves CRLF when updating a whole file', async () => {
     const root = await tempDir();
-    await writeFile(path.join(root, 'rule.md'), 'line one\r\n');
+    await writeProject(root, RULE, 'line one\r\n');
     const changes = await planChanges(
       root,
-      [file('rule.md', 'line two\n')],
-      manifest({ 'rule.md': contentHash('line one\n') }),
+      [file(RULE, 'line two\n')],
+      manifest({ [RULE]: contentHash('line one\n') }),
     );
 
     await applyChanges(root, changes, applyOptions());
 
-    const next = await readFile(path.join(root, 'rule.md'), 'utf8');
+    const next = await readFile(path.join(root, RULE), 'utf8');
     expect(next).toBe('line two\r\n');
   });
 
@@ -312,19 +321,19 @@ describe('applyChanges writes', () => {
 
   it('writes the manifest last and matches the returned file map', async () => {
     const root = await tempDir();
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
     const result = await applyChanges(root, changes, applyOptions());
     const raw = await readFile(path.join(root, MANIFEST_PATH), 'utf8');
     expect(raw).toBe(serializeManifest({ ...META, files: result.manifestFiles }));
-    expect(result.manifestFiles['rule.md']?.sha256).toBe(contentHash('generated\n'));
+    expect(result.manifestFiles[RULE]?.sha256).toBe(contentHash('generated\n'));
   });
 
   it('appends backups/ to an existing .agentinit/.gitignore', async () => {
     const root = await tempDir();
     await mkdir(path.join(root, '.agentinit'));
     await writeFile(path.join(root, '.agentinit/.gitignore'), 'secrets/\n');
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     await applyChanges(root, changes, applyOptions({ force: true }));
 
@@ -335,8 +344,8 @@ describe('applyChanges writes', () => {
     const root = await tempDir();
     await mkdir(path.join(root, '.agentinit'));
     await writeFile(path.join(root, '.agentinit/.gitignore'), 'backups/old/\n');
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     await applyChanges(root, changes, applyOptions({ force: true }));
 
@@ -348,8 +357,8 @@ describe('applyChanges writes', () => {
     const existing = 'backups/\n# keep\n';
     await mkdir(path.join(root, '.agentinit'));
     await writeFile(path.join(root, '.agentinit/.gitignore'), existing);
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     await applyChanges(root, changes, applyOptions({ force: true }));
 
@@ -362,21 +371,21 @@ describe('applyChanges safety', () => {
     const root = await tempDir();
     await writeFile(path.join(root, 'keep.txt'), 'keep\n');
     const before = await treeDigest(root);
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     const result = await applyChanges(root, changes, applyOptions({ dryRun: true }));
 
     expect(await treeDigest(root)).toBe(before);
     expect(result.report[0]?.diff).toContain('+generated');
     await expect(readFile(path.join(root, MANIFEST_PATH))).rejects.toThrow();
-    await expect(readFile(path.join(root, 'rule.md'))).rejects.toThrow();
+    await expect(readFile(path.join(root, RULE))).rejects.toThrow();
   });
 
   it('leaves no partial target files when a write fails after the temp files exist', async () => {
     const root = await tempDir();
     await writeFile(path.join(root, 'keep.txt'), 'keep\n');
     const before = await treeDigest(root);
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
 
     await expect(
       applyChanges(
@@ -391,7 +400,7 @@ describe('applyChanges safety', () => {
     ).rejects.toThrow('disk full');
 
     expect(await treeDigest(root)).toBe(before);
-    await expect(readFile(path.join(root, 'rule.md'))).rejects.toThrow();
+    await expect(readFile(path.join(root, RULE))).rejects.toThrow();
   });
 
   it('shows a diff and follows the selected resolution', async () => {
@@ -434,32 +443,32 @@ describe('applyChanges safety', () => {
 
   it('asks before replacing an unmanaged file and can skip it', async () => {
     const root = await tempDir();
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
     const { prompter, calls } = recordingPrompter([{ type: 'select', value: 'skip' }]);
 
     const result = await applyChanges(root, changes, applyOptions({ yes: false, prompter }));
 
     expect(choicePrompt(calls.find((call) => call.method === 'select')).initialValue).toBe('skip');
-    expect(reportAction(result, 'rule.md')).toBe('skipped');
-    expect(await readFile(path.join(root, 'rule.md'), 'utf8')).toBe('user\n');
+    expect(reportAction(result, RULE)).toBe('skipped');
+    expect(await readFile(path.join(root, RULE), 'utf8')).toBe('user\n');
   });
 
   it('refuses a conflict when there is no prompter and --yes was not passed', async () => {
     const root = await tempDir();
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
     await expect(applyChanges(root, changes, applyOptions({ yes: false }))).rejects.toThrow(NotInteractiveError);
   });
 
   it('does not prompt when --yes is set', async () => {
     const root = await tempDir();
-    await writeFile(path.join(root, 'rule.md'), 'user\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    await writeProject(root, RULE, 'user\n');
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
     const { prompter, calls } = recordingPrompter([]);
     const result = await applyChanges(root, changes, applyOptions({ prompter }));
     expect(calls).toEqual([]);
-    expect(reportAction(result, 'rule.md')).toBe('skipped');
+    expect(reportAction(result, RULE)).toBe('skipped');
   });
 
   it('keeps a skipped block when another block in the file is backup-replaced', async () => {
@@ -498,14 +507,15 @@ describe('applyChanges safety', () => {
   it('does not create a directory through a symlink that leaves the project', async () => {
     const root = await tempDir();
     const outside = await tempDir();
-    await symlink(outside, path.join(root, 'nested'));
+    await mkdir(path.join(root, '.cursor'));
+    await symlink(outside, path.join(root, '.cursor/rules'));
     await expect(
       applyChanges(
         root,
         [
           {
             kind: 'create',
-            path: 'nested/new/rule.md',
+            path: RULE,
             opKind: 'file',
             content: 'generated\n',
             target: 'cursor',
@@ -513,28 +523,31 @@ describe('applyChanges safety', () => {
         ],
         applyOptions(),
       ),
-    ).rejects.toThrow(/outside the project: nested\/new\/rule\.md/);
+    ).rejects.toThrow(/outside the project: \.cursor\/rules\/agentinit-demo\.mdc/);
     expect(await readdir(outside)).toEqual([]);
   });
 
   it('names the file when a write is not permitted', async () => {
     const root = await tempDir();
-    const target = path.join(root, 'rule.md');
-    await writeFile(target, 'owned\n');
-    const changes = await planChanges(root, [file('rule.md', 'next\n')], manifest({ 'rule.md': contentHash('owned\n') }));
-    // Mode 0555 stops the temp file from being created on POSIX. Windows ignores
-    // that bit on directories, so the destination is marked read-only instead;
-    // replacing it fails with EPERM.
+    const target = path.join(root, RULE);
+    await writeProject(root, RULE, 'owned\n');
+    // Pre-create .agentinit so the failure is the rule write, not the manifest dir.
+    await mkdir(path.join(root, '.agentinit'), { recursive: true });
+    const changes = await planChanges(root, [file(RULE, 'next\n')], manifest({ [RULE]: contentHash('owned\n') }));
+    // Mode 0555 on the parent stops the temp file. Windows ignores that bit on
+    // directories, so the destination is marked read-only instead; replacing it
+    // fails with EPERM.
+    const parent = path.dirname(target);
     const windows = process.platform === 'win32';
     if (windows) await chmod(target, 0o444);
-    else await chmod(root, 0o555);
+    else await chmod(parent, 0o555);
     try {
       await expect(applyChanges(root, changes, applyOptions())).rejects.toThrow(
-        /Cannot write rule\.md: permission denied/,
+        /Cannot write \.cursor\/rules\/agentinit-demo\.mdc: permission denied/,
       );
     } finally {
       if (windows) await chmod(target, 0o644);
-      else await chmod(root, 0o755);
+      else await chmod(parent, 0o755);
     }
     expect(await readFile(target, 'utf8')).toBe('owned\n');
   });
@@ -542,8 +555,31 @@ describe('applyChanges safety', () => {
   it('reports a readable error when the parent path is a file', async () => {
     const root = await tempDir();
     await writeFile(path.join(root, '.agentinit'), 'not a directory\n');
-    const changes = await planChanges(root, [file('rule.md', 'generated\n')], null);
+    const changes = await planChanges(root, [file(RULE, 'generated\n')], null);
     await expect(applyChanges(root, changes, applyOptions())).rejects.toThrow(AgentInitError);
+  });
+
+  it('refuses delete-stale for a path agentinit does not own and leaves the file', async () => {
+    const root = await tempDir();
+    const secret = 'secret-notes.txt';
+    await writeFile(path.join(root, secret), 'keep me\n');
+    const changes: Change[] = [
+      {
+        kind: 'delete-stale',
+        path: secret,
+        opKind: 'file',
+        ownedHash: contentHash('keep me\n'),
+      },
+    ];
+
+    await expect(applyChanges(root, changes, applyOptions())).rejects.toSatisfy((error: unknown) => {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return false;
+      expect(error.message).toContain(secret);
+      expect(error.message).toContain('not a file agentinit writes');
+      return true;
+    });
+    expect(await readFile(path.join(root, secret), 'utf8')).toBe('keep me\n');
   });
 });
 

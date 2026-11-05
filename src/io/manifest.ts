@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import type { ZodError } from 'zod';
 import * as z from 'zod';
 import { AgentInitError } from '../errors.js';
+import { isOwnedBlockKey, isOwnedPath } from '../owned-paths.js';
 import type { AgentTarget, Language } from '../types.js';
 
 /** Project-relative path of the committed manifest (PRD §6.2). */
@@ -126,19 +127,39 @@ function sortedFiles(
 /**
  * A manifest file key is a relative POSIX path, or that path plus `#` and a block id
  * (`AGENTS.md#core`). One `#` splits the key; the path itself cannot contain `#`.
+ * Keys must name a file agentinit writes (PRD §5.2).
  */
 function fileKeyProblem(key: string): string | undefined {
   if (key.length === 0) return 'must not be empty';
   if (key.includes('\\')) return 'backslashes are not allowed';
   if (key.startsWith('/') || key.includes('\n') || key.includes('\r')) return 'must be a relative path';
   const hash = key.indexOf('#');
-  if (hash === -1) return undefined;
+  if (hash === -1) {
+    const segmentProblem = pathSegmentProblem(key);
+    if (segmentProblem !== undefined) return segmentProblem;
+    if (!isOwnedPath(key)) return `"${key}" is not a file agentinit writes`;
+    return undefined;
+  }
   if (key.slice(hash + 1).includes('#')) return 'must contain at most one #';
   const filePath = key.slice(0, hash);
   const blockId = key.slice(hash + 1);
   if (filePath.length === 0) return 'path before # must not be empty';
   // Same charset as managed-block ids: no whitespace, `#`, `\`, or `>`.
   if (blockId.length === 0 || /[\s>#\\]/.test(blockId)) return 'block id after # is not valid';
+  const segmentProblem = pathSegmentProblem(filePath);
+  if (segmentProblem !== undefined) return segmentProblem;
+  if (!isOwnedBlockKey(filePath, blockId)) {
+    return `"${key}" is not a file agentinit writes`;
+  }
+  return undefined;
+}
+
+function pathSegmentProblem(filePath: string): string | undefined {
+  for (const segment of filePath.split('/')) {
+    if (segment.length === 0 || segment === '.' || segment === '..') {
+      return 'must not contain empty, ".", or ".." path segments';
+    }
+  }
   return undefined;
 }
 

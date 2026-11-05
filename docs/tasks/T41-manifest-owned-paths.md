@@ -34,12 +34,12 @@ A committed manifest can only ever make agentinit write or delete files agentini
 - Existing fixture manifests (`tests/fixtures/edited-managed-block/.agentinit/manifest.json`) and the dogfood manifest must still parse.
 
 ## Acceptance criteria
-- [ ] A manifest key for `secret-notes.txt`, `package.json`, `.git/config`, `.cursor/rules/../../x.mdc`, or `.cursor/rules/custom.mdc` (no `agentinit-` prefix) fails to parse. The error names the key.
-- [ ] `AGENTS.md` without `#<blockId>` fails. `AGENTS.md#core` passes.
-- [ ] The pre-launch repro deletes nothing and exits `1` with a readable message.
-- [ ] A unit test that hands `applyChanges` a `delete-stale` change for a non-owned path throws and leaves the file in place.
-- [ ] The "every plan path is owned" test covers all fixtures and all four targets.
-- [ ] All existing tests, the dogfood `doctor`, and the smoke test pass.
+- [x] A manifest key for `secret-notes.txt`, `package.json`, `.git/config`, `.cursor/rules/../../x.mdc`, or `.cursor/rules/custom.mdc` (no `agentinit-` prefix) fails to parse. The error names the key.
+- [x] `AGENTS.md` without `#<blockId>` fails. `AGENTS.md#core` passes.
+- [x] The pre-launch repro deletes nothing and exits `1` with a readable message.
+- [x] A unit test that hands `applyChanges` a `delete-stale` change for a non-owned path throws and leaves the file in place.
+- [x] The "every plan path is owned" test covers all fixtures and all four targets.
+- [x] All existing tests, the dogfood `doctor`, and the smoke test pass.
 
 ## Verify
 ```bash
@@ -51,3 +51,5 @@ node dist/cli.js doctor
 `fix(io): limit manifest paths to files agentinit writes`
 
 ## Notes
+- Exported `FRAGMENT_ID_PATTERN` from `src/registry/schema.ts` so `owned-paths` reuses the registry id charset instead of copying it.
+- Apply unit tests that used synthetic paths like `rule.md` now use `.cursor/rules/agentinit-demo.mdc` so the ownership assert stays on in tests.
