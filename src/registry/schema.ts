@@ -11,7 +11,8 @@ const RULE_CATEGORIES = [
 
 const SCOPES = ['always', 'glob', 'auto', 'manual'] as const satisfies readonly FragmentScope[];
 
-const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** Kebab-case fragment and workflow ids (PRD §4.4). */
+export const FRAGMENT_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /**
  * Placeholders from PRD §4.4. They contain braces but are not brace expansion.
@@ -19,7 +20,7 @@ const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  */
 const GLOB_PLACEHOLDER = /\{\{(?:src|pm|scripts\.[^{}]+)\}\}/g;
 
-const idSchema = z.string().regex(KEBAB_CASE, { error: 'must be kebab-case' });
+const idSchema = z.string().regex(FRAGMENT_ID_PATTERN, { error: 'must be kebab-case' });
 
 const singleLineSchema = z.string().superRefine((value, ctx) => {
   if (value.trim().length === 0) {

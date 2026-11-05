@@ -175,4 +175,35 @@ describe('readManifest', () => {
       return true;
     });
   });
+
+  it.each([
+    'secret-notes.txt',
+    'package.json',
+    '.git/config',
+    '.cursor/rules/../../x.mdc',
+    '.cursor/rules/custom.mdc',
+    'AGENTS.md',
+  ])('rejects non-owned or bare shared key %s', async (key) => {
+    const root = await tempDir();
+    const manifest = sampleManifest();
+    const serialized = serializeManifest(manifest).replace(
+      '"AGENTS.md#core"',
+      JSON.stringify(key),
+    );
+    await writeManifest(root, serialized);
+    await expect(readManifest(root)).rejects.toSatisfy((error: unknown) => {
+      expect(error).toBeInstanceOf(AgentInitError);
+      if (!(error instanceof AgentInitError)) return false;
+      expect(error.message).toContain(key);
+      expect(error.message).toContain('not a file agentinit writes');
+      expect(error.hint).toContain('agentinit init');
+      return true;
+    });
+  });
+
+  it('accepts AGENTS.md#core as an owned block key', async () => {
+    const root = await tempDir();
+    await writeManifest(root, serializeManifest(sampleManifest()));
+    await expect(readManifest(root)).resolves.toEqual(sampleManifest());
+  });
 });

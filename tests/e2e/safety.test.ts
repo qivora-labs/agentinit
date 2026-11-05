@@ -1,6 +1,7 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { contentHash } from '../../src/io/hash.js';
 import { removeBlock } from '../../src/io/managed-block.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
 import { runCli } from '../helpers/run.js';
@@ -108,6 +109,29 @@ describe('safety', () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('AGENTS.md');
     expect(await listFiles(dir)).not.toContain('.agentinit/manifest.json');
+    expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('rejects a forged manifest path and deletes nothing', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+
+    const secret = 'secret-notes.txt';
+    const body = 'top secret\n';
+    await writeFile(path.join(dir, secret), body);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      files: Record<string, { sha256: string }>;
+    };
+    manifest.files[secret] = { sha256: contentHash(body) };
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const digest = await treeDigest(dir);
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(secret);
+    expect(result.stderr).toContain('not a file agentinit writes');
+    expect(await readFile(path.join(dir, secret), 'utf8')).toBe(body);
     expect(await treeDigest(dir)).toBe(digest);
   });
 });

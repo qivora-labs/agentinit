@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { createPatch } from 'diff';
 import { AgentInitError, NotInteractiveError } from '../errors.js';
 import { CANCELLED } from '../exit-codes.js';
+import { isOwnedBlockKey, isOwnedPath } from '../owned-paths.js';
 import type { Prompter } from '../ui/prompter.js';
 import {
   canonicalBlockInner,
@@ -100,6 +101,9 @@ export async function applyChanges(
   changes: readonly Change[],
   options: ApplyOptions,
 ): Promise<ApplyResult> {
+  for (const change of changes) {
+    assertOwnedChange(change);
+  }
   const originals = await readOriginals(root, changes);
   const resolved = await resolveAll(changes, originals, options);
   const outcome = settleAll(resolved, originals, backupStamp(options.now));
@@ -118,6 +122,21 @@ export async function applyChanges(
     options.onAtomicWrite,
   );
   return result;
+}
+
+/**
+ * Defense in depth: never delete or replace a path agentinit does not own,
+ * even if a forged manifest or a bug produced the change.
+ */
+function assertOwnedChange(change: Change): void {
+  if (change.kind === 'unchanged') return;
+  const owned =
+    change.blockId !== undefined
+      ? isOwnedBlockKey(change.path, change.blockId)
+      : isOwnedPath(change.path);
+  if (owned) return;
+  const label = change.blockId === undefined ? change.path : `${change.path}#${change.blockId}`;
+  throw new AgentInitError(`Refusing to modify "${label}": it is not a file agentinit writes.`);
 }
 
 async function readOriginals(root: string, changes: readonly Change[]): Promise<Map<string, string | null>> {
