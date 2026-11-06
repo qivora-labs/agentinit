@@ -1,5 +1,6 @@
 import type { Writable } from 'node:stream';
 import type { RunContext } from '../context.js';
+import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
 import { SUCCESS } from '../exit-codes.js';
 import { FRAGMENT_CATEGORIES, loadRegistry, type Registry } from '../registry/load.js';
@@ -21,6 +22,8 @@ interface ListEntry {
   category: FragmentCategory;
   version: string;
   description: string;
+  /** Package name → semver range; empty when the fragment applies to every version. */
+  appliesTo: Record<string, string>;
 }
 
 export async function list(ctx: RunContext, logger: Logger, options: ListOptions): Promise<number> {
@@ -50,7 +53,24 @@ function listEntries(registry: Registry, category: FragmentCategory | undefined)
     category: fragment.meta.category,
     version: fragment.meta.version,
     description: fragment.meta.description,
+    appliesTo: sortedAppliesTo(fragment),
   }));
+}
+
+function sortedAppliesTo(fragment: Fragment): Record<string, string> {
+  const ranges = fragment.meta.category === 'workflow' ? undefined : fragment.meta.appliesTo;
+  const sorted: Record<string, string> = {};
+  for (const name of Object.keys(ranges ?? {}).sort(compareText)) {
+    const range = ranges?.[name];
+    if (range !== undefined) sorted[name] = range;
+  }
+  return sorted;
+}
+
+function formatAppliesTo(appliesTo: Readonly<Record<string, string>>): string {
+  return Object.entries(appliesTo)
+    .map(([name, range]) => `${name} ${range}`)
+    .join(', ');
 }
 
 function fragmentsInCategoryOrder(registry: Registry): Fragment[] {
@@ -68,9 +88,11 @@ function formatGrouped(entries: readonly ListEntry[]): string {
   for (const category of FRAGMENT_CATEGORIES) {
     const rows = entries.filter((entry) => entry.category === category);
     if (rows.length === 0) continue;
-    const lines = rows.map(
-      (row) => `  ${row.id.padEnd(idWidth)}  ${row.name.padEnd(nameWidth)}  ${row.description}`,
-    );
+    const lines = rows.map((row) => {
+      const line = `  ${row.id.padEnd(idWidth)}  ${row.name.padEnd(nameWidth)}  ${row.description}`;
+      const ranges = formatAppliesTo(row.appliesTo);
+      return ranges.length === 0 ? line : `${line}  ${ranges}`;
+    });
     blocks.push([category, ...lines].join('\n'));
   }
   return blocks.join('\n\n');
