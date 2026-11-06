@@ -155,7 +155,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | done |
 | [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
 | [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
-| [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | todo |
+| [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
 
