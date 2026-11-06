@@ -28,8 +28,19 @@ export const agentAdapters: Partial<Record<AgentTarget, TargetAdapter | undefine
   copilot: copilotAdapter,
 };
 
-export function buildPlan(profile: ProjectProfile, resolved: ResolvedSelection): Plan {
-  const ctx = renderTargetContext(profile, resolved);
+export interface BuildPlanOptions {
+  /** When false, adapters emit no workflow FileOps. Defaults to true. */
+  readonly includeWorkflows?: boolean;
+}
+
+export function buildPlan(
+  profile: ProjectProfile,
+  resolved: ResolvedSelection,
+  options: BuildPlanOptions = {},
+): Plan {
+  const includeWorkflows = options.includeWorkflows !== false;
+  const selection = includeWorkflows ? resolved : { ...resolved, workflows: [] };
+  const ctx = renderTargetContext(profile, selection);
   const ops: FileOp[] = [];
   for (const adapter of SHARED_ADAPTERS) {
     ops.push(...adapter(ctx));

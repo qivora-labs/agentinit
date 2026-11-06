@@ -74,6 +74,8 @@ interface Setup {
   readonly excluded: readonly string[];
   /** Ids dropped from `excluded` because they left the registry. */
   readonly excludedNotices: readonly string[];
+  /** Include slash-command workflow FileOps. */
+  readonly workflows: boolean;
 }
 
 const UP_TO_DATE = 'Already up to date.';
@@ -160,6 +162,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     root,
     prepared,
     excluded: setup.excluded,
+    workflows: setup.workflows,
     notices: ctx.json ? jsonNotices() : notices(),
     greenfieldSteps: greenfieldSteps(),
     prompts,
@@ -247,6 +250,7 @@ async function handleUpToDateShortcut(input: {
     root,
     prepared,
     excluded: setup.excluded,
+    workflows: setup.workflows,
     notices: notices(),
     greenfieldSteps: greenfieldSteps(),
     prompts,
@@ -261,13 +265,25 @@ async function applyPreparedWrite(input: {
   readonly root: string;
   readonly prepared: PreparedWrite;
   readonly excluded: readonly string[];
+  readonly workflows: boolean;
   readonly notices: readonly string[];
   readonly greenfieldSteps: readonly string[];
   readonly prompts: () => Prompter;
   readonly spin: boolean;
 }): Promise<number> {
-  const { ctx, logger, options, root, prepared, excluded, notices, greenfieldSteps, prompts, spin } =
-    input;
+  const {
+    ctx,
+    logger,
+    options,
+    root,
+    prepared,
+    excluded,
+    workflows,
+    notices,
+    greenfieldSteps,
+    prompts,
+    spin,
+  } = input;
   const { profile, resolved, plan, changes } = prepared;
   const hadConflicts = needsConflictPrompt(changes);
   const writing = spin && !hadConflicts
@@ -277,7 +293,7 @@ async function applyPreparedWrite(input: {
   try {
     applied = await applyChanges(root, changes, {
       now: options.now ?? new Date(),
-      manifest: manifestBody(profile, resolved, excluded),
+      manifest: manifestBody(profile, resolved, excluded, workflows),
       yes: ctx.yes,
       force: ctx.force,
       dryRun: ctx.dryRun,
@@ -302,10 +318,12 @@ async function applyPreparedWrite(input: {
     notices,
     greenfieldSteps,
     agents: profile.agents,
-    workflows: resolved.workflows.map((workflow) => ({
-      id: workflow.meta.id,
-      order: workflow.meta.order,
-    })),
+    workflows: workflows
+      ? resolved.workflows.map((workflow) => ({
+          id: workflow.meta.id,
+          order: workflow.meta.order,
+        }))
+      : [],
     mode: profile.mode,
   });
 }
@@ -327,6 +345,7 @@ function setupFromManifest(
 ): Setup {
   const saved = asSavedSelections(manifest.selections);
   const { excluded, excludedNotices } = resolveExcluded(saved.excluded, registry);
+  const workflows = resolveWorkflows(ctx, saved.workflows);
   if (detection.mode === 'greenfield') {
     return {
       selection: {
@@ -340,6 +359,7 @@ function setupFromManifest(
       notices: [],
       excluded,
       excludedNotices,
+      workflows,
     };
   }
 
@@ -357,6 +377,7 @@ function setupFromManifest(
     notices: [],
     excluded,
     excludedNotices,
+    workflows,
   };
 }
 
@@ -392,7 +413,7 @@ async function prepareWrite(
     ctx.isInteractive,
     prompts,
   );
-  const plan = buildPlan(profile, resolved);
+  const plan = buildPlan(profile, resolved, { includeWorkflows: setup.workflows });
   const changes = await computeChanges(root, plan, manifest);
   return { profile, resolved, plan, changes };
 }
@@ -454,7 +475,7 @@ async function previewChanges(
   // Dry-run never writes the manifest; excluded is empty here on purpose.
   const applied = await applyChanges(root, changes, {
     now: options.now ?? new Date(),
-    manifest: manifestBody(profile, resolved, []),
+    manifest: manifestBody(profile, resolved, [], true),
     yes: true,
     dryRun: true,
   });
@@ -497,6 +518,7 @@ async function changeSetup(
       notices: current.notices,
       excluded: current.excluded,
       excludedNotices: current.excludedNotices,
+      workflows: current.workflows,
     };
   }
 
@@ -505,10 +527,16 @@ async function changeSetup(
     prompts(),
     detection.draft,
     registry,
-    { selection: current.selection, agents: current.agents, excluded: current.excluded },
+    {
+      selection: current.selection,
+      agents: current.agents,
+      excluded: current.excluded,
+      workflows: current.workflows,
+    },
     {
       ...(agents === undefined ? {} : { agents }),
       excluded: current.excluded,
+      workflows: current.workflows,
     },
   );
   return {
@@ -516,6 +544,7 @@ async function changeSetup(
     notices: current.notices,
     excluded: changed.excluded ?? current.excluded,
     excludedNotices: current.excludedNotices,
+    workflows: changed.workflows ?? current.workflows,
   };
 }
 
@@ -633,6 +662,9 @@ async function chooseSetup(
   const previousExcluded = manifest?.selections.excluded ?? [];
   const { excluded: prunedExcluded, excludedNotices } = resolveExcluded(previousExcluded, registry);
 
+  const previousWorkflows = manifest?.selections.workflows ?? true;
+  const workflows = resolveWorkflows(ctx, previousWorkflows);
+
   if (detection.mode === 'greenfield') {
     if (ctx.yes) {
       const rejected = nonInteractiveSelection({ kind: 'greenfield' });
@@ -646,7 +678,7 @@ async function chooseSetup(
       ...(skipAgents === undefined ? {} : { agents: skipAgents }),
       ...(initial === undefined ? {} : { initial }),
     });
-    return { ...wizard, notices: [], excluded: prunedExcluded, excludedNotices };
+    return { ...wizard, notices: [], excluded: prunedExcluded, excludedNotices, workflows };
   }
 
   const saved =
@@ -671,6 +703,7 @@ async function chooseSetup(
       notices: selected.notices,
       excluded: prunedExcluded,
       excludedNotices,
+      workflows,
     };
   }
 
@@ -680,6 +713,7 @@ async function chooseSetup(
     warnings: detection.warnings,
     excluded: prunedExcluded,
     detectedIds: [...detection.draft.frameworks, ...detection.draft.libraries],
+    workflows,
     ...(agents === undefined ? {} : { agents }),
     ...(saved === undefined
       ? {}
@@ -699,6 +733,7 @@ async function chooseSetup(
     notices: [],
     excluded: confirmed.excluded ?? prunedExcluded,
     excludedNotices,
+    workflows: confirmed.workflows ?? workflows,
   };
 }
 
@@ -728,7 +763,14 @@ function asSavedSelections(selections: Manifest['selections']): SavedSelections 
     architecture: selections.architecture,
     agents: selections.agents,
     excluded: selections.excluded,
+    workflows: selections.workflows,
   };
+}
+
+/** `--no-workflows` turns them off; otherwise the saved value (default true) wins. */
+function resolveWorkflows(ctx: RunContext, saved: boolean): boolean {
+  if (ctx.noWorkflows) return false;
+  return saved;
 }
 
 function resolveExcluded(
@@ -799,6 +841,7 @@ function manifestBody(
   profile: ProjectProfile,
   resolved: ResolvedSelection,
   excluded: readonly string[],
+  workflows: boolean,
 ): Omit<Manifest, 'files'> {
   const resolvedIds = new Set(resolved.fragments.map((fragment) => fragment.meta.id));
   return {
@@ -811,6 +854,7 @@ function manifestBody(
       architecture: profile.architecture.id,
       agents: [...profile.agents],
       excluded: [...excluded],
+      workflows,
     },
     fragments: fragmentVersions(resolved),
   };

@@ -26,6 +26,7 @@ const saved = {
   architecture: 'layered',
   agents: ['cursor' as const],
   excluded: [] as string[],
+  workflows: true,
 };
 
 describe('draftWithSavedSelections', () => {

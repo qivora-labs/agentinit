@@ -165,6 +165,7 @@ describe('init', () => {
       { type: 'groupMultiselect', value: ['nextjs-app-router'] },
       { type: 'groupMultiselect', value: [] },
       { type: 'select', value: 'feature-based' },
+      { type: 'select', value: true },
       { type: 'select', value: 'write' },
     ]);
     const again = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {
@@ -593,6 +594,7 @@ describe('init', () => {
       { type: 'groupMultiselect', value: ['nextjs-app-router'] },
       { type: 'groupMultiselect', value: ['tailwind'] },
       { type: 'select', value: 'feature-based' },
+      { type: 'select', value: true },
       WRITE,
     ]);
     const result = await runCli(['init', '--agents', 'cursor', '--cwd', dir], {

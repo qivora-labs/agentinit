@@ -18,7 +18,8 @@ backups/
       "windsurf",
       "copilot"
     ],
-    "excluded": []
+    "excluded": [],
+    "workflows": true
   },
   "fragments": {
     "express": "1.0.1",

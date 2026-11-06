@@ -5,6 +5,7 @@ import type { Readable, Writable } from 'node:stream';
 import { doctor } from './commands/doctor.js';
 import { init } from './commands/init.js';
 import { list, type ListOptions } from './commands/list.js';
+import { remove } from './commands/remove.js';
 import type { Prompter } from './ui/prompter.js';
 import { AGENT_TARGETS, createRunContext, parseAgents, type RunContext } from './context.js';
 import { AgentInitError } from './errors.js';
@@ -73,6 +74,8 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
     return await dispatch(commandName, ctx, logger, {
       stdout: io.stdout,
       category: commandName === 'list' ? readCategoryFlag(parsed.options.category) : undefined,
+      removeAll: commandName === 'remove' && parsed.options.all === true,
+      removeIds: commandName === 'remove' ? positionalArgs(cli.args) : [],
       prompter: options.prompter,
       now: options.now,
       shouldStop: options.shouldStop,
@@ -91,12 +94,16 @@ function createCli(): CAC {
   cli.option('--agents <list>', `Comma-separated agents: ${AGENT_TARGETS.join(', ')}`);
   cli.option('--cwd <path>', 'Run against another directory');
   cli.option('--force', 'Replace unmanaged and edited files after backing them up');
-  cli.option('--json', 'Machine-readable output for init, list, doctor, and dry-run');
+  cli.option('--json', 'Machine-readable output for init, list, doctor, remove, and dry-run');
+  cli.option('--no-workflows', 'Skip slash-command workflow files on init');
   cli.command('init', 'Bootstrap agent rules for this project');
   cli
     .command('list', 'Browse available fragments')
     .option('--category <name>', 'Only show fragments in one category');
   cli.command('doctor', 'Check that generated rules match the project');
+  cli
+    .command('remove [ids...]', 'Remove agentinit-owned files')
+    .option('--all', 'Remove every owned file, managed block, and the manifest');
   cli.help();
   cli.version(pkg.version);
   // Help and version are printed by run() so tests can capture the streams.
@@ -140,6 +147,8 @@ async function buildContext(options: CAC['options'], io: CommandIo): Promise<Run
     agents: readAgents(options.agents),
     force: options.force === true,
     json: options.json === true,
+    // cac maps `--no-workflows` to `workflows: false`.
+    noWorkflows: options.workflows === false,
     stdinIsTTY: isTerminal(io.stdin),
     stdoutIsTTY: isTerminal(io.stdout),
   });
@@ -214,6 +223,8 @@ async function dispatch(
   io: {
     stdout: CommandIo['stdout'];
     category: string | undefined;
+    removeAll: boolean;
+    removeIds: readonly string[];
     prompter: Prompter | undefined;
     now: Date | undefined;
     shouldStop: (() => boolean) | undefined;
@@ -233,9 +244,23 @@ async function dispatch(
       return await list(ctx, logger, listOptions(io));
     case 'doctor':
       return await doctor(ctx, logger, { stdout: io.stdout });
+    case 'remove':
+      return await remove(ctx, logger, {
+        stdout: io.stdout,
+        all: io.removeAll,
+        ids: io.removeIds,
+        ...(io.prompter === undefined ? {} : { prompter: io.prompter }),
+        ...(io.now === undefined ? {} : { now: io.now }),
+        ...(io.shouldStop === undefined ? {} : { shouldStop: io.shouldStop }),
+        ...(io.onAtomicWrite === undefined ? {} : { onAtomicWrite: io.onAtomicWrite }),
+      });
     default:
       throw new AgentInitError(`Unknown command "${name}".`);
   }
+}
+
+function positionalArgs(args: readonly unknown[]): string[] {
+  return args.filter((arg): arg is string => typeof arg === 'string' && arg.length > 0);
 }
 
 function listOptions(io: { stdout: CommandIo['stdout']; category: string | undefined }): ListOptions {

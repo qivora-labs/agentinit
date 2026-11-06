@@ -344,6 +344,27 @@ describe('buildPlan', () => {
     expect(second).toEqual(first);
   });
 
+  it('omits workflow FileOps when includeWorkflows is false', () => {
+    const allAgents = profile({
+      scripts: existing.scripts,
+      folders: existing.folders,
+      agents: ['cursor', 'claude', 'windsurf', 'copilot'],
+    });
+    const withWorkflows = buildPlan(allAgents, sample);
+    const without = buildPlan(allAgents, sample, { includeWorkflows: false });
+    const isWorkflowPath = (relPath: string): boolean =>
+      relPath.includes('/commands/') ||
+      relPath.includes('/skills/') ||
+      relPath.includes('/workflows/') ||
+      relPath.includes('/prompts/');
+    expect(withWorkflows.ops.some((op) => op.path.includes('/commands/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/skills/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/workflows/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/prompts/'))).toBe(true);
+    expect(without.ops.every((op) => !isWorkflowPath(op.path))).toBe(true);
+    expect(without.ops.length).toBeLessThan(withWorkflows.ops.length);
+  });
+
   it('throws when the selected architecture fragment was not resolved', () => {
     expect(() => buildPlan(profile(), resolved([]))).toThrow(
       'Architecture fragment "layered" was not resolved.',

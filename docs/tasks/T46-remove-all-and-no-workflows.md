@@ -44,14 +44,14 @@ Make trying agentinit low-risk at launch. One command removes everything it gene
 - Keep `commands/remove.ts` thin; deciding what to delete belongs in `io/`, as a `Change[]` computation.
 
 ## Acceptance criteria
-- [ ] Owner decisions recorded under **Notes**, and the PRD updated.
-- [ ] On `existing-claude-md` after `init --yes`, `remove --all --yes` restores `CLAUDE.md` byte-for-byte, deletes every generated file, and removes `.agentinit/manifest.json`.
-- [ ] A hand-edited rule file survives `remove --all --yes` and is reported. With `--force`, it is backed up and then deleted.
-- [ ] Backups made before removal are kept, and their path is printed.
-- [ ] `remove --all --dry-run` writes nothing.
-- [ ] `init --yes --no-workflows` on `next15-src` writes 8 files (4 rule files, `AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, `copilot-instructions.md`). A re-run without the flag keeps workflows off.
-- [ ] Turning workflows off through *Customize* on a re-run deletes the old workflow files.
-- [ ] Interrupting `remove --all` (SIGINT) leaves no partial files (same guarantee as `init`).
+- [x] Owner decisions recorded under **Notes**, and the PRD updated.
+- [x] On `existing-claude-md` after `init --yes`, `remove --all --yes` restores `CLAUDE.md` byte-for-byte, deletes every generated file, and removes `.agentinit/manifest.json`.
+- [x] A hand-edited rule file survives `remove --all --yes` and is reported. With `--force`, it is backed up and then deleted.
+- [x] Backups made before removal are kept, and their path is printed.
+- [x] `remove --all --dry-run` writes nothing.
+- [x] `init --yes --no-workflows` on `next15-src` writes 8 files (4 rule files, `AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, `copilot-instructions.md`). A re-run without the flag keeps workflows off.
+- [x] Turning workflows off through *Customize* on a re-run deletes the old workflow files.
+- [x] Interrupting `remove --all` (SIGINT) leaves no partial files (same guarantee as `init`).
 
 ## Verify
 ```bash
@@ -65,3 +65,6 @@ diff /tmp/ai-t46/CLAUDE.md /tmp/ai-t46-claude.orig && echo "CLAUDE.md restored"
 `feat(cli): add remove --all and --no-workflows`
 
 ## Notes
+- Owner confirmed decisions 1–3 (2026-11-06): keep non-empty `backups/` and print its path; delete whitespace-only shared files after block removal; `selections.workflows: boolean` default `true`.
+- `computeRemoveChanges` is `computeChanges` with an empty plan. `applyRemoveAll` shares conflict resolution and atomic staging with `applyChanges`, then deletes the manifest and `.gitignore` instead of rewriting them.
+- cac maps `--no-workflows` to `workflows: false` on parsed options.

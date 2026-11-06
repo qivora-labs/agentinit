@@ -11,6 +11,8 @@ export interface RunContext {
   agents: AgentTarget[] | undefined;
   force: boolean;
   json: boolean;
+  /** `init --no-workflows`: omit slash-command workflow files. */
+  noWorkflows: boolean;
   isInteractive: boolean;
 }
 
@@ -21,6 +23,7 @@ export interface RunContextInput {
   agents: AgentTarget[] | undefined;
   force: boolean;
   json: boolean;
+  noWorkflows: boolean;
   stdinIsTTY: boolean;
   stdoutIsTTY: boolean;
 }
@@ -35,6 +38,7 @@ export function createRunContext(input: RunContextInput): RunContext {
     agents: input.agents === undefined ? undefined : [...input.agents],
     force: input.force,
     json: input.json,
+    noWorkflows: input.noWorkflows,
     isInteractive: input.stdinIsTTY && input.stdoutIsTTY && !input.yes,
   };
 }

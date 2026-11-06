@@ -150,10 +150,12 @@ npx @agentinit/cli init
 npx @agentinit/cli init --yes      # non-interactive defaults; never overwrites user content
 npx @agentinit/cli init --dry-run  # planned tree + diffs for existing files; write nothing
 npx @agentinit/cli init --agents cursor,claude
+npx @agentinit/cli init --no-workflows  # skip slash-command workflow files
 npx @agentinit/cli doctor          # read-only drift check; exit 2 on issues
 npx @agentinit/cli list
 npx @agentinit/cli list --category library
 npx @agentinit/cli list --json
+npx @agentinit/cli remove --all    # delete every owned file and managed block
 ```
 
 ### Flags
@@ -165,13 +167,14 @@ npx @agentinit/cli list --json
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up. |
-| `--json` | Machine-readable output for `init`, `list`, `doctor`, and `--dry-run`. |
+| `--json` | Machine-readable output for `init`, `list`, `doctor`, `remove`, and `--dry-run`. |
+| `--no-workflows` | On `init`, omit slash-command workflow files. |
 | `-h`, `--help` | Show help. |
 | `-v`, `--version` | Show version. |
 
 **Exit codes:** `0` success · `1` error · `2` `doctor` found issues · `130` cancelled.
 
-Lifecycle commands (`add` / `remove` / `update`) are planned for v0.2.
+`remove --all` undoes an init. Per-id `add` / `remove` / `update` are planned for v0.2.
 
 ### `doctor` in CI
 

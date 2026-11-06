@@ -14,4 +14,9 @@ export interface PromptedSetup {
    * previous list.
    */
   readonly excluded?: readonly string[];
+  /**
+   * Whether to emit slash-command workflows. Set by *Customize*; other paths
+   * leave this undefined so the caller keeps the flag or saved value.
+   */
+  readonly workflows?: boolean;
 }

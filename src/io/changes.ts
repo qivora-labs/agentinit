@@ -90,6 +90,14 @@ export function changeKey(change: Pick<Change, 'path' | 'blockId'>): string {
 }
 
 /**
+ * Classify every owned manifest entry for `remove --all`: unedited entries
+ * become `delete-stale`; hand-edited ones become `conflict-edited`.
+ */
+export async function computeRemoveChanges(root: string, manifest: Manifest): Promise<Change[]> {
+  return computeChanges(root, { ops: [] }, manifest);
+}
+
+/**
  * Inner text `upsertBlock` will store, in LF. Manifest hashes use this so a
  * missing trailing newline does not look like an edit on the next run.
  */

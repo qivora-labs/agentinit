@@ -70,6 +70,7 @@ describe('confirmDetected', () => {
       { type: 'groupMultiselect', value: ['express'] },
       { type: 'groupMultiselect', value: ['playwright'] },
       { type: 'select', value: 'flat' },
+      { type: 'select', value: true },
       { type: 'multiselect', value: ['claude'] },
     ]);
 
@@ -100,8 +101,9 @@ describe('confirmDetected', () => {
       },
     });
     expect(result.agents).toEqual(['claude']);
+    expect(result.workflows).toBe(true);
     expect(result.excluded).toEqual(['nextjs-app-router', 'vitest']);
-    expect(choicePrompt(language).message).toBe('1/5 How strict should TypeScript be?');
+    expect(choicePrompt(language).message).toBe('1/6 How strict should TypeScript be?');
     expect(choicePrompt(frameworks).required).toBe(false);
     expect(choicePrompt(libraries).required).toBe(false);
     expect(choicePrompt(libraries).options.map((option) => option.value)).toEqual([
@@ -109,7 +111,7 @@ describe('confirmDetected', () => {
       'playwright',
     ]);
     expect(choicePrompt(agents).message).toBe(
-      '5/5 Which agents should we generate rules for?\nAGENTS.md is always written.',
+      '6/6 Which agents should we generate rules for?\nAGENTS.md is always written.',
     );
   });
 
@@ -121,6 +123,7 @@ describe('confirmDetected', () => {
       { type: 'groupMultiselect', value: ['nextjs-app-router'] },
       { type: 'groupMultiselect', value: ['vitest', 'zustand'] },
       { type: 'select', value: 'feature-based' },
+      { type: 'select', value: true },
       { type: 'multiselect', value: ['cursor'] },
     ]);
 
@@ -204,15 +207,18 @@ describe('confirmDetected', () => {
       { type: 'groupMultiselect', value: ['nextjs-app-router'] },
       { type: 'groupMultiselect', value: ['vitest'] },
       { type: 'select', value: 'flat' },
+      { type: 'select', value: true },
       { type: 'multiselect', value: ['cursor'] },
     ]);
 
     const result = await confirmDetected(prompter, draft, await bundledRegistry(), { theme });
-    const architecture = choiceCalls(calls, 'select').at(-1);
+    const architecture = choiceCalls(calls, 'select').find((call) =>
+      choicePrompt(call).message.includes('architecture'),
+    );
 
     expect(result.selection.architecture).toBe('flat');
-    expect(choiceCalls(calls, 'select')).toHaveLength(3);
-    expect(choicePrompt(architecture).message).toBe('4/5 Which architecture should we follow?');
+    expect(choiceCalls(calls, 'select')).toHaveLength(4);
+    expect(choicePrompt(architecture).message).toBe('4/6 Which architecture should we follow?');
     expect(choicePrompt(architecture).initialValue).toBe('flat');
   });
 
@@ -289,6 +295,7 @@ describe('changeExistingSetup', () => {
       { type: 'groupMultiselect', value: ['nextjs-app-router'] },
       { type: 'groupMultiselect', value: ['vitest'] },
       { type: 'select', value: 'layered' },
+      { type: 'select', value: false },
       { type: 'multiselect', value: ['claude'] },
     ]);
 
@@ -301,6 +308,7 @@ describe('changeExistingSetup', () => {
         origin: {},
       },
       agents: ['cursor'],
+      workflows: true,
     });
 
     expect(calls.some((call) => call.method === 'note')).toBe(false);
@@ -312,5 +320,6 @@ describe('changeExistingSetup', () => {
     expect(choicePrompt(choiceCalls(calls, 'multiselect')[0]).initialValues).toEqual(['cursor']);
     expect(result.selection.libraries).toEqual(['vitest']);
     expect(result.agents).toEqual(['claude']);
+    expect(result.workflows).toBe(false);
   });
 });

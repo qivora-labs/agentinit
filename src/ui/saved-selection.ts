@@ -18,6 +18,8 @@ export interface SavedSelections {
   readonly architecture: string;
   readonly agents: readonly AgentTarget[];
   readonly excluded: readonly string[];
+  /** Include slash-command workflows. Defaults to true when reading older manifests. */
+  readonly workflows: boolean;
 }
 
 /**
