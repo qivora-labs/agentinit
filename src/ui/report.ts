@@ -17,6 +17,8 @@ export interface ReportFile {
   readonly path: string;
   readonly action: string;
   readonly diff: string;
+  /** Present when the change targets a managed block rather than the whole file. */
+  readonly blockId?: string;
 }
 
 /** Report entry with a resolved target for the grouped TTY summary. */

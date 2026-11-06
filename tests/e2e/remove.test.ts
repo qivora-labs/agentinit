@@ -15,6 +15,7 @@ afterEach(() => temp.cleanup());
 describe('remove --all', () => {
   it('restores CLAUDE.md, deletes generated files, and removes the manifest', async () => {
     const dir = await temp.copyFixture('existing-claude-md');
+    const beforeInit = await listFiles(dir);
     const original = await readFile(path.join(dir, 'CLAUDE.md'));
     expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
     expect(await listFiles(dir)).toContain(MANIFEST_PATH);
@@ -22,11 +23,8 @@ describe('remove --all', () => {
     const removed = await runCli(['remove', '--all', '--yes', '--cwd', dir]);
     expect(removed.code).toBe(0);
     expect(await readFile(path.join(dir, 'CLAUDE.md'))).toEqual(original);
-    expect(await listFiles(dir)).not.toContain(MANIFEST_PATH);
-    expect(await listFiles(dir)).not.toContain('AGENTS.md');
-    expect(await listFiles(dir).then((files) => files.some((file) => file.startsWith('.cursor/')))).toBe(
-      false,
-    );
+    expect(await listFiles(dir)).toEqual(beforeInit);
+    expect(removed.stdout + removed.stderr).toMatch(/CLAUDE\.md \(updated\)/u);
   });
 
   it('keeps a hand-edited rule with --yes and deletes it after backup with --force', async () => {
@@ -57,6 +55,59 @@ describe('remove --all', () => {
       edited,
     );
     expect(force.stdout + force.stderr).toContain('.agentinit/backups');
+  });
+
+  it('asks Keep or Delete after backup for a hand-edited rule', async () => {
+    const edited = '# hand edited\n';
+    const kept = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', kept])).code).toBe(0);
+    const keepRule = (await listFiles(kept)).find((file) => file.startsWith('.cursor/rules/'));
+    expect(keepRule).toBeDefined();
+    if (keepRule === undefined) return;
+    await writeFile(path.join(kept, keepRule), edited);
+    const keep = await runCli(['remove', '--all', '--cwd', kept], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: createFakePrompter([{ type: 'select', value: 'skip' }]),
+    });
+    expect(keep.code).toBe(0);
+    expect(await readFile(path.join(kept, keepRule), 'utf8')).toBe(edited);
+
+    const removed = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', removed])).code).toBe(0);
+    const deleteRule = (await listFiles(removed)).find((file) => file.startsWith('.cursor/rules/'));
+    expect(deleteRule).toBeDefined();
+    if (deleteRule === undefined) return;
+    await writeFile(path.join(removed, deleteRule), edited);
+    const del = await runCli(['remove', '--all', '--cwd', removed], {
+      stdinTTY: true,
+      stdoutTTY: true,
+      prompter: createFakePrompter([{ type: 'select', value: 'backup-replace' }]),
+      now: new Date('2026-11-06T09:37:00.000Z'),
+    });
+    expect(del.code).toBe(0);
+    expect(await listFiles(removed)).not.toContain(deleteRule);
+    expect(await readFile(path.join(removed, '.agentinit/backups', STAMP, deleteRule), 'utf8')).toBe(
+      edited,
+    );
+  });
+
+  it('prints json with files and backupsPath', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const result = await runCli(['remove', '--all', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as {
+      dryRun: boolean;
+      backupsPath: string | null;
+      files: readonly { path: string; action: string; blockId?: string }[];
+    };
+    expect(payload.dryRun).toBe(false);
+    expect(payload.backupsPath).toBeNull();
+    expect(payload.files.some((file) => file.action === 'deleted')).toBe(true);
+    expect(payload.files.some((file) => file.path === 'CLAUDE.md' && file.blockId === 'claude')).toBe(
+      true,
+    );
   });
 
   it('keeps prior backups and prints their path', async () => {

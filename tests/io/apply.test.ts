@@ -264,8 +264,21 @@ describe('applyChanges stale files', () => {
 
     const result = await applyChanges(root, changes, applyOptions());
 
-    expect(reportAction(result, 'AGENTS.md')).toBe('deleted');
+    expect(reportAction(result, 'AGENTS.md')).toBe('updated');
     expect(await readFile(path.join(root, 'AGENTS.md'), 'utf8')).toBe('# Notes\n');
+    expect(result.manifestFiles['AGENTS.md#core']).toBeUndefined();
+  });
+
+  it('deletes a shared file left with only whitespace after the last block is removed', async () => {
+    const root = await tempDir();
+    const inner = 'rules\n';
+    await writeFile(path.join(root, 'AGENTS.md'), `\n${createWithBlock('core', inner)}\n`);
+    const changes = await planChanges(root, [], manifest({ 'AGENTS.md#core': contentHash(inner) }));
+
+    const result = await applyChanges(root, changes, applyOptions());
+
+    expect(reportAction(result, 'AGENTS.md')).toBe('deleted');
+    await expect(readFile(path.join(root, 'AGENTS.md'))).rejects.toMatchObject({ code: 'ENOENT' });
     expect(result.manifestFiles['AGENTS.md#core']).toBeUndefined();
   });
 });

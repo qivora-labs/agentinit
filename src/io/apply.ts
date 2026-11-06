@@ -462,12 +462,23 @@ function settleBlocks(relPath: string, items: readonly Resolved[], original: str
     next = null;
   }
 
+  // Block removal that leaves user bytes rewrites the file; report that as
+  // updated so the tree does not look like the whole path was deleted.
+  const reportEntries =
+    mode === 'write'
+      ? entries.map((item) =>
+          item.action === 'deleted' && item.blockId !== undefined
+            ? { ...item, action: 'updated' as const }
+            : item,
+        )
+      : entries;
+
   return {
     relPath,
     backup: backup ? { destRel: backupRel(relPath, stamp), body: original } : null,
     next,
     mode,
-    entries,
+    entries: reportEntries,
     files,
   };
 }
