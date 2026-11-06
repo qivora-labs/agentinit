@@ -27,6 +27,7 @@ function sampleManifest(): Manifest {
       architecture: 'feature-based',
       agents: ['cursor', 'claude', 'windsurf', 'copilot'],
       excluded: [],
+      workflows: true,
     },
     fragments: {
       zustand: '1.0.0',
@@ -59,7 +60,8 @@ const SERIALIZED = `{
       "windsurf",
       "copilot"
     ],
-    "excluded": []
+    "excluded": [],
+    "workflows": true
   },
   "fragments": {
     "nextjs-app-router": "1.0.0",
@@ -218,6 +220,17 @@ describe('readManifest', () => {
     expect(read?.selections.excluded).toEqual([]);
     if (read === null) return;
     expect(serializeManifest(read)).toContain('"excluded": []');
+  });
+
+  it('parses a manifest without workflows and defaults to true', async () => {
+    const root = await tempDir();
+    const withoutWorkflows = SERIALIZED.replace(/,\n {4}"workflows": true/u, '');
+    expect(withoutWorkflows).not.toContain('"workflows"');
+    await writeManifest(root, withoutWorkflows);
+    const read = await readManifest(root);
+    expect(read?.selections.workflows).toBe(true);
+    if (read === null) return;
+    expect(serializeManifest(read)).toContain('"workflows": true');
   });
 
   it('rejects a duplicate excluded id', async () => {

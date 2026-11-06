@@ -152,6 +152,7 @@ async function runList(options?: {
     agents: undefined,
     force: false,
     json,
+    noWorkflows: false,
     stdinIsTTY: false,
     stdoutIsTTY: false,
   });

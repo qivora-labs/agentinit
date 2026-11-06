@@ -35,7 +35,7 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 - **UC2 — New project:** run it in an empty folder, answer a short wizard, get rules + `ARCHITECTURE.md`, scaffold the app, re-run to refine.
 - **UC3 — Mixed-agent team:** one command writes Cursor, Claude Code, Windsurf, and Copilot files with no duplicated content.
 - **UC4 — Keep rules current:** after adding a library, re-run `init`; in CI, `doctor` fails when rules drift from `package.json`.
-- **UC5 — Try and leave:** remove everything AgentInit generated with one command (v0.2), leaving user content intact.
+- **UC5 — Try and leave:** remove everything AgentInit generated with one command (`remove --all`), leaving user content intact.
 
 ### 1.5 Positioning
 - An unrelated unscoped `agentinit` npm package exists in the same space. Docs and the README always show the scoped command (`npx @agentinit/cli`).
@@ -65,7 +65,7 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 | **3** | **Architecture Map** | Describes the project's **current** layout, what belongs where, and allowed dependency directions. Target conventions apply to new code only. No folders are created or moved. | `ARCHITECTURE.md` |
 | **4** | **Composable Fragment Registry** | Atomic, version-aware Markdown fragments with validated frontmatter and cited sources, bundled in the npm package and contributed via PRs. | Internal `registry/**/*.md` |
 | **5** | **Zero-API Customizer** *(v0.2)* | A slash command that uses the developer's own IDE agent to interview them about business logic and write domain rules into a managed section. | `/agentinit-customize` in every target |
-| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, idempotent re-runs, and a read-only `doctor` check (v0.1); `add` / `remove` / `update` in v0.2. | `.agentinit/manifest.json` |
+| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, idempotent re-runs, `remove --all`, and a read-only `doctor` check (v0.1); `add` / `remove <id>` / `update` in v0.2. | `.agentinit/manifest.json` |
 
 ---
 
@@ -93,10 +93,15 @@ npx @agentinit/cli doctor
 npx @agentinit/cli list
 npx @agentinit/cli list --category library
 
+# Remove everything agentinit generated (v0.1)
+npx @agentinit/cli remove --all
+
+# Skip slash-command workflow files
+npx @agentinit/cli init --no-workflows
+
 # Lifecycle (v0.2)
 npx @agentinit/cli add zustand tanstack-query
 npx @agentinit/cli remove zustand
-npx @agentinit/cli remove --all
 npx @agentinit/cli update
 ```
 
@@ -109,7 +114,8 @@ npx @agentinit/cli update
 | `--agents <list>` | Comma-separated subset of `cursor,claude,windsurf,copilot`. `AGENTS.md` is always written. |
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up (§6.4). |
-| `--json` | Machine-readable output (for `init`, `list`, `doctor`, and `--dry-run`). |
+| `--json` | Machine-readable output (for `init`, `list`, `doctor`, `remove`, and `--dry-run`). |
+| `--no-workflows` | On `init`, omit slash-command workflow files and store `selections.workflows: false`. |
 
 **Exit codes:** `0` success · `1` error (including unsupported project) · `2` `doctor` found issues · `130` cancelled by the user.
 
@@ -176,6 +182,7 @@ Triggered when `package.json` exists in the target directory.
 - Interactive re-run: when the saved selections still match detection and no file would change, the CLI says so first (*"Already up to date"* with the file and agent counts), then asks *Done* (default) · *Change setup*. It does not ask "Use this configuration, or customize?" in that case.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
 - In *Customize*, deselecting a fragment that detection suggested adds its id to `selections.excluded`; selecting it again removes the id. Ids that are no longer in the registry are dropped with a notice.
+- *Customize* also asks *"Include workflows (slash commands)?"* (yes/no), preselecting the saved `selections.workflows` value (default yes). Turning workflows off on a re-run removes previously generated workflow files through the stale-file path.
 
 ### 3.5 Non-Interactive Defaults (`--yes`)
 Every prompt has a defined non-interactive answer:
@@ -189,12 +196,14 @@ Every prompt has a defined non-interactive answer:
 | Use detected configuration | Yes |
 | Low-confidence architecture | `flat` (makes the fewest structural claims), with a notice |
 | Agent selection | Agents whose config already exists; all four if none |
+| Include workflows (slash commands)? | Saved `selections.workflows`, or `true` when unset; `--no-workflows` forces `false` |
 | Review before writing | Skipped; files are written directly |
 | Already up to date: Done or Change setup | Done |
 | Existing unmanaged shared file | Adopt (§6.3) |
 | Existing unmanaged non-shared file | Skip and report |
 | Managed content edited by hand | Skip and report |
 | `selections.excluded` | Kept as saved; `--yes` never adds or removes excluded ids |
+| `selections.workflows` | Kept as saved unless `--no-workflows` is passed |
 
 `conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both), except ids listed in `selections.excluded`, which stay out of the defaults.
 
@@ -511,6 +520,8 @@ applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 ### 5.5 Workflow Specifications
 Every workflow fragment has the sections **Purpose**, **Input**, **Steps**, **Output**, and **Guardrails**, and references project commands through placeholders (e.g. `{{scripts.test}}`).
 
+By default v0.1 writes all four workflows for every selected agent. Teams that do not want slash-command files can pass `--no-workflows` (or answer *No* in *Customize*), which sets `selections.workflows: false` and omits workflow `FileOp`s. Re-runs keep that setting. Next steps do not suggest `/new-feature` when workflows are off.
+
 | Workflow | Input | Steps | Output |
 | :--- | :--- | :--- | :--- |
 | `/new-feature` | `<feature-name>` + description | Read `AGENTS.md` and `ARCHITECTURE.md` → propose a file plan (paths, responsibilities) and **wait for confirmation** → implement following active rules → add tests if a test library is selected → run typecheck, lint, and tests | Summary of files created, decisions, and check results |
@@ -542,7 +553,8 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
     "libraries": ["tailwind", "zustand"],
     "architecture": "feature-based",
     "agents": ["cursor", "claude", "windsurf", "copilot"],
-    "excluded": []
+    "excluded": [],
+    "workflows": true
   },
   "fragments": { "nextjs-app-router": "1.0.0", "zustand": "1.0.0" },
   "files": {
@@ -553,6 +565,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 }
 ```
 - `selections.excluded` is a sorted list of unique kebab-case fragment ids the team intentionally left out of detection. Older manifests without the field still parse; the next write always includes `"excluded": []` (or the saved ids).
+- `selections.workflows` is a boolean (default `true`) controlling whether slash-command workflow files are planned. Older manifests without the field still parse; the next write always includes `"workflows": true` (or the saved value).
 - Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
 - Manifest keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
 - Hash matches → safe to regenerate silently.
@@ -594,9 +607,12 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 
 **Flag errors.** An unknown `--agents` value or `--category` name suggests the closest valid value (for example, *Unknown agent "cursr". Did you mean "cursor"?*).
 
-### 6.6 Lifecycle Commands *(v0.2)*
+### 6.6 Lifecycle Commands
+**v0.1**
+- **`remove --all`:** deletes every AgentInit-owned file and unedited managed block. Edited files and blocks: interactive mode asks *Keep* (default) or *Delete after backup*; `--yes` keeps them and reports them; `--force` backs them up and deletes them. Then deletes the manifest and `.agentinit/.gitignore`. If `.agentinit/backups/` is not empty, it is kept and its path is printed; otherwise `.agentinit/` is removed. Supports `--dry-run` and `--json`. After a managed block is removed, a shared file that contains only whitespace is deleted. `remove` with fragment ids is not available yet (see v0.2).
+
+**v0.2**
 - **`add <id...>` / `remove <id...>`:** update selections in the manifest and regenerate affected files. Unknown ids get fuzzy suggestions.
-- **`remove --all`:** deletes every AgentInit-owned file and managed block, the manifest, and `.agentinit/`; user content is left intact. Edited files still prompt.
 - **`update`:** non-interactive re-sync (equivalent to `init --yes` with a manifest) that also lists fragment version changes since the last run.
 
 ---
@@ -626,6 +642,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 **M5 — Safe IO & Doctor (3 days)**
 - [ ] Managed blocks, manifest with normalized hashes, conflict prompts, diff preview, atomic writes, backups.
 - [ ] Idempotent re-run (§3.4) and `doctor` (§6.5).
+- [ ] `remove --all` (§6.6) and `--no-workflows` (§3.1, §5.5).
 
 **M6 — Quality & Launch (4 days)**
 - [ ] Snapshot tests per target over fixtures (§8); CI on Ubuntu, macOS, and Windows.
@@ -637,7 +654,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
 ### v0.2 — Lifecycle
-- `add`, `remove`, `remove --all`, `update`.
+- `add`, `remove <id...>`, `update`.
 - Team fragments in `.agentinit/fragments/*.md`, compiled to every target alongside registry fragments.
 - `/agentinit-customize` workflow (Pillar 5) writing into a managed `project-domain` block.
 - Opt-in inline mode for Copilot surfaces that ignore `AGENTS.md`.

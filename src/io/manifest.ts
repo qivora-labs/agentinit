@@ -61,6 +61,8 @@ const selectionsSchema = z
     agents: z.array(z.enum(AGENT_TARGETS)),
     /** Opted-out detected fragment ids. Optional on read; always written. */
     excluded: excludedSchema,
+    /** Include slash-command workflows. Optional on read; defaults to true; always written. */
+    workflows: z.boolean().optional().default(true),
   })
   .strict();
 
@@ -107,6 +109,7 @@ export function serializeManifest(manifest: Manifest): string {
       architecture: manifest.selections.architecture,
       agents: [...manifest.selections.agents],
       excluded: [...manifest.selections.excluded].sort(compareText),
+      workflows: manifest.selections.workflows,
     },
     fragments: sortedRecord(manifest.fragments),
     files: sortedFiles(manifest.files),

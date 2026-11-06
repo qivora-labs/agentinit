@@ -44,10 +44,24 @@ describe('run', () => {
     expect(result.stdout).toContain('init');
     expect(result.stdout).toContain('list');
     expect(result.stdout).toContain('doctor');
-    for (const flag of ['--yes', '-y', '--dry-run', '--agents', '--cwd', '--force', '--json']) {
+    expect(result.stdout).toContain('remove');
+    for (const flag of [
+      '--yes',
+      '-y',
+      '--dry-run',
+      '--agents',
+      '--cwd',
+      '--force',
+      '--json',
+      '--no-workflows',
+    ]) {
       expect(result.stdout).toContain(flag);
     }
     expect(result.stdout).not.toContain('rules for the agents in this repo');
+
+    const removeHelp = await runCli(['remove', '--help']);
+    expect(removeHelp.code).toBe(0);
+    expect(removeHelp.stdout).toContain('--all');
   });
 
   it('prints the wordmark above help on a terminal and does not close the frame', async () => {

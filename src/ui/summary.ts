@@ -46,6 +46,8 @@ export interface SummaryExtras {
    * *Customize* uses these to decide what joins `excluded`.
    */
   readonly detectedIds?: readonly string[];
+  /** Previous `selections.workflows`. *Customize* asks; *Use* keeps it. */
+  readonly workflows?: boolean;
 }
 
 interface ChosenFragments {
@@ -58,6 +60,8 @@ interface ChosenFragments {
   /** Agent prompt position after customize; omitted when `--agents` skips it. */
   readonly agentStep?: number;
   readonly agentTotal?: number;
+  /** Set by the *Customize* workflows question. */
+  readonly workflows?: boolean;
 }
 
 type ConfigurationChoice = 'use' | 'customize';
@@ -108,8 +112,9 @@ export async function confirmDetected(
   });
 
   const askAgents = extras.agents === undefined;
+  const workflowsInitial = extras.workflows ?? true;
   const chosen = choice === 'customize'
-    ? await customize(prompter, draft, registry, detectedInitial(draft), askAgents)
+    ? await customize(prompter, draft, registry, detectedInitial(draft), askAgents, workflowsInitial)
     : await acceptDetected(prompter, draft, registry);
 
   const agents = await selectAgents(
@@ -128,7 +133,8 @@ export async function confirmDetected(
           selected: [...selection.frameworks, ...selection.libraries],
         })
       : [...previousExcluded];
-  return { selection, agents, excluded };
+  const workflows = choice === 'customize' ? (chosen.workflows ?? workflowsInitial) : workflowsInitial;
+  return { selection, agents, excluded, workflows };
 }
 
 /**
@@ -140,9 +146,14 @@ export async function changeExistingSetup(
   draft: ProjectDraft,
   registry: Registry,
   current: PromptedSetup,
-  extras?: { readonly agents?: readonly AgentTarget[]; readonly excluded?: readonly string[] },
+  extras?: {
+    readonly agents?: readonly AgentTarget[];
+    readonly excluded?: readonly string[];
+    readonly workflows?: boolean;
+  },
 ): Promise<PromptedSetup> {
   const askAgents = extras?.agents === undefined;
+  const workflowsInitial = extras?.workflows ?? current.workflows ?? true;
   const chosen = await customize(
     prompter,
     draft,
@@ -154,6 +165,7 @@ export async function changeExistingSetup(
       libraries: current.selection.libraries,
     },
     askAgents,
+    workflowsInitial,
   );
   const agents = await selectAgents(
     prompter,
@@ -170,6 +182,7 @@ export async function changeExistingSetup(
       detected: [...draft.frameworks, ...draft.libraries],
       selected: [...selection.frameworks, ...selection.libraries],
     }),
+    workflows: chosen.workflows ?? workflowsInitial,
   };
 }
 
@@ -222,6 +235,7 @@ async function customize(
   registry: Registry,
   initial: CustomizeInitial,
   askAgents: boolean,
+  workflowsInitial: boolean,
 ): Promise<ChosenFragments> {
   const languages = languageOptions(registry);
   const frameworkChoices = frameworkOptions(registry, false);
@@ -230,6 +244,7 @@ async function customize(
   let total = countSetupSteps({
     libraries: mayOfferLibraries(registry, frameworkChoices),
     agents: askAgents,
+    workflows: true,
   });
   let step = 1;
 
@@ -252,7 +267,11 @@ async function customize(
   step += 1;
 
   const libraryChoices = libraryOptions(registry, frameworks);
-  total = countSetupSteps({ libraries: libraryChoices.length > 0, agents: askAgents });
+  total = countSetupSteps({
+    libraries: libraryChoices.length > 0,
+    agents: askAgents,
+    workflows: true,
+  });
 
   const libraries = await groupMultiselectOrEmpty(prompter, {
     message: withStep(step, total, 'Which libraries should we include?'),
@@ -276,8 +295,11 @@ async function customize(
   );
   step += 1;
 
+  const workflows = await askWorkflows(prompter, step, total, workflowsInitial);
+  step += 1;
+
   if (!askAgents) {
-    return { language, architecture, frameworks, libraries, architectureManual: false };
+    return { language, architecture, frameworks, libraries, architectureManual: false, workflows };
   }
   return {
     language,
@@ -285,9 +307,27 @@ async function customize(
     frameworks,
     libraries,
     architectureManual: false,
+    workflows,
     agentStep: step,
     agentTotal: total,
   };
+}
+
+async function askWorkflows(
+  prompter: Prompter,
+  step: number,
+  total: number,
+  initial: boolean,
+): Promise<boolean> {
+  const options: readonly PromptOption<boolean>[] = [
+    { value: true, label: 'Yes', hint: 'Write slash-command workflow files' },
+    { value: false, label: 'No', hint: 'Skip workflow files' },
+  ];
+  return prompter.select({
+    message: withStep(step, total, 'Include workflows (slash commands)?'),
+    options,
+    initialValue: initial,
+  });
 }
 
 function agentStepInfo(

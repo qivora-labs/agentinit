@@ -344,6 +344,18 @@ describe('buildPlan', () => {
     expect(second).toEqual(first);
   });
 
+  it('omits workflow FileOps when includeWorkflows is false', () => {
+    const withWorkflows = buildPlan(existing, sample);
+    const without = buildPlan(existing, sample, { includeWorkflows: false });
+    expect(withWorkflows.ops.some((op) => op.path.includes('commands') || op.path.includes('skills'))).toBe(
+      true,
+    );
+    expect(without.ops.every((op) => !op.path.includes('commands') && !op.path.includes('skills'))).toBe(
+      true,
+    );
+    expect(without.ops.length).toBeLessThan(withWorkflows.ops.length);
+  });
+
   it('throws when the selected architecture fragment was not resolved', () => {
     expect(() => buildPlan(profile(), resolved([]))).toThrow(
       'Architecture fragment "layered" was not resolved.',

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { lstat, mkdir, realpath, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readdir, realpath, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { createPatch } from 'diff';
 import { AgentInitError, NotInteractiveError } from '../errors.js';
@@ -69,6 +69,23 @@ export interface ApplyOptions {
   readonly onAtomicWrite?: (active: boolean) => void;
 }
 
+export interface RemoveAllOptions {
+  readonly now: Date;
+  readonly prompter?: Prompter;
+  readonly yes?: boolean;
+  readonly force?: boolean;
+  readonly dryRun?: boolean;
+  readonly beforeRename?: () => void | Promise<void>;
+  readonly shouldStop?: () => boolean;
+  readonly onAtomicWrite?: (active: boolean) => void;
+}
+
+export interface RemoveAllResult {
+  readonly report: readonly ApplyReportEntry[];
+  /** Project-relative path kept after remove when backups still hold files. */
+  readonly backupsPath?: string;
+}
+
 type Choice = 'adopt' | 'backup-replace' | 'skip';
 type Decision = Choice | 'proceed';
 
@@ -89,6 +106,8 @@ interface PathOutcome {
 }
 
 const GITIGNORE_PATH = '.agentinit/.gitignore';
+const BACKUPS_DIR = '.agentinit/backups';
+const AGENTINIT_DIR = '.agentinit';
 const BACKUPS_LINE = 'backups/';
 
 /**
@@ -105,7 +124,7 @@ export async function applyChanges(
     assertOwnedChange(change);
   }
   const originals = await readOriginals(root, changes);
-  const resolved = await resolveAll(changes, originals, options);
+  const resolved = await resolveAll(changes, originals, options, 'sync');
   const outcome = settleAll(resolved, originals, backupStamp(options.now));
   const manifestFiles = manifestRecord(outcome.flatMap((item) => item.files));
   const result: ApplyResult = { manifestFiles, report: outcome.flatMap((item) => item.entries) };
@@ -122,6 +141,36 @@ export async function applyChanges(
     options.onAtomicWrite,
   );
   return result;
+}
+
+/**
+ * Delete every owned file and managed block from a remove plan. Edited entries
+ * prompt (or follow `--yes` / `--force`). Then drop the manifest and
+ * `.agentinit/.gitignore`, keeping `.agentinit/backups/` when it still holds files.
+ */
+export async function applyRemoveAll(
+  root: string,
+  changes: readonly Change[],
+  options: RemoveAllOptions,
+): Promise<RemoveAllResult> {
+  for (const change of changes) {
+    assertOwnedChange(change);
+  }
+  const originals = await readOriginals(root, changes);
+  const resolved = await resolveAll(changes, originals, options, 'remove');
+  const outcome = settleAll(resolved, originals, backupStamp(options.now));
+  const report = outcome.flatMap((item) => item.entries);
+  const backupsPath = (await backupsDirHasFiles(root)) ? BACKUPS_DIR : undefined;
+  if (options.dryRun === true) return { report, ...(backupsPath === undefined ? {} : { backupsPath }) };
+
+  const kept = await commitRemove(
+    root,
+    outcome,
+    options.beforeRename,
+    options.shouldStop,
+    options.onAtomicWrite,
+  );
+  return { report, ...(kept === undefined ? {} : { backupsPath: kept }) };
 }
 
 /**
@@ -150,30 +199,46 @@ async function readOriginals(root: string, changes: readonly Change[]): Promise<
   return originals;
 }
 
+type ApplyPurpose = 'sync' | 'remove';
+
 async function resolveAll(
   changes: readonly Change[],
   originals: ReadonlyMap<string, string | null>,
-  options: ApplyOptions,
+  options: {
+    readonly yes?: boolean;
+    readonly force?: boolean;
+    readonly prompter?: Prompter;
+  },
+  purpose: ApplyPurpose,
 ): Promise<Resolved[]> {
   const resolved: Resolved[] = [];
   for (const change of changes) {
     const original = originals.get(change.path) ?? null;
     const proposed = proposedFile(change, original);
     const diff = unifiedDiff(change.path, original, proposed);
-    const decision = await decide(change, diff, options);
+    const decision = await decide(change, diff, options, purpose);
     resolved.push({ change, decision, diff, proposed });
   }
   return resolved;
 }
 
-async function decide(change: Change, diff: string, options: ApplyOptions): Promise<Decision> {
+async function decide(
+  change: Change,
+  diff: string,
+  options: {
+    readonly yes?: boolean;
+    readonly force?: boolean;
+    readonly prompter?: Prompter;
+  },
+  purpose: ApplyPurpose,
+): Promise<Decision> {
   if (change.kind !== 'conflict-unmanaged' && change.kind !== 'conflict-edited') return 'proceed';
   if (options.force === true) return 'backup-replace';
   if (options.yes === true) return defaultChoice(change);
   const prompter = options.prompter;
   if (prompter === undefined) throw new NotInteractiveError();
   if (diff.length > 0) prompter.diff(diff, change.path);
-  const choice = await ask(prompter, change);
+  const choice = purpose === 'remove' ? await askRemove(prompter, change) : await ask(prompter, change);
   if (choice === 'adopt' && change.opKind !== 'managed-block') {
     throw new AgentInitError(`${change.path}: only shared files can be adopted.`);
   }
@@ -222,6 +287,18 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
   return choose(prompter, message, 'skip', [
     { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
     { value: 'backup-replace', label: 'Backup & replace', hint: replaceHint },
+  ]);
+}
+
+async function askRemove(prompter: Prompter, change: Change): Promise<Choice> {
+  const label = conflictLabel(change);
+  const deleteHint =
+    change.opKind === 'managed-block'
+      ? 'Back up the file, then remove the managed block'
+      : 'Back up the file, then remove it';
+  return choose(prompter, `${label} was edited after agentinit wrote it. What should we do?`, 'skip', [
+    { value: 'skip', label: 'Keep', hint: 'Leave the file untouched' },
+    { value: 'backup-replace', label: 'Delete after backup', hint: deleteHint },
   ]);
 }
 
@@ -373,12 +450,14 @@ function settleBlocks(relPath: string, items: readonly Resolved[], original: str
 
   let next: string | null = text;
   let mode: PathOutcome['mode'] = 'write';
-  if (original !== null && original.length > 0 && text.length === 0) {
+  // After the last managed block is gone, drop a file that only has whitespace
+  // left — the manifest does not record whether agentinit created it.
+  if (original !== null && isBlank(text)) {
     next = null;
     mode = 'delete';
   } else if (next === original) {
     mode = 'keep';
-  } else if (original === null && text.length === 0) {
+  } else if (original === null && isBlank(text)) {
     mode = 'keep';
     next = null;
   }
@@ -444,7 +523,11 @@ function proposedFile(change: Change, original: string | null): string | null {
 function removedShape(change: Change, original: string | null): string | null {
   if (change.opKind === 'file' || change.blockId === undefined || original === null) return null;
   const next = withoutBlock(original, change.blockId, change.path);
-  return next.length === 0 ? null : next;
+  return isBlank(next) ? null : next;
+}
+
+function isBlank(text: string): boolean {
+  return text.trim().length === 0;
 }
 
 function placeBlock(
@@ -587,6 +670,97 @@ async function commit(
     throw asWriteError(error);
   } finally {
     onAtomicWrite?.(false);
+  }
+}
+
+/**
+ * Same atomic staging as `commit`, then delete the manifest and gitignore.
+ * Keeps `.agentinit/backups/` when it still has files; otherwise removes `.agentinit/`.
+ */
+async function commitRemove(
+  root: string,
+  outcomes: readonly PathOutcome[],
+  beforeRename: RemoveAllOptions['beforeRename'],
+  shouldStop: RemoveAllOptions['shouldStop'],
+  onAtomicWrite: RemoveAllOptions['onAtomicWrite'],
+): Promise<string | undefined> {
+  const createdDirs: string[] = [];
+  const pending: PendingWrite[] = [];
+  const deletes: string[] = [];
+  onAtomicWrite?.(true);
+  try {
+    for (const outcome of outcomes) {
+      if (outcome.backup !== null) {
+        await stage(root, outcome.backup.destRel, outcome.backup.body, 'backup', pending, createdDirs);
+      }
+      if (outcome.mode === 'write' && outcome.next !== null) {
+        await stage(root, outcome.relPath, outcome.next, 'file', pending, createdDirs);
+      } else if (outcome.mode === 'delete') {
+        deletes.push(outcome.relPath);
+      }
+    }
+
+    if (shouldStop?.() === true) throw new AgentInitError('Interrupted.', { exitCode: CANCELLED });
+    await beforeRename?.();
+    if (shouldStop?.() === true) throw new AgentInitError('Interrupted.', { exitCode: CANCELLED });
+
+    for (const phase of ['backup', 'file'] as const) {
+      await renamePhase(pending, phase);
+    }
+    for (const relPath of deletes) {
+      try {
+        await rm(resolveProjectPath(root, relPath), { force: true });
+      } catch (error) {
+        throw asWriteError(error, relPath);
+      }
+    }
+
+    await rmOwned(root, MANIFEST_PATH);
+    await rmOwned(root, GITIGNORE_PATH);
+    return await finishAgentinitDir(root);
+  } catch (error) {
+    await cleanup(pending, createdDirs);
+    throw asWriteError(error);
+  } finally {
+    onAtomicWrite?.(false);
+  }
+}
+
+async function rmOwned(root: string, relPath: string): Promise<void> {
+  try {
+    await rm(resolveProjectPath(root, relPath), { force: true });
+  } catch (error) {
+    throw asWriteError(error, relPath);
+  }
+}
+
+async function finishAgentinitDir(root: string): Promise<string | undefined> {
+  if (await backupsDirHasFiles(root)) return BACKUPS_DIR;
+  try {
+    await rm(resolveProjectPath(root, AGENTINIT_DIR), { recursive: true, force: true });
+  } catch (error) {
+    throw asWriteError(error, AGENTINIT_DIR);
+  }
+  return undefined;
+}
+
+async function backupsDirHasFiles(root: string): Promise<boolean> {
+  const abs = resolveProjectPath(root, BACKUPS_DIR);
+  return hasFilesRecursive(abs);
+}
+
+async function hasFilesRecursive(dir: string): Promise<boolean> {
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile()) return true;
+      if (!entry.isDirectory()) continue;
+      if (await hasFilesRecursive(path.join(dir, entry.name))) return true;
+    }
+    return false;
+  } catch (error) {
+    if (nodeErrorCode(error) === 'ENOENT') return false;
+    throw error;
   }
 }
 

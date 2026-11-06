@@ -93,7 +93,9 @@ async function issuesForManifest(root: string, registry: Registry, manifest: Man
   const detection = detectForDoctor(root, registry, manifest);
   const selection = selectionFrom(manifest);
   const resolved = resolveSelection(registry, selection, factsFor(detection));
-  const plan = buildPlan(profileFor(root, detection, manifest), resolved);
+  const plan = buildPlan(profileFor(root, detection, manifest), resolved, {
+    includeWorkflows: manifest.selections.workflows,
+  });
   const changes = await driftChanges(root, await computeChanges(root, plan, manifest));
   const existing = detection.mode === 'existing';
   return collectDoctorIssues({

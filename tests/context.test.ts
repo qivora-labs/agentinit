@@ -11,6 +11,7 @@ function context(overrides: Partial<RunContextInput> = {}) {
     agents: undefined,
     force: false,
     json: false,
+    noWorkflows: false,
     stdinIsTTY: true,
     stdoutIsTTY: true,
     ...overrides,
