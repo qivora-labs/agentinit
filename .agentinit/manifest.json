@@ -16,7 +16,7 @@
   },
   "fragments": {
     "layered": "1.0.0",
-    "typescript-strict": "1.0.0",
+    "typescript-strict": "1.1.0",
     "vitest": "1.0.0"
   },
   "files": {
@@ -51,7 +51,7 @@
       "sha256": "ac7d68143636c6bedb2fd146b8593983b9d23a59b4aa2aec56107570a1ac8e6c"
     },
     "AGENTS.md#core": {
-      "sha256": "9cbc7b65641e539d5bf07061482390edf7bce6915f94c777f399cccc65d6d71f"
+      "sha256": "2135dd42a3d1ea9af052aa1ee968fdcfc4e375f6e9ee81c1e5b15fcb13eec752"
     },
     "ARCHITECTURE.md#architecture": {
       "sha256": "d85a4bfbb5e63a11026648c831cda25625872fbfb033838f317f32eb8024af2f"

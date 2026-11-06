@@ -90,7 +90,7 @@ These rules apply to every `.ts` and `.tsx` file. The project typechecks with `s
 
 ### Directives
 - **NEVER** use the `any` type. **ALWAYS** hold an unchecked value as `unknown` and narrow it before property access, a call, or assignment to a specific type.
-- **ALWAYS** write an explicit return type on every exported function, including small helpers (`parse*`, `safeParse` wrappers, schema mappers, and React components). **PREFER** inference for a function that is not exported.
+- **ALWAYS** write an explicit return type on every exported function, including small helpers (`parse*`, `safeParse` wrappers, and schema mappers). **Exception:** React components and framework entry files (`page`, `layout`, route handlers) may omit a return type. **PREFER** inference for a function that is not exported.
 - **NEVER** use the postfix `!` non-null assertion. Narrow `null` and `undefined` with a check.
 - **ALWAYS** check a config object literal with `satisfies` when the variable should keep its specific property types.
 - **PREFER** a discriminated union (a shared literal field such as `status`) over a boolean plus optional fields.
