@@ -27,5 +27,6 @@
 │  ○ Layered / Clean
 │  ○ Atomic Design
 │  ○ Flat / Minimal
+│  ○ Modular / By Concern
 │  ↑/↓ to navigate • Enter: confirm
 └

@@ -26,7 +26,7 @@ const LIBRARY_GROUPS: readonly { readonly label: string; readonly ids: readonly 
 ];
 
 const LANGUAGE_ORDER = ['typescript-strict', 'typescript'] as const;
-const ARCHITECTURE_ORDER = ['feature-based', 'layered', 'atomic-design', 'flat'] as const;
+const ARCHITECTURE_ORDER = ['feature-based', 'layered', 'atomic-design', 'flat', 'modular'] as const;
 
 /** Sentinel select value. It is not a fragment id; the wizard maps it to `frameworks: []`. */
 export const OTHER_TYPESCRIPT_PROJECT = 'other-typescript-project';

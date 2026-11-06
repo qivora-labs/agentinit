@@ -63,25 +63,23 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 ## Layout
 
-No detected folder matches the architecture map. Follow the conventions below for new code.
-
-These folders are already in the project:
-
-- `src/commands`
-- `src/detect`
-- `src/doctor`
-- `src/io`
-- `src/plan`
-- `src/registry`
-- `src/targets`
-- `src/ui`
+| Folder | Responsibility |
+| :--- | :--- |
+| `src/commands` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/detect` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/doctor` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/io` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/plan` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/registry` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/targets` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/ui` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
 
 ## Conventions for new code
 
-- **ALWAYS** import inward: `presentation/` and `infrastructure/` may import `application/` and `domain/`; `application/` may import `domain/`.
-- **NEVER** import `application/`, `infrastructure/`, or `presentation/` from `domain/`.
-- **NEVER** import a framework, database client, HTTP client, or filesystem module from `domain/`.
-- **NEVER** import `infrastructure/` or `presentation/` from `application/`.
-- **NEVER** import `presentation/` from `infrastructure/`, or `infrastructure/` from `presentation/`.
-- **PREFER** a port type declared in `application/` or `domain/` when a use case needs I/O, with the implementation in `infrastructure/`.
+- **ALWAYS** add a new concern as `src/<concern>/`, named for that concern.
+- **ALWAYS** put types and contracts shared by more than one concern at the `src/` root.
+- **ALWAYS** follow the dependency directions declared for concerns in `ARCHITECTURE.md`.
+- **NEVER** introduce an import cycle between concern folders.
+- **NEVER** reach into another concern's internals when that concern exposes a public entry file.
+- **PREFER** importing only what `ARCHITECTURE.md` allows for the importing concern.
 <!-- agentinit:end id=architecture -->

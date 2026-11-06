@@ -437,6 +437,7 @@ describe('runRegistryCheck', () => {
       'feature-based',
       'flat',
       'layered',
+      'modular',
       'typescript',
       'typescript-strict',
       'express',

@@ -139,7 +139,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Styling & UI:* Tailwind CSS v4, shadcn/ui
    - *Forms & Validation:* React Hook Form + Zod
    - *Testing:* Vitest, Playwright
-4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal`
+4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal` · `Modular / By Concern`
 5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot. Each option's hint names the folder it writes.
 6. **Review & Write:** before anything is written, a review card shows the file count per agent, the shared files, the always-on token estimate against its budget, and how many existing files will need a decision (§6.3). Options: *Write files* (default) · *Preview changes* (prints the dry-run output, then returns to the card) · *Change setup* (runs steps 1–5 again with the current answers preselected). Then it writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
 7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`. The generator command is highlighted as a command, not printed as a plain status line.
@@ -270,7 +270,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   ├── ui/                          # @clack/prompts wizard, summary box, token report
 │   └── types.ts
 ├── registry/                        # COMMUNITY CONTRIBUTION ZONE
-│   ├── architectures/   feature-based.md · layered.md · atomic-design.md · flat.md
+│   ├── architectures/   feature-based.md · layered.md · atomic-design.md · flat.md · modular.md
 │   ├── languages/       typescript-strict.md · typescript.md
 │   ├── frameworks/      nextjs-app-router.md · nextjs-app-router-15.md · nextjs-pages-router.md · react-vite.md · express.md · express-4.md · fastify.md
 │   ├── libraries/       tailwind.md · shadcn.md · tanstack-query.md · zustand.md · react-hook-form-zod.md · vitest.md · playwright.md
@@ -628,7 +628,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 **M2 — Registry (8 days)**
 - [ ] zod schema, loader, resolver (compatibility, `appliesTo`, requires/conflicts), placeholders.
 - [ ] `scripts/check-registry.ts` for CI: schema, 120-line budget, required sections, no brace globs, `verifiedAt` older than 6 months warns.
-- [ ] Author and verify fragments against official docs: 4 architectures, 2 languages, 7 frameworks, 7 libraries, 4 workflows (§4.2, §5.5).
+- [ ] Author and verify fragments against official docs: 5 architectures, 2 languages, 7 frameworks, 7 libraries, 4 workflows (§4.2, §5.5).
 
 **M3 — Detection (3 days)**
 - [ ] TypeScript gate, packages and versions, marker files, package manager, scripts, tsconfig (JSONC + extends).
