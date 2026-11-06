@@ -9,15 +9,11 @@ This file is for AI coding agents (and humans) developing this repository. It is
 - If the PRD and a task disagree, or the PRD is silent on something you need, **stop and ask** instead of inventing behavior. If the user decides, update the PRD in the same change.
 
 ## Commands
+Repo-only scripts (common `build` / `dev` / `lint` / `test` / `typecheck` live in the managed block below):
 ```bash
-pnpm install          # install dependencies
-pnpm lint             # ESLint
-pnpm typecheck        # tsc --noEmit
-pnpm test             # Vitest (run once)
-pnpm build            # tsdown → dist/cli.js
 pnpm check:package    # publint
-pnpm registry:check   # registry content checks (from T08)
-node dist/cli.js --help
+pnpm registry:check   # registry content checks
+pnpm smoke            # packed-tarball smoke test
 ```
 Before finishing any task, `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must pass.
 
@@ -75,11 +71,11 @@ Always-on rules for this project. Scoped rules and workflows stay in each agent'
 
 ## Architecture
 
-- Put business rules in `src/domain/` and use cases in `src/application/`.
-- Put database, HTTP, and filesystem adapters in `src/infrastructure/`.
-- Put UI and delivery code in `src/presentation/`.
-- Point imports inward, toward `src/domain/`.
-- Keep `src/domain/` free of framework and I/O imports.
+- Put each concern in its own top-level folder under `src/`.
+- Put types and contracts shared by more than one concern at the `src/` root.
+- Import another concern only through the surface that concern exposes.
+- Declare which concerns may import which in `ARCHITECTURE.md`.
+- Keep the graph of concern folders free of import cycles.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
 

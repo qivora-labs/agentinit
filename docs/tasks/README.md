@@ -39,7 +39,7 @@ Rule and workflow fragments need extra care because agents will follow them lite
 - [x] `pnpm registry:check` passes.
 - [x] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05. A human reviewed those two fragments on 2026-11-05. T45 aligned Contract examples with softened `typescript-strict` (decision B) on 2026-11-06. A human reviewed those content edits on 2026-11-06.
+T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05. A human reviewed those two fragments on 2026-11-05. T45 aligned Contract examples with softened `typescript-strict` (decision B) on 2026-11-06. A human reviewed those content edits on 2026-11-06. T47 added `modular` on 2026-11-06 (`pnpm registry:check` clean). A human must review that fragment before merge.
 
 ## Dependency Graph
 
@@ -154,7 +154,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | done |
 | [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | done |
 | [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
-| [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | todo |
+| [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
 | [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | todo |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.

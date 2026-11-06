@@ -63,25 +63,23 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 ## Layout
 
-No detected folder matches the architecture map. Follow the conventions below for new code.
-
-These folders are already in the project:
-
-- `src/commands`
-- `src/detect`
-- `src/doctor`
-- `src/io`
-- `src/plan`
-- `src/registry`
-- `src/targets`
-- `src/ui`
+| Folder | Responsibility |
+| :--- | :--- |
+| `src/commands` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/detect` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/doctor` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/io` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/plan` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/registry` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/targets` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/ui` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
 
 ## Conventions for new code
 
-- **ALWAYS** import inward: `presentation/` and `infrastructure/` may import `application/` and `domain/`; `application/` may import `domain/`.
-- **NEVER** import `application/`, `infrastructure/`, or `presentation/` from `domain/`.
-- **NEVER** import a framework, database client, HTTP client, or filesystem module from `domain/`.
-- **NEVER** import `infrastructure/` or `presentation/` from `application/`.
-- **NEVER** import `presentation/` from `infrastructure/`, or `infrastructure/` from `presentation/`.
-- **PREFER** a port type declared in `application/` or `domain/` when a use case needs I/O, with the implementation in `infrastructure/`.
+- **ALWAYS** add a new concern as `src/<concern>/`, named for that concern.
+- **ALWAYS** put types and contracts shared by more than one concern at the `src/` root.
+- **ALWAYS** follow the dependency directions declared for concerns in `ARCHITECTURE.md`.
+- **NEVER** introduce an import cycle between concern folders.
+- **NEVER** reach into another concern's internals when that concern exposes a public entry file.
+- **PREFER** importing only what `ARCHITECTURE.md` allows for the importing concern.
 <!-- agentinit:end id=architecture -->
