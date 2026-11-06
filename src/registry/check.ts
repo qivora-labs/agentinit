@@ -14,6 +14,36 @@ const DIRECTIVE = /\b(?:ALWAYS|NEVER|PREFER|FORBID|DEFAULT)\b/u;
 const PROHIBITION = /\b(?:NEVER|FORBID)\b/u;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/u;
 const FRAGMENT_LINE = /^([^:\n]+\.md): (.*)$/u;
+/** Single-line `export function` / `export default function` in a ts/tsx fence. */
+const EXPORT_FUNCTION_LINE =
+  /^export\s+(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/u;
+const TS_FENCE_LANG = /^(?:ts|tsx|typescript|typescriptreact)\b/iu;
+/**
+ * Framework entry names that may omit a return type under typescript-strict
+ * decision B (page, layout, route handlers, and related Next.js exports).
+ */
+const FRAMEWORK_ENTRY_NAMES = new Set([
+  'Page',
+  'Layout',
+  'Loading',
+  'Error',
+  'Template',
+  'NotFound',
+  'Default',
+  'GET',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+  'HEAD',
+  'OPTIONS',
+  'generateMetadata',
+  'generateStaticParams',
+  'generateViewport',
+  'generateImageMetadata',
+  'generateSitemaps',
+  'middleware',
+]);
 
 const WORKFLOW_SECTIONS = ['Purpose', 'Input', 'Steps', 'Output', 'Guardrails'] as const;
 
@@ -200,6 +230,7 @@ function checkFragment(fragment: Fragment, today: string): RegistryProblem[] {
   const freshness = freshnessProblem(fragment, today);
   if (freshness !== undefined) problems.push(freshness);
   problems.push(...forbiddenPhraseProblems(fragment));
+  problems.push(...missingReturnTypeProblems(fragment));
   return problems;
 }
 
@@ -358,6 +389,132 @@ function lineMatches(text: string, pattern: RegExp): boolean {
     if (pattern.test(line)) return true;
   }
   return false;
+}
+
+/**
+ * Heuristic: warn when a single-line `export function` / `export default function`
+ * in a `ts`/`tsx` fence has no return type annotation. Does not parse multi-line
+ * signatures. Skips anti-pattern-only fences, lines after an anti-pattern marker
+ * in a mixed fence, PascalCase React components, and framework entry names.
+ */
+function missingReturnTypeProblems(fragment: Fragment): RegistryProblem[] {
+  const problems: RegistryProblem[] = [];
+  const lines = fragment.body.split(/\r?\n/u);
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index] ?? '';
+    const open = openingFence(line);
+    if (open === null) {
+      index += 1;
+      continue;
+    }
+    let end = index + 1;
+    while (end < lines.length && !isClosingFence(lines[end] ?? '', open)) end += 1;
+    const closed = end < lines.length;
+    const block = lines.slice(index, closed ? end + 1 : lines.length);
+    if (!TS_FENCE_LANG.test(open.info)) {
+      index = closed ? end + 1 : lines.length;
+      continue;
+    }
+    if (closed && isClearlyAntiPatternBlock(lines, index, open.info, block)) {
+      index = end + 1;
+      continue;
+    }
+    let inAntiPattern = false;
+    for (const contentLine of block.slice(1, closed ? -1 : undefined)) {
+      if (inAntiPattern) continue;
+      if (startsWithAntiPattern(contentLine)) {
+        inAntiPattern = true;
+        continue;
+      }
+      const name = missingReturnTypeExportName(contentLine);
+      if (name === undefined) continue;
+      problems.push(
+        problem(
+          fragment,
+          'warning',
+          `missing return type on export function ${name} (heuristic; single-line signatures only)`,
+        ),
+      );
+    }
+    index = closed ? end + 1 : lines.length;
+  }
+  return problems;
+}
+
+function missingReturnTypeExportName(line: string): string | undefined {
+  const trimmed = line.trim();
+  const match = EXPORT_FUNCTION_LINE.exec(trimmed);
+  const name = match?.[1];
+  if (name === undefined) return undefined;
+  if (isReturnTypeExempt(name)) return undefined;
+  if (!isSingleLineFunctionSignature(trimmed)) return undefined;
+  if (hasReturnTypeAnnotation(trimmed)) return undefined;
+  return name;
+}
+
+function isReturnTypeExempt(name: string): boolean {
+  if (FRAMEWORK_ENTRY_NAMES.has(name)) return true;
+  // PascalCase → React component (decision B).
+  return /^[A-Z]/u.test(name);
+}
+
+/** True when the opening `{` of the body is on this line (or the signature has no body yet). */
+function isSingleLineFunctionSignature(line: string): boolean {
+  const paramsEnd = closingParenIndex(line, line.indexOf('('));
+  if (paramsEnd < 0) return false;
+  const after = line.slice(paramsEnd + 1);
+  return /^(?:\s*:\s*[^{]+)?\s*(?:\{.*)?$/u.test(after);
+}
+
+function hasReturnTypeAnnotation(line: string): boolean {
+  const paramsEnd = closingParenIndex(line, line.indexOf('('));
+  if (paramsEnd < 0) return false;
+  const after = line.slice(paramsEnd + 1).trimStart();
+  return after.startsWith(':');
+}
+
+/** Index of the `)` that closes the `(` at `openIndex`, or -1 if unbalanced. */
+function closingParenIndex(line: string, openIndex: number): number {
+  if (openIndex < 0 || line[openIndex] !== '(') return -1;
+  let depth = 0;
+  let inSingle = false;
+  let inDouble = false;
+  let inTemplate = false;
+  for (let i = openIndex; i < line.length; i += 1) {
+    const char = line[i] ?? '';
+    const prev = line[i - 1] ?? '';
+    if (inSingle) {
+      if (char === "'" && prev !== '\\') inSingle = false;
+      continue;
+    }
+    if (inDouble) {
+      if (char === '"' && prev !== '\\') inDouble = false;
+      continue;
+    }
+    if (inTemplate) {
+      if (char === '`' && prev !== '\\') inTemplate = false;
+      continue;
+    }
+    if (char === "'") {
+      inSingle = true;
+      continue;
+    }
+    if (char === '"') {
+      inDouble = true;
+      continue;
+    }
+    if (char === '`') {
+      inTemplate = true;
+      continue;
+    }
+    if (char === '(') depth += 1;
+    else if (char === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
 }
 
 function scannableText(body: string): string {

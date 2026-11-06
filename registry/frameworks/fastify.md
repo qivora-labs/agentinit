@@ -2,7 +2,7 @@
 id: fastify
 name: Fastify
 category: framework
-version: 1.0.1
+version: 1.0.2
 order: 30
 description: Fastify 5 plugins, JSON schema validation, hooks, and decorators.
 hint: Plugins, JSON schema, hooks, decorators
@@ -47,7 +47,7 @@ These rules apply to Fastify route and plugin modules. `register` creates an enc
 ## Contract
 ```ts
 // ✅ Good: encapsulated routes, a schema, and a per-request decorator
-export async function userRoutes(fastify: FastifyInstance) {
+export async function userRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.decorateRequest('user', null);
   fastify.addHook('preHandler', async function (request) {
     request.user = await loadUser(this, request);
