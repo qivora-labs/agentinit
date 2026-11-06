@@ -143,6 +143,7 @@ describe('language and architecture options', () => {
       'layered',
       'atomic-design',
       'flat',
+      'modular',
     ]);
     expect(architectures[0]?.hint).toBe('recommended · src/features/<domain>');
     expect(architectures[0]?.label).toBe('Feature-Based');
