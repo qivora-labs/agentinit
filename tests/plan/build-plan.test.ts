@@ -345,14 +345,23 @@ describe('buildPlan', () => {
   });
 
   it('omits workflow FileOps when includeWorkflows is false', () => {
-    const withWorkflows = buildPlan(existing, sample);
-    const without = buildPlan(existing, sample, { includeWorkflows: false });
-    expect(withWorkflows.ops.some((op) => op.path.includes('commands') || op.path.includes('skills'))).toBe(
-      true,
-    );
-    expect(without.ops.every((op) => !op.path.includes('commands') && !op.path.includes('skills'))).toBe(
-      true,
-    );
+    const allAgents = profile({
+      scripts: existing.scripts,
+      folders: existing.folders,
+      agents: ['cursor', 'claude', 'windsurf', 'copilot'],
+    });
+    const withWorkflows = buildPlan(allAgents, sample);
+    const without = buildPlan(allAgents, sample, { includeWorkflows: false });
+    const isWorkflowPath = (relPath: string): boolean =>
+      relPath.includes('/commands/') ||
+      relPath.includes('/skills/') ||
+      relPath.includes('/workflows/') ||
+      relPath.includes('/prompts/');
+    expect(withWorkflows.ops.some((op) => op.path.includes('/commands/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/skills/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/workflows/'))).toBe(true);
+    expect(withWorkflows.ops.some((op) => op.path.includes('/prompts/'))).toBe(true);
+    expect(without.ops.every((op) => !isWorkflowPath(op.path))).toBe(true);
     expect(without.ops.length).toBeLessThan(withWorkflows.ops.length);
   });
 
