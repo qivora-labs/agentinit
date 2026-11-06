@@ -65,14 +65,14 @@ Describes the folders that exist today and the conventions for new code. Existin
 
 | Folder | Responsibility |
 | :--- | :--- |
-| `src/commands` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/detect` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/doctor` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/io` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/plan` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/registry` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/targets` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
-| `src/ui` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `src/commands` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/detect` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/doctor` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/io` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/plan` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/registry` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/targets` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
+| `src/ui` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
 
 ## Conventions for new code
 

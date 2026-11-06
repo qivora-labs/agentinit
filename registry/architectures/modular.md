@@ -2,13 +2,15 @@
 id: modular
 name: Modular / By Concern
 category: architecture
-version: 1.0.0
+version: 1.1.0
 order: 10
 description: One top-level folder per concern, shared contracts at the source root, and no import cycles.
 hint: One folder per concern; deps in ARCHITECTURE.md
 scope: always
 sources:
   - https://docs.nestjs.com/modules
+  - https://docs.nestjs.com/first-steps
+  - https://docs.nestjs.com/fundamentals/circular-dependency
   - https://expressjs.com/en/guide/routing.html
   - https://expressjs.com/en/starter/faq.html
 verifiedAt: 2026-11-06
@@ -24,10 +26,10 @@ verifiedAt: 2026-11-06
 ## Map
 | Path | Responsibility |
 | :--- | :--- |
-| `{{src}}<concern>/` | One concern (pipeline stage, route layer, or capability). Name the folder after that concern. |
+| `{{src}}<concern>/` | Owns one concern (pipeline stage, route module, or capability). Name the folder after that concern. What belongs here and which concerns may import it are declared in ARCHITECTURE.md. |
 
 ## Boundary
-New work for one concern lives under that concern's top-level folder. Types and contracts used by more than one concern live at the `{{src}}` root. Which concerns may import which is declared in `ARCHITECTURE.md`. Concern folders do not form import cycles.
+New work for one concern lives under that concern's top-level folder. Types and contracts used by more than one concern live at the `{{src}}` root. Other concerns import only that folder's public surface (its entry module or exported API), not its internals. Which concerns may import which is declared in `ARCHITECTURE.md`. Concern folders do not form import cycles.
 
 ## Directives
 - **ALWAYS** add a new concern as `{{src}}<concern>/`, named for that concern.

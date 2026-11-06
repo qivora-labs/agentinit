@@ -40,7 +40,7 @@ Pick one and record it under **Notes**:
 - [x] The managed `ARCHITECTURE.md` block maps most `src/` folders, and nothing in it contradicts the hand-written section.
 - [x] `CLAUDE.md` imports `AGENTS.md` once.
 - [x] `node dist/cli.js doctor` exits `0`, and CI is green.
-- [x] If **A**: `pnpm registry:check` passes, and a human reviewed the fragment. (`registry:check` clean; human review pending at PR)
+- [x] If **A**: `pnpm registry:check` passes, and a human reviewed the fragment.
 
 ## Verify
 ```bash
@@ -56,8 +56,8 @@ git diff AGENTS.md CLAUDE.md ARCHITECTURE.md
 
 ## Notes
 - **Decision A** (owner, 2026-11-06): new `modular` architecture fragment; detection unchanged.
-- Authored `registry/architectures/modular.md` (sources: NestJS modules, Express routing, Express FAQ). Added to PRD §3.2 step 4 and §4.2; wizard `ARCHITECTURE_ORDER` lists it after `flat` without a recommended hint.
+- Authored `registry/architectures/modular.md` (sources: NestJS modules, first-steps, circular-dependency; Express routing, FAQ). Added to PRD §3.2 step 4 and §4.2; wizard `ARCHITECTURE_ORDER` lists it after `flat` without a recommended hint.
 - Re-ran `init --yes` with manifest `architecture: modular`. Managed `ARCHITECTURE.md` maps all eight `src/*` concern folders; hand-written pipeline/dependency section kept outside markers.
 - Hand-written `AGENTS.md` Commands trimmed to `check:package`, `registry:check`, `smoke`. `CLAUDE.md` keeps a single `@AGENTS.md` (in the managed block).
-- `pnpm registry:check` passes (0 errors, 0 warnings). Fragment needs a human content review before merge.
+- `pnpm registry:check` passes (0 errors, 0 warnings). Human reviewed the fragment on 2026-11-06; follow-up bumped to 1.1.0 (stronger sources, Map row points agents at `ARCHITECTURE.md` for per-folder detail).
 - README architecture table still lists the old four; left for T48 docs accuracy.

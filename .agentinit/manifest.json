@@ -16,7 +16,7 @@
     "workflows": true
   },
   "fragments": {
-    "modular": "1.0.0",
+    "modular": "1.1.0",
     "typescript-strict": "1.1.0",
     "vitest": "1.0.0"
   },
@@ -55,7 +55,7 @@
       "sha256": "34ff1075b7195771cdecc3c24b6a6f6fd1db0980bc27bd790f0112b4d8d7e2d4"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "dcb2e15ee37603920b6b0f604c20edd425449063a9eb753aff37e5907a70b78c"
+      "sha256": "d4a7b23bc6633d73911e2992e9574b8983251e0046ac4e33ae9f8b4748272a5b"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
