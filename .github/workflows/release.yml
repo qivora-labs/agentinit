@@ -10,14 +10,20 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions: {}
 
 jobs:
-  # Same checks as CI, so nothing is versioned or published unless they pass on this commit.
+  # Same OS/Node matrix and smoke jobs as CI, so nothing is versioned or
+  # published unless those checks pass on this commit — even if the CI
+  # workflow is still running or fails in parallel on the same push.
   verify:
-    name: Verify
-    runs-on: ubuntu-latest
+    name: Verify node ${{ matrix.node }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
       # setup-node's pnpm cache is actions/cache, which cannot save a cache entry without this.
       actions: write
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -28,7 +34,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - name: Install dependencies
@@ -55,12 +61,38 @@ jobs:
       - name: Check package
         run: pnpm check:package
 
+  smoke:
+    name: smoke (${{ matrix.os }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: write
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Smoke test packed tarball
         run: pnpm smoke
 
   release:
     name: Release
-    needs: verify
+    needs: smoke
     runs-on: ubuntu-latest
     permissions:
       contents: write
