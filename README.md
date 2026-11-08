@@ -270,6 +270,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Adding a library or framework is usually
 
 Security reports: [SECURITY.md](SECURITY.md).
 
+## Support
+
+If agentinit helps your workflow, you can sponsor development via [GitHub Sponsors](https://github.com/sponsors/qivora-labs). The CLI stays free, offline, and telemetry-free either way.
+
 ## License
 
 [MIT](LICENSE)

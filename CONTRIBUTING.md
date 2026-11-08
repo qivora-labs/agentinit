@@ -75,6 +75,10 @@ Product work is split into tasks under [`docs/tasks/`](docs/tasks/README.md). On
 
 Before finishing CLI work: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
+## Support
+
+Code contributions (especially registry fragments) are the most useful help. Financial support goes through [GitHub Sponsors](https://github.com/sponsors/qivora-labs).
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for private vulnerability reports.
