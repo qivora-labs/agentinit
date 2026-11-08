@@ -2,8 +2,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import pkg from '../package.json' with { type: 'json' };
 import { loadRegistry } from '../src/registry/load.js';
 import { runCli } from './helpers/run.js';
+
+const versionLine = `${pkg.version}\n`;
 
 const directories: string[] = [];
 
@@ -21,21 +24,21 @@ describe('run', () => {
   it('prints the package version and returns 0', async () => {
     const result = await runCli(['--version']);
     expect(result.code).toBe(0);
-    expect(result.stdout).toBe('0.0.0\n');
+    expect(result.stdout).toBe(versionLine);
     expect(result.stderr).toBe('');
   });
 
   it('prints a bare version on a terminal', async () => {
     const result = await runCli(['--version'], { stdoutTTY: true });
     expect(result.code).toBe(0);
-    expect(result.stdout).toBe('0.0.0\n');
+    expect(result.stdout).toBe(versionLine);
     expect(result.stdout).not.toContain('rules for the agents in this repo');
   });
 
   it('accepts a process.argv-shaped array for --version', async () => {
     const result = await runCli([process.execPath, 'agentinit', '--version']);
     expect(result.code).toBe(0);
-    expect(result.stdout).toBe('0.0.0\n');
+    expect(result.stdout).toBe(versionLine);
   });
 
   it('lists commands and the global flags', async () => {
