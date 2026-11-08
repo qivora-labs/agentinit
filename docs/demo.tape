@@ -5,7 +5,8 @@
 # Output: docs/demo.gif
 #
 # Interactive init on next15-src (via docs/demo-setup.sh): detection card →
-# agents → review → write. Prefer this over --yes so the GIF shows the UX.
+# architecture (a lone src/app is low confidence) → agents → review → write.
+# Prefer this over --yes so the GIF shows the UX.
 
 Output docs/demo.gif
 
@@ -13,9 +14,10 @@ Require node
 Require pnpm
 
 Set Shell "bash"
-Set FontSize 13
+Set FontSize 12
 Set Columns 100
-Set Rows 60
+# Tall enough for the whole interactive flow, so the final report never scrolls.
+Set Rows 72
 Set TypingSpeed 50ms
 Set Theme "Catppuccin Mocha"
 Set Padding 18
@@ -36,6 +38,11 @@ Enter
 # Detection card + confirm configuration
 Wait+Screen /Use this configuration/
 Sleep 1.6s
+Enter
+
+# Low-confidence architecture question (Flat / Minimal preselected)
+Wait+Screen /Which one should we use/
+Sleep 1.2s
 Enter
 
 # Agent multi-select (all selected by default)

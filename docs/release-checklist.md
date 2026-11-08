@@ -1,6 +1,6 @@
 # Launch Checklist — `@agentinit/cli@0.1.0`
 
-Manual steps for making the repository public and publishing the first release. Automated release setup lives in `.github/workflows/release.yml` (changesets "Version Packages" PR → publish with provenance via `NPM_TOKEN`). Owner review of this checklist is a launch gate (not part of merging the release-workflow PR).
+Manual steps for making the repository public and publishing the first release. Automated release setup lives in `.github/workflows/release.yml`: `verify` + `smoke` mirror the CI matrix (including Windows smoke), and only then does the `release` job open the changesets "Version Packages" PR or publish with provenance via `NPM_TOKEN`. Owner review of this checklist is a launch gate (not part of merging the release-workflow PR).
 
 **Do not merge the "Version Packages" PR while the repository is private.** npm provenance requires a public repository; publishing from a private repo will fail or produce a package without a provenance attestation. Complete step 5 before step 6.
 
@@ -11,16 +11,17 @@ After the release workflow lands on `main`, confirm the Release Action opens or 
 ## Checklist
 
 1. **v0.1 readiness**
-   - [ ] Every v0.1 task in `docs/tasks/README.md` is `done`.
-   - [ ] CI (including smoke) is green on `main`.
+   - [ ] Every v0.1 task in `docs/tasks/README.md` is `done`, including every M8 (launch readiness) task, T41–T48.
+   - [ ] CI (including smoke) is green on `main`, and the latest Release workflow run's `verify` and `smoke` jobs passed.
    - [ ] Rule-effectiveness check (T33) passed and is recorded under `docs/evals/`.
-   - [ ] Re-run and record eval cells T1, T3, and T4 after the `typescript-strict` return-type exemption for React components and framework entry files (T45 decision B).
+   - [ ] Re-run and record eval cells T1, T3, and T4 after the `typescript-strict` return-type exemption for React components and framework entry files (T45 chose decision B, so this re-run is required).
 
 2. **Secret scan**
    - [ ] `gitleaks detect` over the full history reports no findings.
 
 3. **Repository files**
-   - [ ] `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and `.github/CODEOWNERS` are present.
+   - [ ] `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/compatibility.md`, and `.github/CODEOWNERS` are present.
+   - [ ] Every minimum version in `docs/compatibility.md` was re-verified against the vendor changelogs for this release, and its **Last verified** date is updated.
 
 4. **Repository settings**
    - [ ] Branch protection on `main`: required status checks, required pull request reviews (from humans / CODEOWNERS). Do not count `github-actions[bot]` approvals toward the review requirement for code-change PRs.

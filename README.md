@@ -41,14 +41,14 @@ Requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`.
 | `AGENTS.md` | Always-on rules once (budget ~1,500 tokens), shared by every agent |
 | `ARCHITECTURE.md` | Current layout, ownership, and dependency direction |
 | Per-agent rules | Scoped fragments in each tool's native format |
-| Workflows | `/new-feature`, `/refactor`, `/review-arch`, `/write-tests` |
+| Workflows | `/new-feature`, `/refactor`, `/review-arch`, `/write-tests` (skip with `--no-workflows`) |
 | `.agentinit/manifest.json` | Committed record of selections and content hashes |
 
 Re-run `init` after dependencies or layout change. When nothing drifted, it prints **Already up to date** and writes nothing. Use `doctor` in CI to catch drift.
 
 ## Example output
 
-On a terminal, `npx @agentinit/cli init` on the `next15-src` fixture (Next.js App Router + TypeScript strict) ends with a short per-agent report:
+On a terminal, `npx @agentinit/cli init --yes` on the `next15-src` fixture (Next.js 16.3 App Router, strict TypeScript, only `src/app`) ends with a short per-agent report:
 
 ```text
 Wrote 24 files for 4 agents
@@ -57,13 +57,16 @@ Claude Code     6 files  .claude/
 Windsurf        5 files  .windsurf/
 GitHub Copilot  6 files  .github/
 Shared          AGENTS.md  ARCHITECTURE.md
-Context cost  ~830 tokens loaded in every chat (budget 1,500)
+Context cost  ~854 tokens loaded in every chat (budget 1,500)
+Architecture confidence is 0.625, below 0.7. Using Flat / Minimal.
 Next steps
 1.  Review the changes  git diff
 2.  Try a workflow      /new-feature
 3.  Check for drift     npx @agentinit/cli doctor
 Done.
 ```
+
+The architecture line appears because a lone `src/app` folder isn't evidence for any architecture. Without `--yes`, `init` asks you to pick one instead.
 
 Piped or CI output (and `--dry-run`) keeps the full file tree. New files are listed; existing files get a diff:
 
@@ -108,39 +111,54 @@ Piped or CI output (and `--dry-run`) keeps the full file tree. New files are lis
 ├── AGENTS.md (created)
 ├── ARCHITECTURE.md (created)
 └── CLAUDE.md (created)
-Always-on tokens: 830
+Always-on tokens: 854
+Architecture confidence is 0.625, below 0.7. Using Flat / Minimal.
 ```
 
-Always-on content lives once in `AGENTS.md`. Scoped rules and workflows go only to each agent's native files.
+Always-on content lives once in `AGENTS.md`. Scoped rules and workflows go only to each agent's native files. 16 of the 24 files are the four workflows in each agent's format. `init --no-workflows` writes the other 8: one rule file per agent, `AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
 
 ## Supported stack
 
-From `npx @agentinit/cli list` (TypeScript web projects in v0.1):
+From `npx @agentinit/cli list` (TypeScript web projects in v0.1). A fragment is suggested only when the installed version is in its range:
 
-| Category | Fragments |
-| :--- | :--- |
-| **Frameworks** | Next.js App Router, Next.js Pages Router, React + Vite, Express, Fastify |
-| **Libraries** | Tailwind CSS, shadcn/ui, TanStack Query, Zustand, React Hook Form + Zod, Vitest, Playwright |
-| **Languages** | TypeScript, TypeScript Strict |
-| **Architectures** | Flat / Minimal, Feature-Based, Layered / Clean, Atomic Design |
-| **Workflows** | `/new-feature`, `/refactor`, `/review-arch`, `/write-tests` (always included) |
+| Category | Fragment | Applies to |
+| :--- | :--- | :--- |
+| **Frameworks** | Next.js App Router 16 (`nextjs-app-router`) | `next >=16.3.0` |
+| | Next.js App Router 15 (`nextjs-app-router-15`) | `next >=15.0.0 <16.3.0` |
+| | Next.js Pages Router (`nextjs-pages-router`) | `next >=13` |
+| | React + Vite (`react-vite`) | `react >=19`, `vite >=6` |
+| | Express 5 (`express`) | `express >=5` |
+| | Express 4 (`express-4`) | `express >=4 <5` |
+| | Fastify (`fastify`) | `fastify >=5` |
+| **Libraries** | Tailwind CSS (`tailwind`) | `tailwindcss >=4` |
+| | shadcn/ui (`shadcn`) | any version |
+| | TanStack Query (`tanstack-query`) | `@tanstack/react-query >=5` |
+| | Zustand (`zustand`) | `zustand >=5` |
+| | React Hook Form + Zod (`react-hook-form-zod`) | `react-hook-form >=7`, `zod >=4` |
+| | Vitest (`vitest`) | `vitest >=3` |
+| | Playwright (`playwright`) | `@playwright/test >=1.40` |
+| **Languages** | TypeScript, TypeScript Strict | — |
+| **Architectures** | Flat / Minimal, Feature-Based, Layered / Clean, Atomic Design, Modular / By Concern | — |
+| **Workflows** | `/new-feature`, `/refactor`, `/review-arch`, `/write-tests` | included unless `--no-workflows` |
 
-No matching framework? agentinit still writes base rules (language, architecture, compatible libraries, workflows, and `ARCHITECTURE.md`). JavaScript-only repos are not supported yet.
+No matching framework? agentinit still writes base rules (language, architecture, compatible libraries, workflows, and `ARCHITECTURE.md`). A version outside every range (for example Next.js 14) gets the same base rules and a notice. JavaScript-only repos are not supported yet.
 
 Browse fragments: `npx @agentinit/cli list`, `list --category library`, or `list --json`.
 
 ## Supported agents
 
-Older versions may silently ignore newer formats. Re-verify these floors each release.
+Older versions may silently ignore newer formats. **Minimum** is the oldest version that loads everything agentinit writes for that agent.
 
 | Agent | Minimum | What we write |
 | :--- | :--- | :--- |
-| **Cursor** | 0.45 | `.cursor/rules/*.mdc`, `.cursor/commands/*.md`; reads `AGENTS.md` |
+| **Cursor** | 1.6 | `.cursor/rules/*.mdc`, `.cursor/commands/*.md`; reads `AGENTS.md` |
 | **Claude Code** | 2.1.84 | `CLAUDE.md` → `@AGENTS.md`, `.claude/rules/*.md`, `.claude/skills/*/SKILL.md` |
 | **Windsurf** | 1.12.25 | `.windsurf/rules/*.md`, `.windsurf/workflows/*.md`; root `AGENTS.md` always-on |
-| **GitHub Copilot** (VS Code) | 1.100 | `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, `.github/prompts/*.prompt.md`; `AGENTS.md` also loaded in VS Code ≥ 1.104 |
+| **GitHub Copilot** (VS Code) | 1.104 | `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, `.github/prompts/*.prompt.md`; reads `AGENTS.md` |
 
-Sources for these floors are recorded in [`docs/tasks/T31-docs-readme-contributing.md`](docs/tasks/T31-docs-readme-contributing.md) **Notes**.
+[`docs/compatibility.md`](docs/compatibility.md) has the minimum for each kind of file (rules, workflows, `AGENTS.md`), the changelog entry behind each one, and known caveats. For example, no Cursor changelog says when it started reading `AGENTS.md`.
+
+OpenAI Codex, Amp, and opencode also read a root `AGENTS.md`. agentinit doesn't write files for them, but they pick up the same always-on rules.
 
 ## Commands
 
@@ -168,17 +186,36 @@ npx @agentinit/cli remove --all    # delete every owned file and managed block
 | `--cwd <path>` | Run against another directory. |
 | `--force` | Replace unmanaged and edited files after backing them up. |
 | `--json` | Machine-readable output for `init`, `list`, `doctor`, `remove`, and `--dry-run`. |
-| `--no-workflows` | On `init`, omit slash-command workflow files. |
+| `--no-workflows` | On `init`, omit slash-command workflow files. Re-runs keep the setting; turn it back on in *Customize*. |
 | `-h`, `--help` | Show help. |
 | `-v`, `--version` | Show version. |
 
 **Exit codes:** `0` success · `1` error · `2` `doctor` found issues · `130` cancelled.
 
-`remove --all` undoes an init. Per-id `add` / `remove` / `update` are planned for v0.2.
+`remove --all` undoes an init. It deletes every generated file and managed block plus the manifest. Hand-edited files are kept and reported (interactive mode asks; `--force` backs them up and deletes them), and `.agentinit/backups/` is kept if it holds anything. Per-id `add` / `remove` / `update` are planned for v0.2.
+
+### Leaving out a fragment
+
+Detected a library you don't want rules for? Run `init`, choose *Customize*, and deselect it. agentinit records the id under `selections.excluded` in `.agentinit/manifest.json`. Re-runs won't add it back and `doctor` won't report it. Select it again in *Customize* to undo. `--yes` never changes the excluded list.
 
 ### `doctor` in CI
 
 `doctor` checks the manifest, managed files, detected packages, package versions, token budget, and legacy rule files. It never writes.
+
+Each issue is an **error** or a **warning**. Only errors exit `2`:
+
+| Severity | Exit | Issues |
+| :--- | :---: | :--- |
+| Error | `2` | No manifest; a generated file or block that is missing, edited, outdated, unmanaged, or stale; a detected fragment that isn't selected or excluded; a selected fragment whose package was removed or whose version left the fragment's range |
+| Warning | `0` | Legacy `.cursorrules` / `.windsurfrules` still present; always-on content over the 1,500-token budget |
+
+```text
+Legacy files
+  .cursorrules still loads alongside the new rules.
+    Fix: Remove .cursorrules if you no longer need it.
+```
+
+`doctor --json` adds `severity` to each issue, and `ok` is `true` when there are no errors.
 
 ```yaml
 # .github/workflows/agentinit-doctor.yml
@@ -205,6 +242,10 @@ jobs:
 - **Backups** — when a file is replaced, a copy goes under `.agentinit/backups/` (gitignored by agentinit).
 - **Idempotent** — re-running `init` with the same selections is a no-op when nothing drifted.
 - **No telemetry.** Metrics in the PRD use public signals only (npm downloads, GitHub stars, issues).
+
+## How this relates to `/init` in your agent
+
+Agents such as Claude Code and opencode have an `/init` command that asks the model to read your repository and write project notes (`CLAUDE.md` or `AGENTS.md`). Those notes cover what only your code can tell: build steps, quirks, and domain terms. agentinit adds what a model shouldn't improvise: reviewed, version-specific framework rules, written the same way for every agent, plus a `doctor` check that fails CI when they drift. The two work together. Keep your own notes outside the `<!-- agentinit:begin … -->` markers in `AGENTS.md` or `CLAUDE.md`, and agentinit leaves them alone.
 
 ## FAQ
 

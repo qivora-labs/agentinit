@@ -22,13 +22,13 @@ const SAMPLE_TEXT = [
   '  typescript-strict    TypeScript strict     Strict TypeScript for application and test code.',
   '',
   'framework',
-  '  nextjs-app-router    Next.js App Router    React Server Components by default.',
-  '  nextjs-pages-router  Next.js Pages Router  Page-based Next.js routing.',
+  '  nextjs-app-router    Next.js App Router    React Server Components by default.  next >=15',
+  '  nextjs-pages-router  Next.js Pages Router  Page-based Next.js routing.  next >=15',
   '',
   'library',
   '  forms                Forms                 Form state and validation.',
   '  shadcn               shadcn/ui             Accessible components from a local registry.',
-  '  tailwind             Tailwind CSS          Utility-first styling.',
+  '  tailwind             Tailwind CSS          Utility-first styling.  tailwindcss >=4',
   '  vitest               Vitest                Unit tests on Vite.',
   '  zustand              Zustand               Small client-side state.',
   '',
@@ -44,6 +44,7 @@ const SAMPLE_JSON = [
     category: 'architecture',
     version: '1.0.0',
     description: 'One direction of dependencies.',
+    appliesTo: {},
   },
   {
     id: 'typescript',
@@ -51,6 +52,7 @@ const SAMPLE_JSON = [
     category: 'language',
     version: '1.0.0',
     description: 'TypeScript without strict compiler options.',
+    appliesTo: {},
   },
   {
     id: 'typescript-strict',
@@ -58,6 +60,7 @@ const SAMPLE_JSON = [
     category: 'language',
     version: '1.0.0',
     description: 'Strict TypeScript for application and test code.',
+    appliesTo: {},
   },
   {
     id: 'nextjs-app-router',
@@ -65,6 +68,7 @@ const SAMPLE_JSON = [
     category: 'framework',
     version: '1.0.0',
     description: 'React Server Components by default.',
+    appliesTo: { next: '>=15' },
   },
   {
     id: 'nextjs-pages-router',
@@ -72,6 +76,7 @@ const SAMPLE_JSON = [
     category: 'framework',
     version: '1.0.0',
     description: 'Page-based Next.js routing.',
+    appliesTo: { next: '>=15' },
   },
   {
     id: 'forms',
@@ -79,6 +84,7 @@ const SAMPLE_JSON = [
     category: 'library',
     version: '1.0.0',
     description: 'Form state and validation.',
+    appliesTo: {},
   },
   {
     id: 'shadcn',
@@ -86,6 +92,7 @@ const SAMPLE_JSON = [
     category: 'library',
     version: '1.0.0',
     description: 'Accessible components from a local registry.',
+    appliesTo: {},
   },
   {
     id: 'tailwind',
@@ -93,6 +100,7 @@ const SAMPLE_JSON = [
     category: 'library',
     version: '1.0.0',
     description: 'Utility-first styling.',
+    appliesTo: { tailwindcss: '>=4' },
   },
   {
     id: 'vitest',
@@ -100,6 +108,7 @@ const SAMPLE_JSON = [
     category: 'library',
     version: '1.0.0',
     description: 'Unit tests on Vite.',
+    appliesTo: {},
   },
   {
     id: 'zustand',
@@ -107,6 +116,7 @@ const SAMPLE_JSON = [
     category: 'library',
     version: '1.0.0',
     description: 'Small client-side state.',
+    appliesTo: {},
   },
   {
     id: 'new-feature',
@@ -114,6 +124,7 @@ const SAMPLE_JSON = [
     category: 'workflow',
     version: '1.0.0',
     description: 'Plan and implement a feature.',
+    appliesTo: {},
   },
   {
     id: 'review-arch',
@@ -121,6 +132,7 @@ const SAMPLE_JSON = [
     category: 'workflow',
     version: '1.0.0',
     description: 'Read-only architecture review.',
+    appliesTo: {},
   },
 ];
 
@@ -181,7 +193,7 @@ describe('list', () => {
         'library',
         '  forms     Forms         Form state and validation.',
         '  shadcn    shadcn/ui     Accessible components from a local registry.',
-        '  tailwind  Tailwind CSS  Utility-first styling.',
+        '  tailwind  Tailwind CSS  Utility-first styling.  tailwindcss >=4',
         '  vitest    Vitest        Unit tests on Vite.',
         '  zustand   Zustand       Small client-side state.',
         '',
@@ -213,6 +225,38 @@ describe('list', () => {
     const result = await runList({ json: true, registryDir: dir });
     const parsed = JSON.parse(result.stdout) as { id: string }[];
     expect(parsed.map((entry) => entry.id)).toEqual(['mid', 'early', 'alpha', 'zeta']);
+  });
+
+  it('shows every appliesTo range sorted by package name in text and json', async () => {
+    const dir = await tempDir();
+    await writeRule(dir, 'frameworks/react-vite.md', {
+      id: 'react-vite',
+      name: 'React + Vite',
+      category: 'framework',
+      description: 'React on Vite.',
+      appliesTo: { vite: '>=6', react: '>=19.0.0 <20' },
+    });
+    await writeRule(dir, 'libraries/plain.md', { id: 'plain', name: 'Plain', category: 'library' });
+
+    const text = await runList({ registryDir: dir });
+    expect(text.stdout).toBe(
+      [
+        'framework',
+        '  react-vite  React + Vite  React on Vite.  react >=19.0.0 <20, vite >=6',
+        '',
+        'library',
+        '  plain       Plain         A fragment.',
+        '',
+      ].join('\n'),
+    );
+
+    const json = await runList({ registryDir: dir, json: true });
+    const parsed = JSON.parse(json.stdout) as { id: string; appliesTo: Record<string, string> }[];
+    expect(parsed.map((entry) => [entry.id, entry.appliesTo])).toEqual([
+      ['react-vite', { react: '>=19.0.0 <20', vite: '>=6' }],
+      ['plain', {}],
+    ]);
+    expect(Object.keys(parsed[0]?.appliesTo ?? {})).toEqual(['react', 'vite']);
   });
 
   it('prints a sentence for an empty registry and an empty array for json', async () => {

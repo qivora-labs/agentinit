@@ -46,9 +46,5 @@ pnpm check:package
 ## Notes
 - Example tree + `Always-on tokens: 758` captured from `node dist/cli.js init --yes` on `tests/fixtures/next15-src` (2026-11-03).
 - Fragment template lives at `docs/fragment-template.md` (not under `registry/`, so it is not loaded). Copying it to `registry/libraries/example-lib.md` and running `pnpm registry:check` → 0 errors, 0 warnings.
-- Minimum agent versions (verified 2026-11-03):
-  - **Cursor ≥ 0.45** — `.cursor/rules` project rules (`.mdc`) introduced: https://cursor.com/changelog/0-45-x ; current format: https://cursor.com/docs/rules
-  - **Claude Code ≥ 2.1.84** — `.claude/rules/` since 2.0.64 (https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md); Skills since 2.0.20; YAML list `paths:` (what we emit) since 2.1.84; docs: https://code.claude.com/docs/en/claude-md
-  - **Windsurf ≥ 1.12.25** — `AGENTS.md` support/fixes (2025-10-22): https://www.havoptic.com/r/windsurf-1.12.25 ; file-based `.windsurf/rules` earlier in Wave 8 (~1.8.2, 2025-05): https://devin.ai/blog/windsurf-wave-8-cascade-customization-features/ ; docs: https://docs.windsurf.com/windsurf/cascade/agents-md
-  - **GitHub Copilot / VS Code ≥ 1.100** — `.instructions.md` + `applyTo` and `.prompt.md`: https://code.visualstudio.com/updates/v1_100 ; root `AGENTS.md` auto-attach in VS Code ≥ 1.104: https://code.visualstudio.com/updates/v1_104/ ; Copilot instructions overview: https://docs.github.com/en/copilot/how-tos/copilot-in-your-ide/customize-copilot/configure-custom-instructions/add-repository-instructions-in-your-ide
+- Minimum agent versions were first verified here on 2026-11-03. T48 moved them, re-verified per output kind, to [`docs/compatibility.md`](../compatibility.md), which is now the source of truth.
 - `docs/demo.gif` recorded with `vhs docs/demo.tape` (uses `docs/demo-setup.sh` to run a local build against `next15-src`, since `@agentinit/cli` is not on npm yet).

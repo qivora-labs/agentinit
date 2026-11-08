@@ -39,6 +39,7 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 
 ### 1.5 Positioning
 - An unrelated unscoped `agentinit` npm package exists in the same space. Docs and the README always show the scoped command (`npx @agentinit/cli`).
+- **Naming (decided, T48):** the package is `@agentinit/cli` (we own the `@agentinit` npm org) with a single bin, `agentinit`. We accept that the bin name collides with the unscoped package: `npx agentinit` runs the other tool, and a global install clashes with its global install. Keep exactly one bin. `npx` and `pnpm dlx` run a scoped package's bin only when it is the sole bin (or one is named `cli`), so a second alias would break `pnpm dlx @agentinit/cli`.
 - Other tools already compile one rule source to many agents (e.g., `ruler`, `rulesync`). Our differentiation is the **curated, version-aware registry + auto-detection + workflows + `ARCHITECTURE.md` + drift detection**, not multi-agent compilation alone.
 
 ### 1.6 Non-Goals
@@ -515,7 +516,7 @@ applyTo: "src/app/**/*.ts,src/app/**/*.tsx"
 
 **`ARCHITECTURE.md`** — **descriptive**: it documents the layout that exists today (detected folders mapped onto the chosen architecture's vocabulary), what belongs where, allowed dependency directions, and naming conventions. Target conventions are stated as rules for **new** code; it never instructs agents to move or restructure existing files unless the user asks. In greenfield mode it describes the planned layout.
 
-**Minimum agent versions** that load each output are listed in the README and re-verified at every release; older versions silently ignore newer formats.
+**Minimum agent versions** that load each output (rules, workflows, `AGENTS.md`) are listed with their sources in `docs/compatibility.md`, summarized in the README, and re-verified at every release; older versions silently ignore newer formats.
 
 ### 5.5 Workflow Specifications
 Every workflow fragment has the sections **Purpose**, **Input**, **Steps**, **Output**, and **Guardrails**, and references project commands through placeholders (e.g. `{{scripts.test}}`).
