@@ -75,6 +75,8 @@ graph LR
   T41 & T43 --> T46
   T43 & T44 & T45 --> T47
   T42 & T43 & T46 & T47 --> T48
+  T49 --> T50 & T52
+  T50 --> T53
 ```
 
 **Parallel waves** (tasks in the same wave can run in separate sessions at the same time):
@@ -98,6 +100,9 @@ graph LR
 | 15 | T43, T45 |
 | 16 | T46, T47 |
 | 17 | T48 |
+| 18 | T49, T51, T54 |
+| 19 | T50, T52 |
+| 20 | T53 |
 
 Running tasks in parallel is optional. When working solo, follow the ID order; it respects every dependency.
 
@@ -156,12 +161,20 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
 | [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
 | [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
+| [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | todo |
+| [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | todo |
+| [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | todo |
+| [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | todo |
+| [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | todo |
+| [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | todo |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
 
 **M8 — Launch readiness** comes from the pre-launch product review on 2026-11-05. These tasks block publishing `0.1.0`. Most have a **Decisions (owner, before starting)** section: an agent running `/implement-task` must stop and ask for those decisions before writing code. Several move behavior into v0.1 or change it, so the PRD is updated in the same PR. Content tasks (T42, T45, T47) follow the Content Tasks checklist above.
 
-**After launch:** Phase 1–3 plans (v0.1.x patches, v0.2 lifecycle, v0.3+ breadth) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
+**M9 — 0.1.1 patch** comes from the follow-ups in T48's Notes and a post-launch review after `0.1.0` shipped on 2026-11-09. Ship `0.1.1` once T49–T52 are merged; T53 and T54 can follow in `0.1.1` or `0.1.2`. Each task adds a `patch` changeset, so the release PR collects them. T50, T51, T53, and T54 have **Decisions (owner, before starting)** sections.
+
+**After launch:** the remaining Phase 1–3 plans (v0.1.x patches, v0.2 lifecycle, v0.3+ breadth) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
 
 ## Task File Template
 Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.
