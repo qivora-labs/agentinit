@@ -161,7 +161,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
 | [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
 | [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
-| [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | todo |
+| [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | done |
 | [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | todo |
 | [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | todo |
 | [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | todo |

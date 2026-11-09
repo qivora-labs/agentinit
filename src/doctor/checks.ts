@@ -1,4 +1,4 @@
-import { satisfies } from 'semver';
+import { eq, lt, satisfies, valid } from 'semver';
 import { compareText } from '../compare-text.js';
 import type { PlanWarning } from '../plan/types.js';
 
@@ -15,6 +15,7 @@ export const DOCTOR_ISSUE_KINDS = [
   'missing',
   'edited',
   'outdated',
+  'rules-update',
   'unmanaged',
   'stale',
   'unselected',
@@ -75,6 +76,7 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
   missing: 'managed-files',
   edited: 'managed-files',
   outdated: 'managed-files',
+  'rules-update': 'managed-files',
   unmanaged: 'managed-files',
   stale: 'managed-files',
   unselected: 'detected-packages',
@@ -93,6 +95,7 @@ const SEVERITY_FOR_KIND = {
   missing: 'error',
   edited: 'error',
   outdated: 'error',
+  'rules-update': 'warning',
   unmanaged: 'error',
   stale: 'error',
   unselected: 'error',
@@ -108,6 +111,7 @@ function severityFor(kind: DoctorIssueKind): DoctorSeverity {
     case 'missing':
     case 'edited':
     case 'outdated':
+    case 'rules-update':
     case 'unmanaged':
     case 'stale':
     case 'unselected':
@@ -154,6 +158,12 @@ export interface CheckedFragment {
   readonly appliesTo: Readonly<Record<string, string>>;
 }
 
+/** Running CLI vs the version that wrote the manifest (for `rules-update`). */
+export interface DoctorCliVersions {
+  readonly running: string;
+  readonly manifest: string;
+}
+
 export interface DoctorInput {
   readonly initialized: boolean;
   readonly changes: readonly DriftChange[];
@@ -162,6 +172,7 @@ export interface DoctorInput {
   readonly packages: Readonly<Record<string, string | null>>;
   readonly warnings: readonly PlanWarning[];
   readonly legacyFiles: readonly string[];
+  readonly cliVersions: DoctorCliVersions;
 }
 
 const GROUP_TITLE: Record<DoctorIssueKind, string> = {
@@ -169,6 +180,7 @@ const GROUP_TITLE: Record<DoctorIssueKind, string> = {
   missing: 'Missing',
   edited: 'Edited',
   outdated: 'Out of date',
+  'rules-update': 'Rules update',
   unmanaged: 'Unmanaged',
   stale: 'Stale',
   unselected: 'Not selected',
@@ -186,7 +198,7 @@ const GROUP_TITLE: Record<DoctorIssueKind, string> = {
 export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
   if (!input.initialized) return [notInitializedIssue()];
   return [
-    ...checkChanges(input.changes),
+    ...checkChanges(input.changes, input.cliVersions),
     ...checkUnselected(input.unselected),
     ...checkFragmentPackages(input.fragments, input.packages),
     ...checkAlwaysOn(input.warnings),
@@ -281,10 +293,13 @@ export function notInitializedIssue(): DoctorIssue {
   return issue('not-initialized', { message: 'Not initialized', fix: INIT_FIX });
 }
 
-export function checkChanges(changes: readonly DriftChange[]): DoctorIssue[] {
+export function checkChanges(
+  changes: readonly DriftChange[],
+  cliVersions: DoctorCliVersions,
+): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
   for (const change of changes) {
-    const next = issueForChange(change);
+    const next = issueForChange(change, cliVersions);
     if (next !== undefined) issues.push(next);
   }
   return issues;
@@ -360,7 +375,10 @@ function issue(
   };
 }
 
-function issueForChange(change: DriftChange): DoctorIssue | undefined {
+function issueForChange(
+  change: DriftChange,
+  cliVersions: DoctorCliVersions,
+): DoctorIssue | undefined {
   if (change.blockMissing === true) return missingBlock(change);
   switch (change.kind) {
     case 'unchanged':
@@ -370,7 +388,9 @@ function issueForChange(change: DriftChange): DoctorIssue | undefined {
     case 'conflict-edited':
       return edited(change);
     case 'update':
-      return drifted(change, 'outdated', 'does not match the generated rules');
+      return cliVersionsDiffer(cliVersions)
+        ? rulesUpdate(change, cliVersions)
+        : drifted(change, 'outdated', 'does not match the generated rules');
     case 'conflict-unmanaged':
       return drifted(change, 'unmanaged', 'is not managed');
     case 'delete-stale':
@@ -409,6 +429,38 @@ function drifted(change: DriftChange, kind: DoctorIssueKind, detail: string): Do
   const message =
     blockId === undefined ? `${change.path} ${detail}.` : `${change.path} managed block "${blockId}" ${detail}.`;
   return issue(kind, { path: location(change), message, fix: INIT_FIX });
+}
+
+/**
+ * Content differs from what this CLI would write, and the manifest was written
+ * by another CLI version. Warning so an unpinned CI upgrade does not fail the build.
+ * While versions differ, a project change that alters generated text looks the
+ * same as a rule-text change (PRD §6.5 trade-off).
+ */
+function rulesUpdate(change: DriftChange, cliVersions: DoctorCliVersions): DoctorIssue {
+  const subject = change.blockId === undefined ? change.path : `${change.path} managed block "${change.blockId}"`;
+  const running = cliVersions.running;
+  const manifest = cliVersions.manifest;
+  const runningValid = valid(running) !== null;
+  const manifestValid = valid(manifest) !== null;
+  if (runningValid && manifestValid && lt(running, manifest)) {
+    return issue('rules-update', {
+      path: location(change),
+      message: `${subject} was generated by a newer agentinit (${manifest}).`,
+      fix: `Run doctor with \`@agentinit/cli@${manifest}\` or newer.`,
+    });
+  }
+  return issue('rules-update', {
+    path: location(change),
+    message: `${subject} was generated by agentinit ${manifest}. agentinit ${running} generates different rules.`,
+    fix: `npx @agentinit/cli@${running} init`,
+  });
+}
+
+/** True when versions differ, or either side is not valid semver. */
+export function cliVersionsDiffer(versions: DoctorCliVersions): boolean {
+  if (valid(versions.running) === null || valid(versions.manifest) === null) return true;
+  return !eq(versions.running, versions.manifest);
 }
 
 function location(change: DriftChange): string {
