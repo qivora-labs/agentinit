@@ -18,7 +18,7 @@ Each item lists: **Problem**, **Proposal**, **Open decisions**, **Depends on**, 
 
 ## Phase 1 — v0.1.x patches (first 2–4 weeks after launch)
 
-Small fixes and coverage gaps that don't change the product's shape. Ship them as patch releases.
+Small fixes and coverage gaps that don't change the product's shape. Ship them as patch releases. The first batch is M9 (T49–T54) in [`README.md`](README.md#task-index).
 
 ### P1.1 Older majors for libraries and React + Vite
 - **Problem:** `react-vite` requires `react >=19` and `vite >=6`, `zustand >=5`, `vitest >=3`. Common React 18 / Vite 5, Zustand 4, and Vitest 2 projects get no rules.
@@ -26,20 +26,11 @@ Small fixes and coverage gaps that don't change the product's shape. Ship them a
 - **Open decisions:** none beyond the T42 policy.
 - **Depends on:** T42. **Size:** L (content-heavy; split per fragment). **PRD:** §4.2, §8.2.
 
-### P1.2 Low-severity safety hardening
-- **Problem:** found in the review:
-  - The backup folder name has only millisecond resolution, so two runs in the same millisecond share a folder.
-  - A literal marker line (`<!-- agentinit:begin id=… -->`) in user prose or inside a fenced code block makes that file unparseable.
-  - A corrupt manifest makes `doctor` exit `1` instead of reporting a `manifest` issue with exit `2`.
-- **Proposal:** add a random suffix to backup folders. Ignore marker lines inside fenced code. Map manifest parse failures in `doctor` to a failing `manifest` check.
-- **Open decisions:** whether markers inside fences should be ignored or rejected with a clearer message.
-- **Depends on:** T41, T43. **Size:** M. **PRD:** §6.1, §6.4, §6.5.
+### ~~P1.2 Low-severity safety hardening~~
+Promoted to [T53](T53-safety-hardening.md).
 
-### P1.3 Duplicate H1 when adopting an existing file
-- **Problem:** adopting an existing `AGENTS.md` appends a block that starts with its own `# AGENTS.md`, so the file ends up with two H1 headings. The same happens for `ARCHITECTURE.md`.
-- **Proposal:** the block never emits an H1 when adopted into a file that already has one. Targets are pure, so `io/` passes a "file already has an H1" fact into planning, or the block's H1 is moved into the initial file template only.
-- **Open decisions:** where the "has H1" fact enters the pure plan.
-- **Depends on:** —. **Size:** M. **PRD:** §5.1, §6.1.
+### ~~P1.3 Duplicate H1 when adopting an existing file~~
+Promoted to [T54](T54-adopt-duplicate-h1.md).
 
 ### P1.4 Detection robustness
 - **Problem:** lockfiles are read only at the project directory. `yarn.lock` and `bun.lock` aren't parsed. Versions are read only from top-level `node_modules/<pkg>`. Inside a workspace package with no local lockfile, versions fall back to semver ranges.
@@ -57,6 +48,20 @@ Small fixes and coverage gaps that don't change the product's shape. Ship them a
 - **Problem:** with no telemetry (PRD §1.2), the only signal is GitHub issues.
 - **Proposal:** add issue templates (bug, wrong rule, new fragment request) and a "Report a wrong rule" link in each generated rule file's managed block or in the README. Label issues `data-loss`, `wrong-rule`, and `coverage` to match PRD §11.
 - **Depends on:** —. **Size:** S. **PRD:** §11.
+
+### P1.7 Windsurf workflows move to skills **(new)**
+- **Problem:** T48 found that Windsurf (now Devin Desktop) 3.6.22 says workflows are being deprecated in favor of skills. The Windsurf target writes `.windsurf/workflows/<id>.md`.
+- **Proposal:** once the deprecation lands in official docs, write Windsurf workflows as skills, the same way T51 handles Cursor. Keep the old paths owned so re-runs clean them up.
+- **Open decisions:** the skills folder and format, and whether Windsurf also loads `.claude/skills/` (which would cause the same duplicates T51 fixes for Cursor).
+- **Depends on:** T51 (same pattern). **Size:** M. **PRD:** §5.2, §5.4.
+
+### Owner operations after 0.1.0 (not tasks)
+Repository and account settings an agent can't change. Tick them off here.
+- [ ] Remove the stray `0.0.0-stage` version: `npm unpublish @agentinit/cli@0.0.0-stage` within 72 hours of publishing it, otherwise `npm deprecate`.
+- [ ] Branch protection on `main`: require the CI checks and pull requests (no required approvals while solo).
+- [ ] npm Trusted Publishing for `release.yml`, then delete the `NPM_TOKEN` secret.
+- [ ] Record whether the rule-effectiveness eval was re-run after T45 for tasks T1, T3, and T4 (`docs/evals/results-v0.1.md`).
+- [ ] Create the `data-loss`, `wrong-rule`, and `coverage` labels (P1.6 adds the templates).
 
 ---
 
