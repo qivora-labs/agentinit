@@ -17,7 +17,13 @@ import {
 } from './changes.js';
 import { contentHash } from './hash.js';
 import { createWithBlock, findBlocks, removeBlock, upsertBlock } from './managed-block.js';
-import { MANIFEST_PATH, serializeManifest, type Manifest } from './manifest.js';
+import {
+  MANIFEST_PATH,
+  serializeManifest,
+  withPreservedFileExtras,
+  type Manifest,
+  type ManifestFileEntry,
+} from './manifest.js';
 
 export type ApplyAction =
   | 'created'
@@ -48,6 +54,11 @@ export interface ApplyOptions {
   readonly now: Date;
   /** Written last, with `manifestFiles` from this apply. Omitted on a dry run. */
   readonly manifest: Omit<Manifest, 'files'>;
+  /**
+   * Prior `files` map. Unknown entry keys are kept for paths that remain so an
+   * older CLI rewrite does not drop data a newer CLI wrote (T50).
+   */
+  readonly previousFiles?: Manifest['files'];
   readonly prompter?: Prompter;
   /** Use PRD §3.5 defaults instead of prompting. */
   readonly yes?: boolean;
@@ -126,7 +137,10 @@ export async function applyChanges(
   const originals = await readOriginals(root, changes);
   const resolved = await resolveAll(changes, originals, options, 'sync');
   const outcome = settleAll(resolved, originals, backupStamp(options.now));
-  const manifestFiles = manifestRecord(outcome.flatMap((item) => item.files));
+  const manifestFiles = withPreservedFileExtras(
+    manifestRecord(outcome.flatMap((item) => item.files)),
+    options.previousFiles,
+  );
   const result: ApplyResult = { manifestFiles, report: outcome.flatMap((item) => item.entries) };
   if (options.dryRun === true) return result;
 
@@ -597,8 +611,8 @@ function backupStamp(now: Date): string {
   return now.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.', '');
 }
 
-function manifestRecord(records: readonly { key: string; sha256: string }[]): Manifest['files'] {
-  const files: Manifest['files'] = {};
+function manifestRecord(records: readonly { key: string; sha256: string }[]): Record<string, ManifestFileEntry> {
+  const files: Record<string, ManifestFileEntry> = {};
   for (const record of records) files[record.key] = { sha256: record.sha256 };
   return files;
 }

@@ -103,9 +103,15 @@ describe('serializeManifest', () => {
   });
 
   it('keeps selection array order', () => {
-    const manifest = sampleManifest();
-    manifest.selections.agents = ['copilot', 'cursor'];
-    manifest.selections.frameworks = ['express', 'fastify'];
+    const base = sampleManifest();
+    const manifest: Manifest = {
+      ...base,
+      selections: {
+        ...base.selections,
+        agents: ['copilot', 'cursor'],
+        frameworks: ['express', 'fastify'],
+      },
+    };
     const serialized = serializeManifest(manifest);
     expect(serialized.indexOf('copilot')).toBeLessThan(serialized.indexOf('cursor'));
     expect(serialized.indexOf('express')).toBeLessThan(serialized.indexOf('fastify'));
@@ -145,14 +151,68 @@ describe('readManifest', () => {
 
   it('throws a recoverable error for a schema mismatch', async () => {
     const root = await tempDir();
-    await writeManifest(root, `${JSON.stringify({ cliVersion: '0.1.0', extra: true })}\n`);
+    await writeManifest(root, `${JSON.stringify({ cliVersion: '0.1.0' })}\n`);
     await expect(readManifest(root)).rejects.toSatisfy((error: unknown) => {
       expect(error).toBeInstanceOf(AgentInitError);
       if (!(error instanceof AgentInitError)) return false;
-      expect(error.message).toContain('unknown key');
+      expect(error.message).toMatch(/mode|selections|fragments|files/u);
       expect(error.hint).toContain('agentinit init');
       return true;
     });
+  });
+
+  it('parses unknown top-level, selections, and file-entry keys', async () => {
+    const root = await tempDir();
+    const withExtras = `{
+  "cliVersion": "0.1.0",
+  "mode": "existing",
+  "selections": {
+    "language": "typescript-strict",
+    "frameworks": [
+      "nextjs-app-router"
+    ],
+    "libraries": [
+      "tailwind",
+      "zustand"
+    ],
+    "architecture": "feature-based",
+    "agents": [
+      "cursor",
+      "claude",
+      "windsurf",
+      "copilot"
+    ],
+    "excluded": [],
+    "workflows": true,
+    "futureFlag": true
+  },
+  "fragments": {
+    "nextjs-app-router": "1.0.0",
+    "zustand": "1.0.0"
+  },
+  "files": {
+    ".claude/skills/new-feature/SKILL.md": {
+      "sha256": "${HASH_B}",
+      "etag": "abc"
+    },
+    ".cursor/rules/agentinit-zustand.mdc": {
+      "sha256": "${HASH_A}"
+    },
+    "AGENTS.md#core": {
+      "sha256": "${HASH_C}"
+    }
+  },
+  "schemaHint": 2
+}
+`;
+    await writeManifest(root, withExtras);
+    const read = await readManifest(root);
+    expect(read).not.toBeNull();
+    if (read === null) return;
+    expect(read.extras).toEqual({ schemaHint: 2 });
+    expect(read.selections.extras).toEqual({ futureFlag: true });
+    expect(read.files['.claude/skills/new-feature/SKILL.md']?.extras).toEqual({ etag: 'abc' });
+    expect(serializeManifest(read)).toBe(withExtras);
   });
 
   it('rejects a file key that is not a path or path#blockId', async () => {

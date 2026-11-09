@@ -1,4 +1,5 @@
 import type { Writable } from 'node:stream';
+import { assessCliCompat, cliCompatNotice } from '../cli-compat.js';
 import type { RunContext } from '../context.js';
 import { detectProject, type DetectionResult } from '../detect/index.js';
 import { findExistingAgentFiles, findLegacyFiles } from '../detect/existing-agents.js';
@@ -51,23 +52,31 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
   const root = ctx.cwd;
   const manifest = await readManifest(root);
+  const versionNotice =
+    manifest === null
+      ? undefined
+      : cliCompatNotice(assessCliCompat(pkg.version, manifest.cliVersion));
+  const notices = versionNotice === undefined ? [] : [versionNotice];
   const issues =
     manifest === null
       ? collectDoctorIssues(uninitializedInput(root, registry))
       : await issuesForManifest(root, registry, manifest);
 
-  const report = doctorReport(issues);
+  const report = doctorReport(issues, notices);
   const { errors, warnings } = countBySeverity(issues);
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);
   else if (logger.theme.tty) {
+    for (const notice of notices) logger.warn(notice);
     const checks = doctorChecklist(issues);
     logger.info(underRail(paintDoctorChecks(checks, logger.theme), logger.theme, logger.columns));
     if (errors === 0 && warnings === 0) logger.close(NO_ISSUES);
     else if (errors === 0) logger.close(issuesFoundMessage(errors, warnings), { tone: 'warn' });
     else logger.close(issuesFoundMessage(errors, warnings), { tone: 'error' });
   } else if (errors === 0 && warnings === 0) {
+    for (const notice of notices) logger.warn(notice);
     logger.close(NO_ISSUES);
   } else {
+    for (const notice of notices) logger.warn(notice);
     logger.info(paintDoctorReport(formatDoctorReport(issues), logger.theme));
     logger.close();
   }

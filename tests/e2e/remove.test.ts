@@ -100,14 +100,34 @@ describe('remove --all', () => {
     const payload = JSON.parse(result.stdout) as {
       dryRun: boolean;
       backupsPath: string | null;
+      notices: readonly string[];
       files: readonly { path: string; action: string; blockId?: string }[];
     };
     expect(payload.dryRun).toBe(false);
     expect(payload.backupsPath).toBeNull();
+    expect(payload.notices).toEqual([]);
     expect(payload.files.some((file) => file.action === 'deleted')).toBe(true);
     expect(payload.files.some((file) => file.path === 'CLAUDE.md' && file.blockId === 'claude')).toBe(
       true,
     );
+  });
+
+  it('exits 1 when the manifest is from a newer minor unless --force', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, MANIFEST_PATH);
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = '0.2.0';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const blocked = await runCli(['remove', '--all', '--yes', '--cwd', dir]);
+    expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
+
+    const forced = await runCli(['remove', '--all', '--yes', '--force', '--json', '--cwd', dir]);
+    expect(forced.code).toBe(0);
+    const payload = JSON.parse(forced.stdout) as { notices: string[] };
+    expect(payload.notices.some((notice) => notice.includes('0.2.0'))).toBe(true);
   });
 
   it('keeps prior backups and prints their path', async () => {

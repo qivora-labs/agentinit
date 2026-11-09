@@ -50,6 +50,9 @@ Agents without slash commands can open the matching file in `docs/workflows/` an
 - Conventional Commits; **never** add `Co-authored-by:` trailers or AI/tool attribution. Full convention: `.cursor/rules/git-commits.mdc`.
 - One task = one branch (`task/T05-registry-loader`) = one PR, unless the task file says otherwise.
 
+## Compatibility
+Public API rules for fragments, the manifest, `--json`, and exit codes: [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility) (PRD §6.2, §9). In short: published fragment ids are never renamed; manifest changes in 0.x stay additive; `--json` / exit-code breaks need a minor release and a `BREAKING CHANGE` changeset note.
+
 <!-- agentinit:begin id=core -->
 # AGENTS.md
 

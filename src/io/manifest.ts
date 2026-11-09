@@ -52,6 +52,10 @@ const fileKeySchema = z.string().superRefine((key, ctx) => {
   }
 });
 
+/**
+ * Unknown keys are kept (passthrough) so a newer CLI's manifest still parses.
+ * Known fields keep their validation; extras are stripped into `extras` bags.
+ */
 const selectionsSchema = z
   .object({
     language: z.enum(LANGUAGES),
@@ -64,7 +68,9 @@ const selectionsSchema = z
     /** Include slash-command workflows. Optional on read; defaults to true; always written. */
     workflows: z.boolean().optional().default(true),
   })
-  .strict();
+  .loose();
+
+const fileEntrySchema = z.object({ sha256: sha256Schema }).loose();
 
 export const manifestSchema = z
   .object({
@@ -72,11 +78,49 @@ export const manifestSchema = z
     mode: z.enum(MODES),
     selections: selectionsSchema,
     fragments: z.record(nonEmpty, nonEmpty),
-    files: z.record(fileKeySchema, z.object({ sha256: sha256Schema }).strict()),
+    files: z.record(fileKeySchema, fileEntrySchema),
   })
-  .strict();
+  .loose();
 
-export type Manifest = z.infer<typeof manifestSchema>;
+const KNOWN_TOP_KEYS = new Set(['cliVersion', 'mode', 'selections', 'fragments', 'files']);
+const KNOWN_SELECTION_KEYS = new Set([
+  'language',
+  'frameworks',
+  'libraries',
+  'architecture',
+  'agents',
+  'excluded',
+  'workflows',
+]);
+const KNOWN_FILE_KEYS = new Set(['sha256']);
+
+/** Unknown JSON keys from a newer CLI; written after known keys on serialize. */
+export type ManifestExtras = Readonly<Record<string, unknown>>;
+
+export interface ManifestFileEntry {
+  readonly sha256: string;
+  readonly extras?: ManifestExtras;
+}
+
+export interface ManifestSelections {
+  readonly language: Language;
+  readonly frameworks: readonly string[];
+  readonly libraries: readonly string[];
+  readonly architecture: string;
+  readonly agents: readonly AgentTarget[];
+  readonly excluded: readonly string[];
+  readonly workflows: boolean;
+  readonly extras?: ManifestExtras;
+}
+
+export interface Manifest {
+  readonly cliVersion: string;
+  readonly mode: (typeof MODES)[number];
+  readonly selections: ManifestSelections;
+  readonly fragments: Readonly<Record<string, string>>;
+  readonly files: Readonly<Record<string, ManifestFileEntry>>;
+  readonly extras?: ManifestExtras;
+}
 
 /** `null` when the manifest file is absent. Invalid JSON or schema throws. */
 export async function readManifest(root: string): Promise<Manifest | null> {
@@ -95,26 +139,84 @@ export async function readManifest(root: string): Promise<Manifest | null> {
 
 /**
  * Stable key order, 2-space indent, and one trailing newline.
+ * Known keys first; unknown extras follow in their original relative order.
  * `fragments` and `files` keys are sorted by UTF-16 code unit.
  * Array order is kept as given.
  */
 export function serializeManifest(manifest: Manifest): string {
-  const ordered = {
+  const selections: Record<string, unknown> = {
+    language: manifest.selections.language,
+    frameworks: [...manifest.selections.frameworks],
+    libraries: [...manifest.selections.libraries],
+    architecture: manifest.selections.architecture,
+    agents: [...manifest.selections.agents],
+    excluded: [...manifest.selections.excluded].sort(compareText),
+    workflows: manifest.selections.workflows,
+  };
+  appendExtras(selections, manifest.selections.extras);
+
+  const files: Record<string, unknown> = {};
+  for (const key of Object.keys(manifest.files).sort(compareText)) {
+    const entry = manifest.files[key];
+    if (entry === undefined) continue;
+    const out: Record<string, unknown> = { sha256: entry.sha256 };
+    appendExtras(out, entry.extras);
+    files[key] = out;
+  }
+
+  const ordered: Record<string, unknown> = {
     cliVersion: manifest.cliVersion,
     mode: manifest.mode,
-    selections: {
-      language: manifest.selections.language,
-      frameworks: [...manifest.selections.frameworks],
-      libraries: [...manifest.selections.libraries],
-      architecture: manifest.selections.architecture,
-      agents: [...manifest.selections.agents],
-      excluded: [...manifest.selections.excluded].sort(compareText),
-      workflows: manifest.selections.workflows,
-    },
+    selections,
     fragments: sortedRecord(manifest.fragments),
-    files: sortedFiles(manifest.files),
+    files,
   };
+  appendExtras(ordered, manifest.extras);
   return `${JSON.stringify(ordered, null, 2)}\n`;
+}
+
+/**
+ * Copy unknown top-level and `selections` keys from a previous manifest onto a
+ * freshly built body so an older CLI rewrite does not drop newer data.
+ */
+export function withPreservedExtras(
+  next: Omit<Manifest, 'files'>,
+  previous: Manifest | null | undefined,
+): Omit<Manifest, 'files'> {
+  if (previous === null || previous === undefined) return next;
+  return {
+    ...next,
+    ...(previous.extras === undefined ? {} : { extras: previous.extras }),
+    selections: {
+      ...next.selections,
+      ...(previous.selections.extras === undefined ? {} : { extras: previous.selections.extras }),
+    },
+  };
+}
+
+/**
+ * Keep unknown keys on file entries that still exist after apply updates hashes.
+ */
+export function withPreservedFileExtras(
+  files: Readonly<Record<string, { readonly sha256: string }>>,
+  previous: Manifest['files'] | undefined,
+): Manifest['files'] {
+  if (previous === undefined) {
+    const next: Record<string, ManifestFileEntry> = {};
+    for (const [key, entry] of Object.entries(files)) {
+      next[key] = { sha256: entry.sha256 };
+    }
+    return next;
+  }
+  const next: Record<string, ManifestFileEntry> = {};
+  for (const [key, entry] of Object.entries(files)) {
+    const prior = previous[key];
+    next[key] =
+      prior?.extras === undefined
+        ? { sha256: entry.sha256 }
+        : { sha256: entry.sha256, extras: prior.extras };
+  }
+  return next;
 }
 
 function parseManifest(raw: string): Manifest {
@@ -128,27 +230,61 @@ function parseManifest(raw: string): Manifest {
   if (!result.success) {
     throw new AgentInitError(formatIssues(result.error), { hint: RECOVER_HINT });
   }
-  return result.data;
+  return toManifest(result.data);
+}
+
+function toManifest(parsed: z.infer<typeof manifestSchema>): Manifest {
+  const topExtras = pickExtras(parsed, KNOWN_TOP_KEYS);
+  const selectionExtras = pickExtras(parsed.selections, KNOWN_SELECTION_KEYS);
+  const files: Record<string, ManifestFileEntry> = {};
+  for (const [key, entry] of Object.entries(parsed.files)) {
+    const extras = pickExtras(entry, KNOWN_FILE_KEYS);
+    files[key] = extras === undefined ? { sha256: entry.sha256 } : { sha256: entry.sha256, extras };
+  }
+  return {
+    cliVersion: parsed.cliVersion,
+    mode: parsed.mode,
+    selections: {
+      language: parsed.selections.language,
+      frameworks: parsed.selections.frameworks,
+      libraries: parsed.selections.libraries,
+      architecture: parsed.selections.architecture,
+      agents: parsed.selections.agents,
+      excluded: parsed.selections.excluded,
+      workflows: parsed.selections.workflows,
+      ...(selectionExtras === undefined ? {} : { extras: selectionExtras }),
+    },
+    fragments: parsed.fragments,
+    files,
+    ...(topExtras === undefined ? {} : { extras: topExtras }),
+  };
+}
+
+function pickExtras(value: object, known: ReadonlySet<string>): ManifestExtras | undefined {
+  const extras: Record<string, unknown> = {};
+  let found = false;
+  for (const [key, entry] of Object.entries(value)) {
+    if (known.has(key)) continue;
+    extras[key] = entry;
+    found = true;
+  }
+  return found ? extras : undefined;
+}
+
+function appendExtras(target: Record<string, unknown>, extras: ManifestExtras | undefined): void {
+  if (extras === undefined) return;
+  for (const [key, value] of Object.entries(extras)) {
+    if (Object.hasOwn(target, key)) continue;
+    target[key] = value;
+  }
 }
 
 function sortedRecord(record: Readonly<Record<string, string>>): Record<string, string> {
   const sorted: Record<string, string> = {};
-  for (const key of Object.keys(record).sort()) {
+  for (const key of Object.keys(record).sort(compareText)) {
     const value = record[key];
     if (value === undefined) continue;
     sorted[key] = value;
-  }
-  return sorted;
-}
-
-function sortedFiles(
-  files: Readonly<Record<string, { sha256: string }>>,
-): Record<string, { sha256: string }> {
-  const sorted: Record<string, { sha256: string }> = {};
-  for (const key of Object.keys(files).sort()) {
-    const entry = files[key];
-    if (entry === undefined) continue;
-    sorted[key] = { sha256: entry.sha256 };
   }
   return sorted;
 }

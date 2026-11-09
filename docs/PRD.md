@@ -184,6 +184,7 @@ Triggered when `package.json` exists in the target directory.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
 - In *Customize*, deselecting a fragment that detection suggested adds its id to `selections.excluded`; selecting it again removes the id. Ids that are no longer in the registry are dropped with a notice.
 - *Customize* also asks *"Include workflows (slash commands)?"* (yes/no), preselecting the saved `selections.workflows` value (default yes). Turning workflows off on a re-run removes previously generated workflow files through the stale-file path.
+- When `manifest.cliVersion` is a newer major or minor than the running CLI, `init` exits `1` with a message to run that version or newer, unless `--force` is passed. A same major.minor with an older patch only warns and continues. An invalid `cliVersion` warns and never blocks. The notice *"Set up with agentinit \<manifest\> · running \<cli\>"* is printed (and included in `--json` notices) whenever the versions differ.
 
 ### 3.5 Non-Interactive Defaults (`--yes`)
 Every prompt has a defined non-interactive answer:
@@ -568,7 +569,8 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 - `selections.excluded` is a sorted list of unique kebab-case fragment ids the team intentionally left out of detection. Older manifests without the field still parse; the next write always includes `"excluded": []` (or the saved ids).
 - `selections.workflows` is a boolean (default `true`) controlling whether slash-command workflow files are planned. Older manifests without the field still parse; the next write always includes `"workflows": true` (or the saved value).
 - Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
-- Manifest keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
+- Manifest `files` keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
+- **Forward compatibility (from 0.1.1):** unknown keys at the top level, in `selections`, and in each file entry are ignored for validation and preserved on rewrite (appended after known keys, values kept). Manifest changes in 0.x are additive and optional only. 0.1.0 readers remain strict and reject unknown keys; keep the strict window short by shipping tolerant readers promptly.
 - Hash matches → safe to regenerate silently.
 - Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report.
 
@@ -611,7 +613,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 
 ### 6.6 Lifecycle Commands
 **v0.1**
-- **`remove --all`:** deletes every AgentInit-owned file and unedited managed block. Edited files and blocks: interactive mode asks *Keep* (default) or *Delete after backup*; `--yes` keeps them and reports them; `--force` backs them up and deletes them. Then deletes the manifest and `.agentinit/.gitignore`. If `.agentinit/backups/` is not empty, it is kept and its path is printed; otherwise `.agentinit/` is removed. Supports `--dry-run` and `--json`. After a managed block is removed, a shared file that contains only whitespace is deleted. `remove` with fragment ids is not available yet (see v0.2).
+- **`remove --all`:** deletes every AgentInit-owned file and unedited managed block. Edited files and blocks: interactive mode asks *Keep* (default) or *Delete after backup*; `--yes` keeps them and reports them; `--force` backs them up and deletes them. Then deletes the manifest and `.agentinit/.gitignore`. If `.agentinit/backups/` is not empty, it is kept and its path is printed; otherwise `.agentinit/` is removed. Supports `--dry-run` and `--json`. After a managed block is removed, a shared file that contains only whitespace is deleted. `remove` with fragment ids is not available yet (see v0.2). Same CLI-version guard as §3.4: an older major/minor exits `1` unless `--force`; a patch-only lag or invalid `cliVersion` only warns. `doctor` never blocks on version alone — it only warns (and still applies §6.5 content checks).
 
 **v0.2**
 - **`add <id...>` / `remove <id...>`:** update selections in the manifest and regenerate affected files. Unknown ids get fuzzy suggestions.
