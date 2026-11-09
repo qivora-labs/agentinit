@@ -594,11 +594,12 @@ Compares the manifest, the current project, and the files on disk. Never writes.
 | Severity | Exit | Kinds |
 | :--- | :---: | :--- |
 | **error** | `2` | `not-initialized`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `package-removed`, `unsupported-version` |
-| **warning** | `0` | `legacy-file`, `always-on-tokens` |
+| **warning** | `0` | `rules-update`, `legacy-file`, `always-on-tokens` |
 
 Checks:
 - No manifest found (suggests `init`).
 - A managed file or block is missing, or was edited by hand. The `edited` fix tells the user to move their text outside the agentinit markers and re-run `init`, or to exclude the fragment with *Customize*.
+- An owned, unedited file whose content differs from what this CLI would generate is `outdated` (error) when `manifest.cliVersion` matches the running CLI, and `rules-update` (warning) when the versions differ — so a newer release that changes rule text does not fail unpinned CI. While the versions differ, doctor cannot tell a rule-text change from a project change that alters generated text; both are warnings until someone re-runs `init` with the current CLI.
 - A detected package has a matching fragment that isn't selected and isn't in `selections.excluded`.
 - A selected fragment's package was removed, or its version left the `appliesTo` range.
 - The always-on core is over budget (warning).

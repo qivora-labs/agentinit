@@ -34,6 +34,8 @@ import type { ProjectProfile } from '../types.js';
 import { underRail } from '../ui/brand.js';
 import type { Logger } from '../ui/logger.js';
 import { paintDoctorChecks, paintDoctorReport } from '../ui/paint.js';
+// Inlined by tsdown — same source `init` uses for the manifest `cliVersion`.
+import pkg from '../../package.json' with { type: 'json' };
 
 export interface DoctorOptions {
   readonly stdout?: Writable;
@@ -86,6 +88,7 @@ function uninitializedInput(root: string, registry: Registry) {
     packages: {},
     warnings: [],
     legacyFiles: [],
+    cliVersions: { running: pkg.version, manifest: pkg.version },
   };
 }
 
@@ -106,6 +109,7 @@ async function issuesForManifest(root: string, registry: Registry, manifest: Man
     packages: existing ? installedPackages(root) : {},
     warnings: plan.warnings,
     legacyFiles: findLegacyFiles(root),
+    cliVersions: { running: pkg.version, manifest: manifest.cliVersion },
   });
 }
 
