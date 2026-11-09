@@ -232,8 +232,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx --yes @agentinit/cli doctor
+      - run: npx --yes @agentinit/cli@0.1.0 doctor
 ```
+
+**Pin the version in CI.** `doctor` compares your files with what *that* CLI version would generate. Unpinned, a new agentinit release with updated rules fails your CI on the next run, even though nothing in your repository changed. To upgrade, run `npx @agentinit/cli@<new version> init` locally, commit the result, and bump the pin in the same pull request.
+
+If you'd rather have Dependabot or Renovate propose upgrades, add the CLI as a dev dependency and run that copy instead: `npm install --save-dev @agentinit/cli`, then `npx --no agentinit doctor` in the workflow, after installing dependencies. `--no` stops npx from downloading the unrelated unscoped `agentinit` package when the local copy is missing.
 
 ## How it stays safe
 
