@@ -1,4 +1,4 @@
-import { lt, satisfies, valid } from 'semver';
+import { eq, lt, satisfies, valid } from 'semver';
 import { compareText } from '../compare-text.js';
 import type { PlanWarning } from '../plan/types.js';
 
@@ -460,7 +460,7 @@ function rulesUpdate(change: DriftChange, cliVersions: DoctorCliVersions): Docto
 /** True when versions differ, or either side is not valid semver. */
 export function cliVersionsDiffer(versions: DoctorCliVersions): boolean {
   if (valid(versions.running) === null || valid(versions.manifest) === null) return true;
-  return versions.running !== versions.manifest;
+  return !eq(versions.running, versions.manifest);
 }
 
 function location(change: DriftChange): string {

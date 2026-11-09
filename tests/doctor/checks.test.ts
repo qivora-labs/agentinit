@@ -237,6 +237,7 @@ describe('checkChanges', () => {
 describe('cliVersionsDiffer', () => {
   it.each<[string, DoctorCliVersions, boolean]>([
     ['equal versions', { running: '0.1.0', manifest: '0.1.0' }, false],
+    ['semver-equal with build metadata', { running: '0.1.0', manifest: '0.1.0+build' }, false],
     ['running newer', { running: '0.1.1', manifest: '0.1.0' }, true],
     ['running older', { running: '0.1.0', manifest: '0.2.0' }, true],
     ['invalid manifest', { running: '0.1.0', manifest: 'latest' }, true],
