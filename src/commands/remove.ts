@@ -1,4 +1,5 @@
 import type { Writable } from 'node:stream';
+import { assessCliCompat, cliCompatNotice } from '../cli-compat.js';
 import { requireInteractiveOrYes, type RunContext } from '../context.js';
 import { INIT_FIX } from '../doctor/checks.js';
 import { AgentInitError } from '../errors.js';
@@ -10,6 +11,7 @@ import type { Logger } from '../ui/logger.js';
 import { paintFileTree } from '../ui/paint.js';
 import { createClackPrompter, type Prompter } from '../ui/prompter.js';
 import { formatDiffs, formatFileTree, type ReportFile } from '../ui/report.js';
+import pkg from '../../package.json' with { type: 'json' };
 
 export interface RemoveOptions {
   readonly all?: boolean;
@@ -43,6 +45,15 @@ export async function remove(ctx: RunContext, logger: Logger, options: RemoveOpt
     throw new AgentInitError('Not initialized.', { hint: INIT_FIX });
   }
 
+  const compat = assessCliCompat(pkg.version, manifest.cliVersion);
+  if (compat.kind === 'behind' && !ctx.force) {
+    // Still emit the version notice before exiting so mixed-version CI logs stay consistent.
+    logger.warn(compat.notice);
+    throw new AgentInitError(compat.message);
+  }
+  const versionNotice = cliCompatNotice(compat);
+  const notices = versionNotice === undefined ? [] : [versionNotice];
+
   const changes = await computeRemoveChanges(root, manifest);
   const applied = await applyRemoveAll(root, changes, {
     now: options.now ?? new Date(),
@@ -54,7 +65,7 @@ export async function remove(ctx: RunContext, logger: Logger, options: RemoveOpt
     ...(options.onAtomicWrite === undefined ? {} : { onAtomicWrite: options.onAtomicWrite }),
   });
 
-  return reportRemove(ctx, logger, options, applied.report, applied.backupsPath);
+  return reportRemove(ctx, logger, options, applied.report, applied.backupsPath, notices);
 }
 
 function reportRemove(
@@ -63,13 +74,18 @@ function reportRemove(
   options: RemoveOptions,
   report: readonly ApplyReportEntry[],
   backupsPath: string | undefined,
+  notices: readonly string[],
 ): number {
   const files = report.map(reportFile);
   if (ctx.json) {
-    writeStdout(options, `${JSON.stringify({ files, dryRun: ctx.dryRun, backupsPath: backupsPath ?? null }, null, 2)}\n`);
+    writeStdout(
+      options,
+      `${JSON.stringify({ files, dryRun: ctx.dryRun, backupsPath: backupsPath ?? null, notices }, null, 2)}\n`,
+    );
     return SUCCESS;
   }
 
+  for (const notice of notices) logger.warn(notice);
   const tree = formatFileTree(files);
   if (tree.length > 0) logger.info(paintFileTree(tree, logger.theme));
   if (ctx.dryRun) {

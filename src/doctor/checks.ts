@@ -41,6 +41,8 @@ export interface DoctorIssue {
 export interface DoctorReport {
   readonly ok: boolean;
   readonly issues: readonly DoctorIssue[];
+  /** Non-issue messages (for example a CLI version mismatch header). */
+  readonly notices: readonly string[];
 }
 
 export const DOCTOR_CHECK_IDS = [
@@ -207,8 +209,15 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
 }
 
 /** `ok` is true when there are no error-severity issues (warnings are fine). */
-export function doctorReport(issues: readonly DoctorIssue[]): DoctorReport {
-  return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
+export function doctorReport(
+  issues: readonly DoctorIssue[],
+  notices: readonly string[] = [],
+): DoctorReport {
+  return {
+    ok: !issues.some((issue) => issue.severity === 'error'),
+    issues,
+    notices,
+  };
 }
 
 export function countBySeverity(issues: readonly DoctorIssue[]): {

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { compareText } from '../../src/compare-text.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
+import pkg from '../../package.json' with { type: 'json' };
 import { runCli } from '../helpers/run.js';
 import { choicePrompt, recordingPrompter } from '../ui/recording-prompter.js';
 
@@ -731,5 +732,94 @@ describe('init', () => {
     expect(after.some((file) => file === 'CLAUDE.md' || file.startsWith('.claude/'))).toBe(true);
     expect(after).toContain('AGENTS.md');
     expect(after).toContain('ARCHITECTURE.md');
+  });
+
+  it('exits 1 when the manifest is from a newer minor unless --force', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = '0.2.0';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const blocked = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
+    expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
+    expect(blocked.stderr).toContain('npx @agentinit/cli@0.2.0');
+
+    const forced = await runCli(['init', '--yes', '--force', '--json', '--cwd', dir]);
+    expect(forced.code).toBe(0);
+    const payload = JSON.parse(forced.stdout) as { notices: string[] };
+    expect(payload.notices).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
+  });
+
+  it('warns and continues when cliVersion is invalid', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = 'not-a-version';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as { notices: string[] };
+    expect(payload.notices).toContain(`Set up with agentinit not-a-version · running ${pkg.version}`);
+  });
+
+  it('warns and continues when only the patch is older', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    const [major = '0', minor = '1'] = pkg.version.split('.');
+    saved.cliVersion = `${major}.${minor}.99`;
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as { notices: string[] };
+    expect(payload.notices).toContain(
+      `Set up with agentinit ${saved.cliVersion} · running ${pkg.version}`,
+    );
+  });
+
+  it('preserves unknown manifest keys across init --yes rewrite', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      selections: Record<string, unknown>;
+      files: Record<string, Record<string, unknown>>;
+      [key: string]: unknown;
+    };
+    saved.schemaHint = 2;
+    saved.selections.futureFlag = true;
+    const firstFile = Object.keys(saved.files)
+      .filter((key) => !key.includes('#'))
+      .sort(compareText)[0];
+    expect(firstFile).toBeDefined();
+    if (firstFile === undefined) return;
+    const entry = saved.files[firstFile];
+    expect(entry).toBeDefined();
+    if (entry === undefined) return;
+    entry.etag = 'keep-me';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    // Force a rewrite so serialize runs with the preserved extras.
+    await rm(path.join(dir, firstFile), { force: true });
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+
+    const after = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      schemaHint?: unknown;
+      selections: { futureFlag?: unknown };
+      files: Record<string, { etag?: unknown; sha256: string }>;
+    };
+    expect(after.schemaHint).toBe(2);
+    expect(after.selections.futureFlag).toBe(true);
+    expect(after.files[firstFile]?.etag).toBe('keep-me');
+    expect(after.files[firstFile]?.sha256).toMatch(/^[a-f0-9]{64}$/u);
   });
 });

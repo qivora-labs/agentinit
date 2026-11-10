@@ -1,4 +1,9 @@
 import type { Writable } from 'node:stream';
+import {
+  assessCliCompat,
+  cliCompatNotice,
+  type CliCompat,
+} from '../cli-compat.js';
 import { requireInteractiveOrYes, type RunContext } from '../context.js';
 import { detectProject, type DetectionResult } from '../detect/index.js';
 import { findExistingAgentFiles } from '../detect/existing-agents.js';
@@ -8,7 +13,7 @@ import { AgentInitError } from '../errors.js';
 import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, type Change } from '../io/changes.js';
-import { readManifest, type Manifest } from '../io/manifest.js';
+import { readManifest, withPreservedExtras, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { ALWAYS_ON_TOKEN_LIMIT } from '../plan/tokens.js';
 import type { Plan, PlanWarning } from '../plan/types.js';
@@ -93,6 +98,8 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const prompts = prompterFor(options, logger.theme);
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
+  const compat = manifest === null ? undefined : assessCliCompat(pkg.version, manifest.cliVersion);
+  enforceWriteCompat(ctx, logger, compat);
 
   if (manifest !== null && canTakeUpToDateShortcut(detection, manifest)) {
     const savedSetup = setupFromManifest(ctx, detection, manifest, registry);
@@ -110,6 +117,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
         setup: savedSetup,
         prepared: savedPrepared,
         spin,
+        compat,
       });
     }
   }
@@ -122,11 +130,13 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     noticeLines(registry, detection, prepared.resolved, setup.notices, {
       legacyWarnings: shownLegacyOnCard ? 'omit' : 'include',
       excludedNotices: setup.excludedNotices,
+      ...(compat === undefined ? {} : { compat }),
     });
   const jsonNotices = () =>
     noticeLines(registry, detection, prepared.resolved, setup.notices, {
       legacyWarnings: 'include',
       excludedNotices: setup.excludedNotices,
+      ...(compat === undefined ? {} : { compat }),
     });
   const greenfieldSteps = () =>
     prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
@@ -161,6 +171,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
     options,
     root,
     prepared,
+    previous: manifest,
     excluded: setup.excluded,
     workflows: setup.workflows,
     notices: ctx.json ? jsonNotices() : notices(),
@@ -182,13 +193,15 @@ async function handleUpToDateShortcut(input: {
   setup: Setup;
   prepared: PreparedWrite;
   readonly spin: boolean;
+  readonly compat: CliCompat | undefined;
 }): Promise<number> {
-  const { ctx, logger, options, registry, detection, manifest, prompts, root, spin } = input;
+  const { ctx, logger, options, registry, detection, manifest, prompts, root, spin, compat } = input;
   let { setup, prepared } = input;
   const allNotices = () =>
     noticeLines(registry, detection, prepared.resolved, setup.notices, {
       legacyWarnings: 'include',
       excludedNotices: setup.excludedNotices,
+      ...(compat === undefined ? {} : { compat }),
     });
 
   if (!ctx.isInteractive || ctx.yes) {
@@ -214,6 +227,7 @@ async function handleUpToDateShortcut(input: {
     noticeLines(registry, detection, prepared.resolved, setup.notices, {
       legacyWarnings: 'omit',
       excludedNotices: setup.excludedNotices,
+      ...(compat === undefined ? {} : { compat }),
     });
   const greenfieldSteps = () =>
     prepared.profile.mode === 'greenfield' ? greenfieldNextSteps(prepared.profile.frameworks) : [];
@@ -249,6 +263,7 @@ async function handleUpToDateShortcut(input: {
     options,
     root,
     prepared,
+    previous: manifest,
     excluded: setup.excluded,
     workflows: setup.workflows,
     notices: notices(),
@@ -264,6 +279,7 @@ async function applyPreparedWrite(input: {
   readonly options: InitOptions;
   readonly root: string;
   readonly prepared: PreparedWrite;
+  readonly previous: Manifest | null;
   readonly excluded: readonly string[];
   readonly workflows: boolean;
   readonly notices: readonly string[];
@@ -277,6 +293,7 @@ async function applyPreparedWrite(input: {
     options,
     root,
     prepared,
+    previous,
     excluded,
     workflows,
     notices,
@@ -293,7 +310,8 @@ async function applyPreparedWrite(input: {
   try {
     applied = await applyChanges(root, changes, {
       now: options.now ?? new Date(),
-      manifest: manifestBody(profile, resolved, excluded, workflows),
+      manifest: withPreservedExtras(manifestBody(profile, resolved, excluded, workflows), previous),
+      ...(previous === null ? {} : { previousFiles: previous.files }),
       yes: ctx.yes,
       force: ctx.force,
       dryRun: ctx.dryRun,
@@ -880,9 +898,12 @@ function noticeLines(
   options: {
     readonly legacyWarnings: 'include' | 'omit';
     readonly excludedNotices?: readonly string[];
+    readonly compat?: CliCompat;
   } = { legacyWarnings: 'include' },
 ): string[] {
   const lines: string[] = [];
+  const versionNotice = options.compat === undefined ? undefined : cliCompatNotice(options.compat);
+  if (versionNotice !== undefined) lines.push(versionNotice);
   if (detection.mode === 'existing') {
     for (const notice of detection.notices) lines.push(formatRegistryNotice(notice, registry));
     for (const warning of detection.warnings) {
@@ -894,6 +915,15 @@ function noticeLines(
   for (const notice of lowConfidence) lines.push(formatLowConfidence(notice, registry));
   for (const notice of options.excludedNotices ?? []) lines.push(notice);
   return unique(lines);
+}
+
+/** Older major/minor exits 1 unless `--force`; patch-behind and invalid only warn. */
+function enforceWriteCompat(ctx: RunContext, logger: Logger, compat: CliCompat | undefined): void {
+  if (compat?.kind !== 'behind') return;
+  if (ctx.force) return;
+  // Still emit the version notice before exiting so mixed-version CI logs stay consistent.
+  logger.warn(compat.notice);
+  throw new AgentInitError(compat.message);
 }
 
 function unique(lines: readonly string[]): string[] {

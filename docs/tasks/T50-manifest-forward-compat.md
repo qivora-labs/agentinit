@@ -41,12 +41,12 @@ Record the answers under **Notes** and in the PRD.
 - Read `.cursor/rules/io-safety.mdc`. The manifest is still written last and atomically.
 
 ## Acceptance criteria
-- [ ] Owner decisions recorded under **Notes**, and the PRD updated.
-- [ ] A manifest with an extra top-level key, an extra `selections` key, and an extra file-entry key parses. `doctor` treats it like the same manifest without them.
-- [ ] Under decision 1 "preserve": `init --yes` rewrites the manifest and keeps the extra keys byte-for-byte in value.
-- [ ] `cliVersion: "0.2.0"` with a running `0.1.1`: `init --yes` exits `1` with the upgrade message, and `init --yes --force` proceeds. A patch-only difference warns and proceeds.
-- [ ] `CONTRIBUTING.md` has the Compatibility section.
-- [ ] A `patch` changeset exists.
+- [x] Owner decisions recorded under **Notes**, and the PRD updated.
+- [x] A manifest with an extra top-level key, an extra `selections` key, and an extra file-entry key parses. `doctor` treats it like the same manifest without them.
+- [x] Under decision 1 "preserve": `init --yes` rewrites the manifest and keeps the extra keys byte-for-byte in value.
+- [x] `cliVersion: "0.2.0"` with a running `0.1.1`: `init --yes` exits `1` with the upgrade message, and `init --yes --force` proceeds. A patch-only difference warns and proceeds.
+- [x] `CONTRIBUTING.md` has the Compatibility section.
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -57,3 +57,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `fix(io): tolerate unknown manifest keys and guard against older clis`
 
 ## Notes
+- Decision 1: **preserve** unknown keys after known keys on rewrite (values kept).
+- Decision 2: patch-behind warns; older major/minor blocks `init` / `remove --all` unless `--force`; `doctor` only warns; invalid `cliVersion` warns and never blocks.
+- Zod 4: used `.loose()` (passthrough is deprecated). Extras live in `Manifest.extras` / `selections.extras` / file-entry `extras` bags and are re-emitted after known keys.
+- `doctor` / `remove` `--json` now include a `notices` array (additive). Version line: `Set up with agentinit <manifest> · running <cli>`.

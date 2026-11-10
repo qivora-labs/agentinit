@@ -354,7 +354,7 @@ describe('checkLegacy', () => {
 describe('doctorReport', () => {
   it('is ok when there are only warnings', () => {
     const issues = checkLegacy(['.cursorrules']);
-    expect(doctorReport(issues)).toEqual({ ok: true, issues });
+    expect(doctorReport(issues)).toEqual({ ok: true, issues, notices: [] });
   });
 
   it('is not ok when any issue is an error', () => {
