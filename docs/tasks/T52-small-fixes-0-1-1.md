@@ -50,6 +50,7 @@ node dist/cli.js --help | grep workflows
 `fix(cli): correct no-workflows help, doctor fix text, and package files`
 
 ## Notes
-- Cleared cac's auto `default: true` on `--no-workflows` after registration so help omits `(default: true)`; absence of the flag still leaves workflows on (`options.workflows === false` only when passed).
+- cac's help callback strips `(default: true)` from the `--no-workflows` line (negated flags still get that default for parsing); absence of the flag leaves workflows on (`options.workflows === false` only when passed).
 - Skill paths (`.claude/skills/…`, `.cursor/skills/…`) use the workflow edited-fix text (`--no-workflows`), since they are slash-command outputs.
 - PRD §6.5 edited-fix bullet updated to the three kind-specific messages (owner-approved).
+- Pack allowlist in `scripts/smoke.ts` accepts only `dist/cli.js` from `dist/`; `tests/package-files.test.ts` plants `dist/junk` and asserts `npm pack --dry-run` omits it.
