@@ -601,7 +601,7 @@ Compares the manifest, the current project, and the files on disk. Never writes.
 
 Checks:
 - No manifest found (suggests `init`).
-- A managed file or block is missing, or was edited by hand. The `edited` fix tells the user to move their text outside the agentinit markers and re-run `init`, or to exclude the fragment with *Customize*.
+- A managed file or block is missing, or was edited by hand. The `edited` fix depends on the output kind: for a managed block, move text outside the agentinit markers in that file and re-run `init`; for a rule file, re-run `init` and choose Backup & replace, or exclude the fragment under Customize; for a workflow file, re-run `init` and choose Backup & replace, or pass `--no-workflows`.
 - An owned, unedited file whose content differs from what this CLI would generate is `outdated` (error) when `manifest.cliVersion` matches the running CLI, and `rules-update` (warning) when the versions differ — so a newer release that changes rule text does not fail unpinned CI. While the versions differ, doctor cannot tell a rule-text change from a project change that alters generated text; both are warnings until someone re-runs `init` with the current CLI.
 - A detected package has a matching fragment that isn't selected and isn't in `selections.excluded`.
 - A selected fragment's package was removed, or its version left the `appliesTo` range.

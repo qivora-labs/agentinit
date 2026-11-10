@@ -96,6 +96,13 @@ function createCli(): CAC {
   cli.option('--force', 'Replace unmanaged and edited files after backing them up');
   cli.option('--json', 'Machine-readable output for init, list, doctor, remove, and dry-run');
   cli.option('--no-workflows', 'Skip slash-command workflow files on init');
+  // cac sets default:true for negated flags, which prints "(default: true)" and
+  // reads as if workflows are skipped by default. Clear it; absence still means
+  // workflows stay on (`options.workflows === false` only when the flag is passed).
+  const noWorkflows = cli.globalCommand.options.find((option) => option.rawName === '--no-workflows');
+  if (noWorkflows !== undefined) {
+    noWorkflows.config.default = undefined;
+  }
   cli.command('init', 'Bootstrap agent rules for this project');
   cli
     .command('list', 'Browse available fragments')

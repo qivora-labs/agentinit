@@ -2,7 +2,7 @@ import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { detectProject } from '../src/detect/index.js';
-import { isOwnedBlockKey, isOwnedPath } from '../src/owned-paths.js';
+import { isOwnedBlockKey, isOwnedPath, isOwnedWorkflowPath, ownedRuleId } from '../src/owned-paths.js';
 import { buildPlan } from '../src/plan/build-plan.js';
 import { loadRegistry } from '../src/registry/load.js';
 import { resolveSelection, type ResolvedSelection } from '../src/registry/resolve.js';
@@ -61,6 +61,26 @@ describe('isOwnedPath / isOwnedBlockKey', () => {
 
   it('rejects a block key on a non-shared path', () => {
     expect(isOwnedBlockKey('.cursor/rules/agentinit-zustand.mdc', 'core')).toBe(false);
+  });
+
+  it.each([
+    ['.cursor/rules/agentinit-zustand.mdc', 'zustand'],
+    ['.claude/rules/agentinit-vitest.md', 'vitest'],
+    ['.github/instructions/agentinit-tailwind.instructions.md', 'tailwind'],
+  ] as const)('reads rule fragment id from %s', (filePath, id) => {
+    expect(ownedRuleId(filePath)).toBe(id);
+    expect(isOwnedWorkflowPath(filePath)).toBe(false);
+  });
+
+  it.each([
+    '.cursor/commands/new-feature.md',
+    '.windsurf/workflows/refactor.md',
+    '.github/prompts/write-tests.prompt.md',
+    '.claude/skills/new-feature/SKILL.md',
+    '.cursor/skills/new-feature/SKILL.md',
+  ])('classifies workflow path %s', (filePath) => {
+    expect(isOwnedWorkflowPath(filePath)).toBe(true);
+    expect(ownedRuleId(filePath)).toBeUndefined();
   });
 });
 
