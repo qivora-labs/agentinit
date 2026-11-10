@@ -36,18 +36,6 @@
     ".claude/skills/write-tests/SKILL.md": {
       "sha256": "c7f11876b98df17bbc04965ec69613989f940608b651fdd6b1e36dc6de3cd2a7"
     },
-    ".cursor/commands/new-feature.md": {
-      "sha256": "901dd42cb0a243c71d0cecff738a4e4c625089b3df2c1d319747eadbd4818c82"
-    },
-    ".cursor/commands/refactor.md": {
-      "sha256": "43645162f09e3c3d823cdabf263e63bac8cc1ab0dabbf77001ec01e03df2ac82"
-    },
-    ".cursor/commands/review-arch.md": {
-      "sha256": "e49ea0256a29559c2ccddac15a7d0a9b38850131194b554aa4465f1d26378e9a"
-    },
-    ".cursor/commands/write-tests.md": {
-      "sha256": "c3093f37f20d82e51a8ed585710a9165163e501038d7cb018e45bfa5c6688764"
-    },
     ".cursor/rules/agentinit-vitest.mdc": {
       "sha256": "ac7d68143636c6bedb2fd146b8593983b9d23a59b4aa2aec56107570a1ac8e6c"
     },

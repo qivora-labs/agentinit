@@ -18,6 +18,7 @@ The **Minimum** column in the README is the highest floor in each agent's rows b
 
 - **`AGENTS.md` has no documented first version.** Community reports on Cursor 1.7.44–1.7.54 (October 2025) say the root file was not attached automatically ([forum](https://forum.cursor.com/t/support-agents-md/133414)). Use a current release if always-on rules matter.
 - **Skills replace commands.** Cursor 2.4+ loads project skills from `.cursor/skills/` and, for compatibility, `.claude/skills/`. When both Cursor and Claude Code are selected, agentinit writes workflows only under `.claude/skills/` so Cursor does not list each one twice. Cursor-only projects still get `.cursor/skills/`. Legacy `.cursor/commands/` from 0.1.0 are removed on the next `init` when unedited.
+- **`argument-hint` is intentional.** Cursor-only workflow skills include `argument-hint` when the fragment sets it, matching Claude Code skills (PRD §5.4). [Agent Skills](https://cursor.com/docs/skills) does not list that field; unknown frontmatter keys are ignored.
 
 ### Claude Code — minimum 2.1.84
 

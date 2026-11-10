@@ -41,6 +41,8 @@ function ruleOp(fragment: RenderedFragment, scope: CursorRuleScope): FileOp {
 
 function workflowSkillOp(workflow: RenderedWorkflow): FileOp {
   const lines = [`name: ${yamlScalar(workflow.id)}`, `description: ${yamlScalar(workflow.description)}`];
+  // Cursor's Agent Skills docs omit `argument-hint`; keep it so Cursor-only
+  // skills match Claude skill frontmatter (PRD §5.4). Unknown keys are ignored.
   if (workflow.argumentHint !== undefined) {
     lines.push(`argument-hint: ${yamlScalar(workflow.argumentHint)}`);
   }
