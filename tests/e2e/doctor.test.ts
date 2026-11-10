@@ -18,8 +18,8 @@ const directories: string[] = [];
 
 const FIX = 'npx @agentinit/cli init';
 
-const EDITED_FIX =
-  'Move your text outside the agentinit markers, then run `npx @agentinit/cli init`, or exclude the fragment with *Customize*.';
+const EDITED_RULE_FIX =
+  'Run `npx @agentinit/cli init` and choose Backup & replace, or exclude nextjs-app-router under Customize.';
 
 const doctorIssueSchema = z
   .object({
@@ -296,7 +296,7 @@ describe('doctor', () => {
       severity: 'error',
       path: file,
       message: `${file} was edited by hand.`,
-      fix: EDITED_FIX,
+      fix: EDITED_RULE_FIX,
     });
   });
 
@@ -360,7 +360,7 @@ describe('doctor', () => {
       severity: 'error',
       path: file,
       message: `${file} was edited by hand.`,
-      fix: EDITED_FIX,
+      fix: EDITED_RULE_FIX,
     });
   });
 

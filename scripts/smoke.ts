@@ -69,7 +69,7 @@ export async function runSmoke(): Promise<void> {
   }
 }
 
-/** Published layout: `package.json`, `README.md`, `LICENSE`, `dist/**`, `registry/**`. */
+/** Published layout: `package.json`, `README.md`, `LICENSE`, `dist/cli.js`, `registry/**`. */
 export function assertTarballEntries(entries: readonly string[], expectations: TarballExpectations = {}): void {
   const relative = entries.map(toPackageRelative);
   const unexpected = relative.filter((entry) => !isAllowedPackedPath(entry)).sort(compareText);
@@ -81,7 +81,7 @@ export function assertTarballEntries(entries: readonly string[], expectations: T
   for (const required of REQUIRED_FILES) {
     if (!files.includes(required)) throw new Error(`Tarball is missing ${required}.`);
   }
-  if (!files.some((file) => file.startsWith('dist/'))) throw new Error('Tarball is missing dist/.');
+  if (!files.includes('dist/cli.js')) throw new Error('Tarball is missing dist/cli.js.');
   if (!files.some((file) => file.startsWith('registry/'))) {
     throw new Error('Tarball is missing registry/. Include "registry" in package.json "files".');
   }
@@ -105,7 +105,10 @@ function isAllowedPackedPath(entry: string): boolean {
   if (bare === '') return true;
   if (bare.split('/').includes('..')) return false;
   if (bare === 'package.json' || bare === 'README.md' || bare === 'LICENSE') return !entry.endsWith('/');
-  return bare === 'dist' || bare.startsWith('dist/') || bare === 'registry' || bare.startsWith('registry/');
+  // Only dist/cli.js — package.json "files" must not use a bare "dist" glob.
+  if (bare === 'dist' || bare === 'dist/cli.js') return true;
+  if (bare === 'registry' || bare.startsWith('registry/')) return true;
+  return false;
 }
 
 function binaryPath(installDir: string): string {

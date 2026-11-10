@@ -40,9 +40,25 @@ const SKILL_FORMS = [
  * manuals). Shared managed-block files are checked with `isOwnedBlockKey`.
  */
 export function isOwnedPath(path: string): boolean {
+  return ownedRuleId(path) !== undefined || isOwnedWorkflowPath(path);
+}
+
+/**
+ * Fragment id when `path` is an owned rule file (`.cursor/rules/agentinit-<id>.mdc`,
+ * and the other agent rule forms). Otherwise undefined.
+ */
+export function ownedRuleId(path: string): string | undefined {
   for (const form of RULE_FORMS) {
-    if (idBetween(path, form.prefix, form.suffix) !== undefined) return true;
+    const id = idBetween(path, form.prefix, form.suffix);
+    if (id !== undefined) return id;
   }
+  return undefined;
+}
+
+/**
+ * True when `path` is an owned workflow or skill file (slash-command outputs).
+ */
+export function isOwnedWorkflowPath(path: string): boolean {
   for (const form of WORKFLOW_FORMS) {
     if (idBetween(path, form.prefix, form.suffix) !== undefined) return true;
   }

@@ -10,7 +10,7 @@ import {
   countBySeverity,
   doctorChecklist,
   doctorReport,
-  EDITED_FIX,
+  editedFix,
   formatDoctorReport,
   issuesFoundMessage,
   notInitializedIssue,
@@ -19,6 +19,9 @@ import {
 } from '../../src/doctor/checks.js';
 
 const FIX = 'npx @agentinit/cli init';
+
+const EDITED_RULE_FIX = editedFix({ path: '.cursor/rules/agentinit-zustand.mdc' });
+const EDITED_BLOCK_FIX = editedFix({ path: 'AGENTS.md', blockId: 'core' });
 
 const SAME_VERSIONS: DoctorCliVersions = { running: '0.1.0', manifest: '0.1.0' };
 
@@ -106,7 +109,18 @@ describe('checkChanges', () => {
         severity: 'error',
         path: '.cursor/rules/agentinit-zustand.mdc',
         message: '.cursor/rules/agentinit-zustand.mdc was edited by hand.',
-        fix: EDITED_FIX,
+        fix: EDITED_RULE_FIX,
+      },
+    ],
+    [
+      'workflow edited by hand',
+      { kind: 'conflict-edited', path: '.cursor/commands/new-feature.md' },
+      {
+        kind: 'edited',
+        severity: 'error',
+        path: '.cursor/commands/new-feature.md',
+        message: '.cursor/commands/new-feature.md was edited by hand.',
+        fix: editedFix({ path: '.cursor/commands/new-feature.md' }),
       },
     ],
     [
@@ -117,7 +131,7 @@ describe('checkChanges', () => {
         severity: 'error',
         path: 'AGENTS.md#core',
         message: 'AGENTS.md managed block "core" was edited by hand.',
-        fix: EDITED_FIX,
+        fix: EDITED_BLOCK_FIX,
       },
     ],
     [
@@ -228,9 +242,33 @@ describe('checkChanges', () => {
         severity: 'error',
         path: '.cursor/rules/agentinit-zustand.mdc',
         message: '.cursor/rules/agentinit-zustand.mdc was edited by hand.',
-        fix: EDITED_FIX,
+        fix: EDITED_RULE_FIX,
       },
     ]);
+  });
+});
+
+describe('editedFix', () => {
+  it.each([
+    [
+      'managed block',
+      { path: 'AGENTS.md', blockId: 'core' },
+      'Move your text outside the agentinit markers in AGENTS.md, then run `npx @agentinit/cli init`.',
+    ],
+    [
+      'rule file',
+      { path: '.cursor/rules/agentinit-zustand.mdc' },
+      'Run `npx @agentinit/cli init` and choose Backup & replace, or exclude zustand under Customize.',
+    ],
+    [
+      'workflow file',
+      { path: '.windsurf/workflows/refactor.md' },
+      'Run `npx @agentinit/cli init` and choose Backup & replace, or pass `--no-workflows`.',
+    ],
+  ] as const)('%s has no markdown emphasis', (_name, change, expected) => {
+    const fix = editedFix(change);
+    expect(fix).toBe(expected);
+    expect(fix).not.toContain('*');
   });
 });
 
@@ -462,6 +500,6 @@ describe('formatDoctorReport', () => {
 
 Edited
   .cursor/rules/agentinit-zustand.mdc was edited by hand.
-    Fix: ${EDITED_FIX}`);
+    Fix: ${EDITED_RULE_FIX}`);
   });
 });

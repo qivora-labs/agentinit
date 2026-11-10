@@ -27,6 +27,18 @@ describe('assertTarballEntries', () => {
     }).toThrow(/unexpected paths/);
   });
 
+  it('rejects stray files under dist/', () => {
+    expect(() => {
+      assertTarballEntries([...published, 'package/dist/junk/x']);
+    }).toThrow(/unexpected paths/);
+  });
+
+  it('rejects a tarball that omits dist/cli.js', () => {
+    expect(() => {
+      assertTarballEntries(published.filter((entry) => entry !== 'package/dist/cli.js'));
+    }).toThrow(/missing dist\/cli\.js/);
+  });
+
   it('rejects a tarball that omits registry', () => {
     expect(() => {
       assertTarballEntries(published.filter((entry) => !entry.includes('registry/')));

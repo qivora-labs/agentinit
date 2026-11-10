@@ -1,14 +1,24 @@
 import { eq, lt, satisfies, valid } from 'semver';
 import { compareText } from '../compare-text.js';
+import { ownedRuleId } from '../owned-paths.js';
 import type { PlanWarning } from '../plan/types.js';
 
 /** Same command `init` prints for users who have not generated rules yet. */
 export const INIT_FIX = 'npx @agentinit/cli init';
 
-export const EDITED_FIX =
-  'Move your text outside the agentinit markers, then run `npx @agentinit/cli init`, or exclude the fragment with *Customize*.';
-
 export const NO_ISSUES = 'No issues found.';
+
+/** Fix text for an `edited` issue; kind depends on managed block vs rule vs workflow. */
+export function editedFix(change: Pick<DriftChange, 'path' | 'blockId'>): string {
+  if (change.blockId !== undefined) {
+    return `Move your text outside the agentinit markers in ${change.path}, then run \`npx @agentinit/cli init\`.`;
+  }
+  const ruleId = ownedRuleId(change.path);
+  if (ruleId !== undefined) {
+    return `Run \`npx @agentinit/cli init\` and choose Backup & replace, or exclude ${ruleId} under Customize.`;
+  }
+  return `Run \`npx @agentinit/cli init\` and choose Backup & replace, or pass \`--no-workflows\`.`;
+}
 
 export const DOCTOR_ISSUE_KINDS = [
   'not-initialized',
@@ -430,7 +440,7 @@ function edited(change: DriftChange): DoctorIssue {
     blockId === undefined
       ? `${change.path} was edited by hand.`
       : `${change.path} managed block "${blockId}" was edited by hand.`;
-  return issue('edited', { path: location(change), message, fix: EDITED_FIX });
+  return issue('edited', { path: location(change), message, fix: editedFix(change) });
 }
 
 function drifted(change: DriftChange, kind: DoctorIssueKind, detail: string): DoctorIssue {

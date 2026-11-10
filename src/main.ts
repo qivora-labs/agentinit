@@ -104,7 +104,11 @@ function createCli(): CAC {
   cli
     .command('remove [ids...]', 'Remove agentinit-owned files')
     .option('--all', 'Remove every owned file, managed block, and the manifest');
-  cli.help();
+  // cac sets default:true for negated flags and prints "(default: true)", which
+  // reads as if workflows are skipped by default. Strip that from help only;
+  // absence of the flag still leaves workflows on (`options.workflows === false`
+  // only when the flag is passed).
+  cli.help(omitNoWorkflowsDefault);
   cli.version(pkg.version);
   // Help and version are printed by run() so tests can capture the streams.
   cli.showHelpOnExit = false;
@@ -287,6 +291,24 @@ function printHelp(cli: CAC, stdout: Writable): void {
   } finally {
     console.info = original;
   }
+}
+
+/** Drop cac's misleading `(default: true)` from the `--no-workflows` help line. */
+function omitNoWorkflowsDefault(
+  sections: readonly { readonly title?: string; readonly body: string }[],
+): { title?: string; body: string }[] {
+  return sections.map((section) => {
+    if (section.title !== 'Options') return { ...section };
+    return {
+      ...section,
+      body: section.body
+        .split('\n')
+        .map((line) =>
+          line.includes('--no-workflows') ? line.replace(/\s*\(default: true\)\s*$/u, '') : line,
+        )
+        .join('\n'),
+    };
+  });
 }
 
 function terminalChrome(): LoggerChrome {

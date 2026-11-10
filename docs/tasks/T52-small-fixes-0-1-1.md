@@ -34,10 +34,10 @@ Fix three small defects that shipped in 0.1.0: a backwards-reading help line, a 
 - Update the `doctor-issue-*` screen snapshots.
 
 ## Acceptance criteria
-- [ ] `node dist/cli.js --help` shows `--no-workflows` with no "(default: true)".
-- [ ] An edited managed block, an edited rule file, and an edited workflow file each show the matching fix text, with no `*` characters.
-- [ ] `npm pack --dry-run` lists only `dist/cli.js` from `dist/`, even when other files exist under `dist/`.
-- [ ] Smoke test passes. A `patch` changeset exists.
+- [x] `node dist/cli.js --help` shows `--no-workflows` with no "(default: true)".
+- [x] An edited managed block, an edited rule file, and an edited workflow file each show the matching fix text, with no `*` characters.
+- [x] `npm pack --dry-run` lists only `dist/cli.js` from `dist/`, even when other files exist under `dist/`.
+- [x] Smoke test passes. A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -50,3 +50,7 @@ node dist/cli.js --help | grep workflows
 `fix(cli): correct no-workflows help, doctor fix text, and package files`
 
 ## Notes
+- cac's help callback strips `(default: true)` from the `--no-workflows` line (negated flags still get that default for parsing); absence of the flag leaves workflows on (`options.workflows === false` only when passed).
+- Skill paths (`.claude/skills/…`, `.cursor/skills/…`) use the workflow edited-fix text (`--no-workflows`), since they are slash-command outputs.
+- PRD §6.5 edited-fix bullet updated to the three kind-specific messages (owner-approved).
+- Pack allowlist in `scripts/smoke.ts` accepts only `dist/cli.js` from `dist/`; `tests/package-files.test.ts` plants `dist/junk` and asserts `npm pack --dry-run` omits it.

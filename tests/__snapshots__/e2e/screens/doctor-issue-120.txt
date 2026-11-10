@@ -4,8 +4,7 @@
 │  ◆  manifest
 │  ■  managed files
 │    .cursor/rules/agentinit-nextjs-app-router.mdc was edited by hand.
-│      Fix: Move your text outside the agentinit markers, then run `npx @agentinit/cli init`, or exclude the fragment
-│  with *Customize*.
+│      Fix: Run `npx @agentinit/cli init` and choose Backup & replace, or exclude nextjs-app-router under Customize.
 │  ◆  detected packages
 │  ◆  package versions
 │  ◆  token budget

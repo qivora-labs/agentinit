@@ -31,7 +31,7 @@
     "agentinit": "./dist/cli.js"
   },
   "files": [
-    "dist",
+    "dist/cli.js",
     "registry"
   ],
   "engines": {

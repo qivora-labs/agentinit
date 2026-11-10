@@ -67,6 +67,18 @@ describe('run', () => {
     expect(removeHelp.stdout).toContain('--all');
   });
 
+  it('lists --no-workflows without a misleading default', async () => {
+    const result = await runCli(['--help']);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toMatch(/--no-workflows\s+Skip slash-command workflow files on init/);
+    const workflowsLine = result.stdout
+      .split('\n')
+      .find((line) => line.includes('--no-workflows'));
+    expect(workflowsLine).toBeDefined();
+    expect(workflowsLine).not.toContain('(default: true)');
+    expect(workflowsLine).not.toContain('(default:');
+  });
+
   it('prints the wordmark above help on a terminal and does not close the frame', async () => {
     const result = await runCli(['--help'], { stdoutTTY: true });
     expect(result.code).toBe(0);
