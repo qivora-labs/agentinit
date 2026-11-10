@@ -59,7 +59,7 @@ describe('safety', () => {
     expect(await readFile(agents, 'utf8')).toBe(before);
   });
 
-  it('removes unedited .cursor/commands leftovers from 0.1.0 and keeps edited ones', async () => {
+  it('removes unedited and hand-edited .cursor/commands leftovers from 0.1.0', async () => {
     const dir = await temp.copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
 
@@ -79,12 +79,14 @@ describe('safety', () => {
     manifest.files[edited] = { sha256: contentHash('original command body\n') };
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    const again = await runCli(['init', '--yes', '--cwd', dir], {
+      now: new Date('2026-11-02T01:10:00.000Z'),
+    });
     expect(again.code).toBe(0);
     expect(await listFiles(dir)).not.toContain(unedited);
-    expect(await listFiles(dir)).toContain(edited);
-    expect(await readFile(path.join(dir, edited), 'utf8')).toBe(editedBody);
-    expect(again.stdout).toContain('skipped');
+    expect(await listFiles(dir)).not.toContain(edited);
+    expect(await readFile(path.join(dir, '.agentinit/backups', STAMP, edited), 'utf8')).toBe(editedBody);
+    expect(again.stdout).toContain('deleted');
   });
 
   it('An existing same-named workflow file is never overwritten without confirmation or --force', async () => {

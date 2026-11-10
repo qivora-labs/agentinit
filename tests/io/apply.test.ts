@@ -226,6 +226,23 @@ describe('applyChanges stale files', () => {
     expect(result.manifestFiles[RULE]?.sha256).toBe(previous);
   });
 
+  it('backs up and removes a stale edited .cursor/commands leftover with --yes', async () => {
+    const root = await tempDir();
+    const command = '.cursor/commands/refactor.md';
+    const edited = '## Purpose\n\nHand-edited leftover command.\n';
+    const previous = contentHash('owned command\n');
+    await writeProject(root, command, edited);
+    const changes = await planChanges(root, [], manifest({ [command]: previous }));
+
+    const result = await applyChanges(root, changes, applyOptions());
+
+    expect(changes[0]?.kind).toBe('conflict-edited');
+    expect(reportAction(result, command)).toBe('deleted');
+    expect(await readFile(path.join(root, `.agentinit/backups/${STAMP}/${command}`), 'utf8')).toBe(edited);
+    await expect(readFile(path.join(root, command))).rejects.toThrow();
+    expect(result.manifestFiles[command]).toBeUndefined();
+  });
+
   it('backs up a stale edited file before --force deletes it', async () => {
     const root = await tempDir();
     const edited = 'edited\n';

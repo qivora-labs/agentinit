@@ -11,6 +11,7 @@ The product promise is "never overwrite user content." Every change here must ke
 - NEVER modify bytes outside a managed block (`<!-- agentinit:begin id=… -->` … `<!-- agentinit:end id=… -->`).
 - NEVER guess on malformed markers (missing end, nested, duplicate ids); throw an `AgentInitError` naming the file.
 - NEVER overwrite a file that is unmanaged or hand-edited (hash mismatch) without the user's choice or `--force`; `--force` ALWAYS backs up first to `.agentinit/backups/<timestamp>/`.
+- **Exception (PRD §6.3):** a stale hand-edited `.cursor/commands/*.md` leftover from 0.1.0 is backed up and removed even with `--yes`, so Cursor does not list the old command alongside the new skill.
 - ALWAYS hash content with line endings normalized to LF; ALWAYS preserve a file's existing line endings when writing.
 - ALWAYS write atomically: temp file in the same directory, then rename; write the manifest last.
 - ALWAYS make `dryRun` and `doctor` paths write nothing, including `.agentinit/`.
