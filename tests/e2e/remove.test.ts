@@ -234,7 +234,7 @@ describe('init --no-workflows', () => {
   it('deletes old workflow files when Customize turns workflows off', async () => {
     const dir = await temp.copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir])).code).toBe(0);
-    const workflow = '.cursor/commands/new-feature.md';
+    const workflow = '.cursor/skills/new-feature/SKILL.md';
     expect(await listFiles(dir)).toContain(workflow);
 
     const answers: readonly FakeAnswer[] = [

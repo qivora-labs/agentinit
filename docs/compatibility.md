@@ -2,22 +2,23 @@
 
 The oldest version of each agent that loads each kind of file `@agentinit/cli` writes. Older versions silently ignore newer formats, so a rule that never loads looks the same as a rule the agent chose to ignore.
 
-**Last verified: 2026-11-07**, against each vendor's official changelog or release notes. Re-verify every row before each release (`docs/release-checklist.md`, step 3).
+**Last verified: 2026-11-10**, against each vendor's official changelog or release notes. Re-verify every row before each release (`docs/release-checklist.md`, step 3). Cursor workflows re-verified against [Agent Skills](https://cursor.com/docs/skills) and [Changelog 2.4](https://cursor.com/changelog/2-4).
 
 ## Minimums
 
 The **Minimum** column in the README is the highest floor in each agent's rows below.
 
-### Cursor — minimum 1.6
+### Cursor — minimum 2.4
 
 | Output | What we write | Since | Source |
 | :--- | :--- | :--- | :--- |
 | Rules | `.cursor/rules/agentinit-*.mdc` (`description`, `globs`, `alwaysApply`) | 0.45 | [Changelog 0.45](https://cursor.com/changelog/0-45-x): "`.cursor/rules`: Users can write several repository-level rules to disk". Current format: [Rules](https://cursor.com/docs/rules) |
-| Workflows | `.cursor/commands/<id>.md`, run as `/<id>` | 1.6 | [Changelog 1.6](https://cursor.com/changelog/1-6): "Commands are stored in `.cursor/commands/[command].md`" |
+| Workflows | `.cursor/skills/<id>/SKILL.md`, run as `/<id>` (omitted when Claude Code is also selected) | 2.4 | [Changelog 2.4](https://cursor.com/changelog/2-4): Agent Skills. Directories: [Agent Skills](https://cursor.com/docs/skills) (`.cursor/skills/`, and for compatibility `.claude/skills/`). Help: [Skills](https://cursor.com/help/customization/skills) |
 | `AGENTS.md` | Root `AGENTS.md` | Not pinned | [Rules → AGENTS.md](https://cursor.com/docs/rules): "Cursor supports AGENTS.md in the project root and subdirectories." No changelog entry from 0.49 through 2.2 announces it. |
 
 - **`AGENTS.md` has no documented first version.** Community reports on Cursor 1.7.44–1.7.54 (October 2025) say the root file was not attached automatically ([forum](https://forum.cursor.com/t/support-agents-md/133414)). Use a current release if always-on rules matter.
-- **Commands are moving to skills.** Cursor's commands documentation now redirects to [Skills → migrate commands to skills](https://cursor.com/help/customization/skills), which describes `/migrate-to-skills` (Cursor 2.4+). v0.1 still writes `.cursor/commands`. The same page says Cursor also loads `.claude/skills/`, so selecting both Cursor and Claude Code can list each workflow twice in Cursor.
+- **Skills replace commands.** Cursor 2.4+ loads project skills from `.cursor/skills/` and, for compatibility, `.claude/skills/`. When both Cursor and Claude Code are selected, agentinit writes workflows only under `.claude/skills/` so Cursor does not list each one twice. Cursor-only projects still get `.cursor/skills/`. Legacy `.cursor/commands/` from 0.1.0 are removed on the next `init` (unedited deleted in place; hand-edited ones are backed up under `.agentinit/backups/` then removed) so Cursor does not keep a second slash entry.
+- **`argument-hint` is intentional.** Cursor-only workflow skills include `argument-hint` when the fragment sets it, matching Claude Code skills (PRD §5.4). [Agent Skills](https://cursor.com/docs/skills) does not list that field; unknown frontmatter keys are ignored.
 
 ### Claude Code — minimum 2.1.84
 

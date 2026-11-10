@@ -62,7 +62,7 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 | Pillar | Name | Description | Output Artifact(s) |
 | :--- | :--- | :--- | :--- |
 | **1** | **Scoped Micro-Rules Engine** | Compiles modular rules so agents only load relevant context. Always-on content is written once. | `AGENTS.md`, `.cursor/rules/*.mdc`, `.claude/rules/*.md`, `.windsurf/rules/*.md`, `.github/instructions/*.instructions.md` |
-| **2** | **Pre-Built Workflows** | Generates structured slash commands (§5.5) so developers can trigger senior-level workflows without writing prompts. | `.cursor/commands/*.md`, `.claude/skills/*/SKILL.md`, `.windsurf/workflows/*.md`, `.github/prompts/*.prompt.md` |
+| **2** | **Pre-Built Workflows** | Generates structured slash commands (§5.5) so developers can trigger senior-level workflows without writing prompts. | `.cursor/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.windsurf/workflows/*.md`, `.github/prompts/*.prompt.md` |
 | **3** | **Architecture Map** | Describes the project's **current** layout, what belongs where, and allowed dependency directions. Target conventions apply to new code only. No folders are created or moved. | `ARCHITECTURE.md` |
 | **4** | **Composable Fragment Registry** | Atomic, version-aware Markdown fragments with validated frontmatter and cited sources, bundled in the npm package and contributed via PRs. | Internal `registry/**/*.md` |
 | **5** | **Zero-API Customizer** *(v0.2)* | A slash command that uses the developer's own IDE agent to interview them about business logic and write domain rules into a managed section. | `/agentinit-customize` in every target |
@@ -203,7 +203,7 @@ Every prompt has a defined non-interactive answer:
 | Already up to date: Done or Change setup | Done |
 | Existing unmanaged shared file | Adopt (§6.3) |
 | Existing unmanaged non-shared file | Skip and report |
-| Managed content edited by hand | Skip and report |
+| Managed content edited by hand | Skip and report (stale `.cursor/commands/*.md` leftovers are backed up and removed; §6.3) |
 | `selections.excluded` | Kept as saved; `--yes` never adds or removes excluded ids |
 | `selections.workflows` | Kept as saved unless `--no-workflows` is passed |
 
@@ -458,7 +458,7 @@ Most agents read `AGENTS.md` **and** their own files. To avoid loading the same 
 | Output | Always-on | Scoped rules | Workflows |
 | :--- | :--- | :--- | :--- |
 | **Shared** | `AGENTS.md` | — | — |
-| **Cursor** | reads `AGENTS.md` | `.cursor/rules/agentinit-<id>.mdc` | `.cursor/commands/<id>.md` |
+| **Cursor** | reads `AGENTS.md` | `.cursor/rules/agentinit-<id>.mdc` | `.cursor/skills/<id>/SKILL.md` (omitted when Claude Code is also selected) |
 | **Claude Code** | `CLAUDE.md` → `@AGENTS.md` | `.claude/rules/agentinit-<id>.md` | `.claude/skills/<id>/SKILL.md` |
 | **Windsurf** | reads `AGENTS.md` | `.windsurf/rules/agentinit-<id>.md` | `.windsurf/workflows/<id>.md` |
 | **GitHub Copilot** | `.github/copilot-instructions.md` → `AGENTS.md` | `.github/instructions/agentinit-<id>.instructions.md` | `.github/prompts/<id>.prompt.md` |
@@ -488,6 +488,7 @@ globs: src/app/**/*.ts,src/app/**/*.tsx
 alwaysApply: false
 ---
 ```
+Workflows are skills (`.cursor/skills/new-feature/SKILL.md`, invoked as `/new-feature`) with `name`, `description`, `argument-hint`, and `disable-model-invocation: true`, so they run only when the user invokes them. Cursor also loads `.claude/skills/` for compatibility; when Claude Code is selected, the Cursor adapter emits no workflow files so each workflow appears once.
 
 **Claude Code** — `CLAUDE.md` contains a managed block with `@AGENTS.md` plus Claude-specific notes. Scoped rules:
 ```markdown
@@ -572,7 +573,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 - Manifest `files` keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
 - **Forward compatibility (from 0.1.1):** unknown keys at the top level, in `selections`, and in each file entry are ignored for validation and preserved on rewrite (appended after known keys, values kept). Manifest changes in 0.x are additive and optional only. 0.1.0 readers remain strict and reject unknown keys; keep the strict window short by shipping tolerant readers promptly.
 - Hash matches → safe to regenerate silently.
-- Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report.
+- Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report. Exception: a stale hand-edited `.cursor/commands/*.md` leftover from 0.1.0 is backed up and removed even with `--yes` (see §6.3), so Cursor does not list the old command alongside the new skill.
 
 ### 6.3 Conflicts With Existing Files
 For each existing file AgentInit wants to write that it doesn't already own:
@@ -580,9 +581,9 @@ For each existing file AgentInit wants to write that it doesn't already own:
 - **Backup & replace** — back up (§6.4), then write a fresh file. For a managed block, the file contains that block plus any skipped or unchanged blocks from the original.
 - **Skip** — leave the file untouched (the `--yes` default for non-shared files, including same-named workflows).
 
-Nothing is destroyed unless the user chooses it or passes `--force`. Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules, once per run.
+Nothing is destroyed unless the user chooses it or passes `--force`, except a stale hand-edited `.cursor/commands/*.md` leftover from 0.1.0: that path is no longer generated, and leaving it would duplicate the workflow in Cursor's slash menu, so init backs it up and removes it (interactive default and `--yes`). Legacy `.cursorrules` and `.windsurfrules` are never modified; the CLI warns that they still load alongside the new rules, once per run.
 
-The conflict prompt names the file by its path. For an unmanaged shared file that needs a managed block: "`CLAUDE.md` already exists and has no agentinit section yet." For an unmanaged non-shared file: "`.cursor/commands/new-feature.md` already exists and agentinit didn't create it." Edited managed content uses "the agentinit section of `CLAUDE.md`" (never a block id). The prompt shows only the diff hunks, without `Index:`, `===`, `---`, or `+++` header lines. On a TTY, added lines are green, removed lines red, and hunk headers gray. The product is written "agentinit" in every message.
+The conflict prompt names the file by its path. For an unmanaged shared file that needs a managed block: "`CLAUDE.md` already exists and has no agentinit section yet." For an unmanaged non-shared file: "`.cursor/skills/new-feature/SKILL.md` already exists and agentinit didn't create it." Edited managed content uses "the agentinit section of `CLAUDE.md`" (never a block id). The prompt shows only the diff hunks, without `Index:`, `===`, `---`, or `+++` header lines. On a TTY, added lines are green, removed lines red, and hunk headers gray. The product is written "agentinit" in every message.
 
 ### 6.4 Write Guarantees
 - All files are written to a temp path and renamed (atomic); Ctrl-C leaves no partial output.

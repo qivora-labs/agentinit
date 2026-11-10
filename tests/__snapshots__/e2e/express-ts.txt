@@ -42,18 +42,6 @@ backups/
     ".claude/skills/write-tests/SKILL.md": {
       "sha256": "fcbfd30a6a42dfe42697743f8f4312dc4f6367407d5233b928e65ea6e77d84f3"
     },
-    ".cursor/commands/new-feature.md": {
-      "sha256": "005ce24b31fc9552204cfb46b72527db96891767dd8cf45216781aa23edc08e3"
-    },
-    ".cursor/commands/refactor.md": {
-      "sha256": "8d5dbd1e0c9c7f8ae1b072c0954664fafea9256d1026ab4cddeb575f6af2d5b5"
-    },
-    ".cursor/commands/review-arch.md": {
-      "sha256": "e49ea0256a29559c2ccddac15a7d0a9b38850131194b554aa4465f1d26378e9a"
-    },
-    ".cursor/commands/write-tests.md": {
-      "sha256": "23c98c434a1690ac2a6cb643f78ee42be173589ccf705337e9be9ab791f47997"
-    },
     ".cursor/rules/agentinit-express.mdc": {
       "sha256": "58a5d6dba53c268582570bcc7131e2655c1ff9b014027a082cb96dc469d3f7bb"
     },
@@ -238,93 +226,6 @@ argument-hint: <target>
 disable-model-invocation: true
 ---
 
-## Purpose
-Add tests for one target, using the test library named by the active rules.
-
-## Input
-The user's input: a target, such as a file, module, or behavior. If it is missing, ask for it and stop.
-
-## Steps
-1. Read the active rules. Use the test library those rules name. If more than one test library is active, use the library whose rules match this target. If no test library is active, stop and say so.
-2. Cover observable behavior: the happy path, edge cases a real caller can trigger, and the error paths.
-3. Assert a return value, a thrown error, a callback the caller passed in, or something a user can see. Follow the active test-library rule for file layout, mocks, and assertions.
-
-## Output
-List the tests written, what each one covers, and the result of the test command.
-
-## Guardrails
-- **NEVER** mock the unit under test. Mock a dependency only when the active test-library rule allows it.
-- **NEVER** change the target's behavior so a new test passes. If a test fails because the target is wrong, report the failure.
-- **NEVER** run network commands, install packages, or read secrets.
-
-===== .cursor/commands/new-feature.md
-## Purpose
-Add one feature. Plan the files, wait for confirmation, then implement that plan.
-
-## Input
-The user's input: a feature name and a short description. If either part is missing, ask for it and stop.
-
-## Steps
-1. Read `AGENTS.md` and `ARCHITECTURE.md`. For each file you will edit, read the closest `AGENTS.md` in that file's directory tree. The closest file wins where they disagree.
-2. Propose a file plan: each path to create or edit, its responsibility, and the active rules that apply. Then stop and wait for the user to confirm. Do not create or edit files before that confirmation.
-3. After the user confirms, implement only the confirmed plan. Follow the active rules.
-4. If a test-library rule is active, add tests for the feature's observable behavior and follow that rule.
-5. Run `npm run lint`.
-
-## Output
-List the files created or edited, the decisions you made, and the result of each check that ran.
-
-## Guardrails
-- **NEVER** write files before the user confirms the file plan. Silence is not confirmation.
-- **NEVER** create or edit a path that is not in the confirmed plan.
-- **NEVER** run network commands, install packages, or read secrets.
-- If a check fails, fix the feature and run that check again. **NEVER** weaken a test to make it pass.
-
-===== .cursor/commands/refactor.md
-## Purpose
-Change structure only. Behavior and the public API stay as they are unless the user's input asks for a change.
-
-## Input
-The user's input: a target and a goal. If either part is missing, ask for it and stop.
-
-## Steps
-1. Read `AGENTS.md`, `ARCHITECTURE.md`, and the active rules that apply to the target.
-2. If tests do not already cover the target's observable behavior, write characterization tests before any edit. Follow the active test-library rule. Start from a test named `x` with a dummy expected value, run it, copy the actual result into the assertion, and name the test for that behavior. Keep the observed result unless the user has called it a bug.
-3. Wait until those characterization tests pass before changing structure.
-4. Refactor toward the goal in small steps. After each step, run:
-   - `npm run lint`
-
-## Output
-Summarize the structural changes, the tests that pin current behavior, and each check result. State that behavior and the public API are unchanged, or quote the request that allowed a change.
-
-## Guardrails
-- **NEVER** change observable behavior or the public API unless the user's input asks for that change.
-- **NEVER** change structure while characterization tests are missing or failing.
-- **NEVER** edit a characterization test to hide a behavior change the refactor introduced.
-- **NEVER** run network commands, install packages, or read secrets.
-
-===== .cursor/commands/review-arch.md
-## Purpose
-Report architecture and rule problems. This review is read-only.
-
-## Input
-The user's input: an optional path. When the input is empty, review the uncommitted changes. When it names a path, review that path.
-
-## Steps
-1. Read `ARCHITECTURE.md` and the active rules. Read `AGENTS.md` when it states a constraint those files do not.
-2. Check folder boundaries, dependency direction, and naming against `ARCHITECTURE.md`.
-3. Check those same files against the active rules.
-
-## Output
-Group findings by severity: **Blocker**, **Should fix**, then **Nit**. Each finding includes `file:line`, what is wrong, and a suggested fix. If nothing is wrong, say so.
-
-## Guardrails
-- **Read-only.** **NEVER** edit, create, or delete files. **NEVER** apply a suggested fix.
-- **NEVER** commit.
-- **NEVER** run network commands, install packages, or read secrets.
-- A preference that `ARCHITECTURE.md` and the active rules do not require is a **Nit**.
-
-===== .cursor/commands/write-tests.md
 ## Purpose
 Add tests for one target, using the test library named by the active rules.
 

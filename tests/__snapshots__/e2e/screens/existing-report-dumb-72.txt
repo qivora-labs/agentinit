@@ -25,9 +25,9 @@ Qivora Labs
 │  AGENTS.md is always written.
 │  Cursor, Claude Code, Windsurf, GitHub Copilot
 │
-◇  Ready to write 24 files ───────────────────────────────────────╮
+◇  Ready to write 20 files ───────────────────────────────────────╮
 │                                                                 │
-│  Cursor          5 files  .cursor/                              │
+│  Cursor          1 file   .cursor/                              │
 │  Claude Code     6 files  .claude/                              │
 │  Windsurf        5 files  .windsurf/                            │
 │  GitHub Copilot  6 files  .github/                              │
@@ -40,8 +40,8 @@ Qivora Labs
 │  Write files
 │
 ◇  Wrote the rules
-|  Wrote 24 files for 4 agents
-|  Cursor          5 files  .cursor/
+|  Wrote 20 files for 4 agents
+|  Cursor          1 file   .cursor/
 |  Claude Code     6 files  .claude/
 |  Windsurf        5 files  .windsurf/
 |  GitHub Copilot  6 files  .github/

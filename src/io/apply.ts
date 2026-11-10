@@ -261,6 +261,10 @@ async function decide(
 
 function defaultChoice(change: Change): Choice {
   if (change.kind === 'conflict-unmanaged' && change.opKind === 'managed-block') return 'adopt';
+  // Obsolete 0.1.0 Cursor commands still load in Cursor 2.4+ alongside skills.
+  // Leaving a hand-edited leftover would reintroduce duplicate slash entries, so
+  // --yes backs it up and removes it (PRD §6.3).
+  if (isLegacyCursorCommandRemoval(change)) return 'backup-replace';
   return 'skip';
 }
 
@@ -290,6 +294,21 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
     );
   }
   const removing = change.content === undefined;
+  if (isLegacyCursorCommandRemoval(change)) {
+    return choose(
+      prompter,
+      `${label} is a leftover Cursor command. Cursor may list it alongside the new skill and show the workflow twice. What should we do?`,
+      'backup-replace',
+      [
+        {
+          value: 'backup-replace',
+          label: 'Backup & remove',
+          hint: 'Back up the file, then remove it so the skill is the only slash entry',
+        },
+        { value: 'skip', label: 'Keep', hint: 'Leave the command file on disk' },
+      ],
+    );
+  }
   const message = removing
     ? `${label} was edited and is no longer in the plan. What should we do?`
     : `${label} was edited after agentinit wrote it. What should we do?`;
@@ -302,6 +321,17 @@ async function ask(prompter: Prompter, change: Change): Promise<Choice> {
     { value: 'skip', label: 'Skip', hint: 'Leave the file untouched' },
     { value: 'backup-replace', label: 'Backup & replace', hint: replaceHint },
   ]);
+}
+
+/** Stale `.cursor/commands/*` from 0.1.0 that agentinit no longer generates. */
+function isLegacyCursorCommandRemoval(change: Change): boolean {
+  return (
+    change.kind === 'conflict-edited' &&
+    change.content === undefined &&
+    change.opKind === 'file' &&
+    change.path.startsWith('.cursor/commands/') &&
+    change.path.endsWith('.md')
+  );
 }
 
 async function askRemove(prompter: Prompter, change: Change): Promise<Choice> {

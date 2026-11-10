@@ -447,9 +447,9 @@ describe('copilotAdapter', () => {
       'ARCHITECTURE.md',
     ]);
     expect(buildPlan(profile({ agents: ['cursor'] }), selection).ops.map((op) => op.path)).toEqual([
-      '.cursor/commands/new-feature.md',
       '.cursor/rules/agentinit-app-router.mdc',
       '.cursor/rules/agentinit-review.mdc',
+      '.cursor/skills/new-feature/SKILL.md',
       'AGENTS.md',
       'ARCHITECTURE.md',
     ]);

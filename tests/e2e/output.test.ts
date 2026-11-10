@@ -52,6 +52,22 @@ describe('output', () => {
     expect(express).not.toContain('npm run test');
     expect(express).not.toContain('pnpm ');
   });
+
+  it('Cursor-only init writes .cursor/skills workflows with §5.4 frontmatter', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    const result = await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const files = await generatedFiles(dir);
+    const skills = files.filter(
+      (file) => file.startsWith('.cursor/skills/') && file.endsWith('/SKILL.md'),
+    );
+    expect(skills.length).toBeGreaterThan(0);
+    expect(files.some((file) => file.startsWith('.claude/skills/'))).toBe(false);
+    expect(files.some((file) => file.startsWith('.cursor/commands/'))).toBe(false);
+    for (const file of skills) {
+      assertSkill(file, await readFile(path.join(dir, file), 'utf8'));
+    }
+  });
 });
 
 const APP_ROUTER_GLOBS = {
@@ -110,7 +126,12 @@ async function assertAgentFormats(root: string): Promise<void> {
     expect(text, file).not.toContain('\\');
     if (file.startsWith('.cursor/rules/') && file.endsWith('.mdc')) assertCursorRule(file, text);
     else if (file.startsWith('.claude/rules/')) assertClaudeRule(file, text);
-    else if (file.startsWith('.claude/skills/') && file.endsWith('/SKILL.md')) assertSkill(file, text);
+    else if (
+      (file.startsWith('.claude/skills/') || file.startsWith('.cursor/skills/')) &&
+      file.endsWith('/SKILL.md')
+    ) {
+      assertSkill(file, text);
+    }
     else if (file.startsWith('.windsurf/rules/')) assertWindsurfRule(file, text);
     else if (file.startsWith('.windsurf/workflows/')) assertDescriptionFrontmatter(file, text);
     else if (file.startsWith('.github/instructions/') && file.endsWith('.instructions.md')) {

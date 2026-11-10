@@ -26,6 +26,7 @@ describe('isOwnedPath / isOwnedBlockKey', () => {
     '.windsurf/rules/agentinit-nextjs-app-router.md',
     '.github/instructions/agentinit-tailwind.instructions.md',
     '.cursor/commands/new-feature.md',
+    '.cursor/skills/new-feature/SKILL.md',
     '.claude/skills/new-feature/SKILL.md',
     '.claude/skills/agentinit-forms/SKILL.md',
     '.windsurf/workflows/refactor.md',
