@@ -1,5 +1,5 @@
-Wrote 24 files for 4 agents
-Cursor          5 files  .cursor/
+Wrote 20 files for 4 agents
+Cursor          1 file   .cursor/
 Claude Code     6 files  .claude/
 Windsurf        5 files  .windsurf/
 GitHub Copilot  6 files  .github/

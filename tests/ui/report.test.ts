@@ -83,7 +83,6 @@ describe('formatAgentReport', () => {
     { path: '.claude/rules/a.md', action: 'created', target: 'claude' },
     { path: '.claude/skills/new-feature/SKILL.md', action: 'created', target: 'claude' },
     { path: '.cursor/rules/a.mdc', action: 'created', target: 'cursor' },
-    { path: '.cursor/commands/new-feature.md', action: 'created', target: 'cursor' },
     { path: '.windsurf/rules/a.md', action: 'created', target: 'windsurf' },
     { path: '.github/copilot-instructions.md', action: 'created', target: 'copilot' },
     { path: '.github/instructions/a.instructions.md', action: 'created', target: 'copilot' },
@@ -143,14 +142,15 @@ describe('formatAgentReport', () => {
       [
         { path: '.cursor/rules/old.mdc', action: 'deleted', target: 'cursor' },
         { path: '.cursor/commands/old.md', action: 'deleted', target: 'cursor' },
+        { path: '.cursor/skills/old/SKILL.md', action: 'deleted', target: 'cursor' },
         { path: '.claude/rules/a.md', action: 'created', target: 'claude' },
       ],
       plain,
     );
     expect(report).toBe(
       [
-        'Wrote 3 files for 2 agents',
-        'Cursor       2 files · 2 deleted  .cursor/',
+        'Wrote 4 files for 2 agents',
+        'Cursor       3 files · 3 deleted  .cursor/',
         'Claude Code  1 file               .claude/',
       ].join('\n'),
     );
@@ -200,9 +200,6 @@ describe('formatAgentReport', () => {
         { path: '.claude/skills/refactor/SKILL.md', action: 'created', target: 'claude' },
         { path: '.claude/skills/review-arch/SKILL.md', action: 'created', target: 'claude' },
         { path: '.claude/skills/write-tests/SKILL.md', action: 'created', target: 'claude' },
-        { path: '.cursor/commands/refactor.md', action: 'created', target: 'cursor' },
-        { path: '.cursor/commands/review-arch.md', action: 'created', target: 'cursor' },
-        { path: '.cursor/commands/write-tests.md', action: 'created', target: 'cursor' },
         { path: '.windsurf/workflows/new-feature.md', action: 'created', target: 'windsurf' },
         { path: '.windsurf/workflows/refactor.md', action: 'created', target: 'windsurf' },
         { path: '.windsurf/workflows/review-arch.md', action: 'created', target: 'windsurf' },

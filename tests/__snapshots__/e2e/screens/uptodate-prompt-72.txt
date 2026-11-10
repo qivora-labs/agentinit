@@ -10,7 +10,7 @@
 
 │
 ◇  Read the project
-◆  Already up to date · 24 files for 4 agents
+◆  Already up to date · 20 files for 4 agents
 │
 ◆  What next?
 │  ● Done

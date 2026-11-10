@@ -30,9 +30,9 @@
 │  AGENTS.md is always written.
 │  Cursor, Claude Code, Windsurf, GitHub Copilot
 │
-◇  Ready to write 24 files ───────────────────────────────────────╮
+◇  Ready to write 20 files ───────────────────────────────────────╮
 │                                                                 │
-│  Cursor          5 files  .cursor/                              │
+│  Cursor          1 file   .cursor/                              │
 │  Claude Code     6 files  .claude/                              │
 │  Windsurf        5 files  .windsurf/                            │
 │  GitHub Copilot  6 files  .github/                              │

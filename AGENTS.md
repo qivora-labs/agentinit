@@ -37,7 +37,7 @@ Detailed rules for each area live in `.cursor/rules/`. Cursor loads them automat
 | Writing a commit message | `.cursor/rules/git-commits.mdc` |
 
 ## Workflows
-Reusable procedures live in `docs/workflows/` and are exposed as slash commands (`.cursor/commands/`, `.claude/skills/`):
+Reusable procedures live in `docs/workflows/` and are exposed as slash commands (`.cursor/skills/`, `.claude/skills/`):
 - `/implement-task <id>` — implement one task from `docs/tasks/`.
 - `/review-task <id>` — read-only review of a finished task.
 - `/write-fragment <id>` — author or revise a registry fragment.

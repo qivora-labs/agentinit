@@ -163,7 +163,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
 | [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | done |
 | [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | done |
-| [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | todo |
+| [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | done |
 | [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | todo |
 | [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | todo |
 | [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | todo |

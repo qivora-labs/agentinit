@@ -151,7 +151,7 @@ Older versions may silently ignore newer formats. **Minimum** is the oldest vers
 
 | Agent | Minimum | What we write |
 | :--- | :--- | :--- |
-| **Cursor** | 1.6 | `.cursor/rules/*.mdc`, `.cursor/commands/*.md`; reads `AGENTS.md` |
+| **Cursor** | 2.4 | `.cursor/rules/*.mdc`, `.cursor/skills/*/SKILL.md` (skipped when Claude Code is selected); reads `AGENTS.md` |
 | **Claude Code** | 2.1.84 | `CLAUDE.md` → `@AGENTS.md`, `.claude/rules/*.md`, `.claude/skills/*/SKILL.md` |
 | **Windsurf** | 1.12.25 | `.windsurf/rules/*.md`, `.windsurf/workflows/*.md`; root `AGENTS.md` always-on |
 | **GitHub Copilot** (VS Code) | 1.104 | `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, `.github/prompts/*.prompt.md`; reads `AGENTS.md` |

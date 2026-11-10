@@ -96,6 +96,7 @@ describe('cursorAdapter', () => {
           id: 'new-feature',
           name: 'New feature',
           order: 50,
+          argumentHint: '<feature-name>',
           body: '## Purpose\n\nPlan the files, then implement them.\n\n## Steps\n\n1. Read `AGENTS.md`.\n',
         }),
       ],
@@ -103,12 +104,12 @@ describe('cursorAdapter', () => {
   );
   const ops = cursorAdapter(ctx);
 
-  it('snapshots one glob rule, one auto rule, one manual rule, and one workflow', async () => {
+  it('snapshots one glob rule, one auto rule, one manual rule, and one workflow skill', async () => {
     expect(ops.map((op) => op.path)).toEqual([
       '.cursor/rules/agentinit-app-router.mdc',
       '.cursor/rules/agentinit-zustand.mdc',
       '.cursor/rules/agentinit-review.mdc',
-      '.cursor/commands/new-feature.md',
+      '.cursor/skills/new-feature/SKILL.md',
     ]);
     expect(ops.map((op) => ({ kind: op.kind, target: op.target, blockId: op.blockId }))).toEqual([
       { kind: 'file', target: 'cursor', blockId: undefined },
@@ -120,7 +121,7 @@ describe('cursorAdapter', () => {
     const glob = content(ops, '.cursor/rules/agentinit-app-router.mdc');
     const auto = content(ops, '.cursor/rules/agentinit-zustand.mdc');
     const manual = content(ops, '.cursor/rules/agentinit-review.mdc');
-    const workflow = content(ops, '.cursor/commands/new-feature.md');
+    const workflow = content(ops, '.cursor/skills/new-feature/SKILL.md');
     for (const text of [glob, auto, manual, workflow]) {
       expect(text.endsWith('\n')).toBe(true);
       expect(text.endsWith('\n\n')).toBe(false);
@@ -131,12 +132,17 @@ describe('cursorAdapter', () => {
     expect(manual).not.toContain('description');
     expect(manual).not.toContain('Manual only when mentioned.');
     expect(manual).not.toContain('globs');
-    expect(workflow.startsWith('---')).toBe(false);
+    expect(parseYaml(frontmatter(workflow))).toEqual({
+      name: 'new-feature',
+      description: 'A workflow.',
+      'argument-hint': '<feature-name>',
+      'disable-model-invocation': true,
+    });
 
     await expect(glob).toMatchFileSnapshot('../__snapshots__/targets/cursor-glob.mdc');
     await expect(auto).toMatchFileSnapshot('../__snapshots__/targets/cursor-auto.mdc');
     await expect(manual).toMatchFileSnapshot('../__snapshots__/targets/cursor-manual.mdc');
-    await expect(workflow).toMatchFileSnapshot('../__snapshots__/targets/cursor-command.md');
+    await expect(workflow).toMatchFileSnapshot('../__snapshots__/targets/cursor-skill.md');
   });
 
   it('serializes globs as a comma-separated string', () => {
@@ -304,8 +310,8 @@ describe('cursorAdapter', () => {
       [workflowFragment({ id: 'new-feature', name: 'New feature', order: 50, body: 'WORKFLOW' })],
     );
     expect(buildPlan(profile({ agents: ['cursor'] }), selection).ops.map((op) => op.path)).toEqual([
-      '.cursor/commands/new-feature.md',
       '.cursor/rules/agentinit-app-router.mdc',
+      '.cursor/skills/new-feature/SKILL.md',
       'AGENTS.md',
       'ARCHITECTURE.md',
     ]);
@@ -315,6 +321,34 @@ describe('cursorAdapter', () => {
       '.github/prompts/new-feature.prompt.md',
       'AGENTS.md',
       'ARCHITECTURE.md',
+    ]);
+  });
+
+  it('skips cursor workflow skills when Claude Code is also selected', () => {
+    const selection = resolved(
+      [
+        layeredFragment(),
+        ruleFragment({
+          id: 'app-router',
+          name: 'App Router',
+          category: 'framework',
+          scope: 'glob',
+          order: 30,
+          globs: ['{{src}}**/*.ts'],
+          body: 'GLOB_RULE',
+        }),
+      ],
+      [workflowFragment({ id: 'new-feature', name: 'New feature', order: 50, body: 'WORKFLOW' })],
+    );
+    expect(
+      buildPlan(profile({ agents: ['cursor', 'claude'] }), selection).ops.map((op) => op.path),
+    ).toEqual([
+      '.claude/rules/agentinit-app-router.md',
+      '.claude/skills/new-feature/SKILL.md',
+      '.cursor/rules/agentinit-app-router.mdc',
+      'AGENTS.md',
+      'ARCHITECTURE.md',
+      'CLAUDE.md',
     ]);
   });
 });

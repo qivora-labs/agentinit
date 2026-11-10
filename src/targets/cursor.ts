@@ -12,13 +12,18 @@ type CursorRuleScope = 'glob' | 'auto' | 'manual';
  * list such as the PRD §5.4 example stays unquoted.
  * A description that contains `:` or `#` is double-quoted so the frontmatter
  * stays valid YAML.
+ * Workflows are skills under `.cursor/skills/` (Cursor 2.4+). When Claude Code
+ * is also selected, Cursor loads the same skills from `.claude/skills/`, so
+ * this adapter emits no workflow files in that case (PRD §5.2).
  */
 export const cursorAdapter: TargetAdapter = (ctx) => {
   const ops: FileOp[] = [];
   for (const fragment of ctx.fragments.glob) ops.push(ruleOp(fragment, 'glob'));
   for (const fragment of ctx.fragments.auto) ops.push(ruleOp(fragment, 'auto'));
   for (const fragment of ctx.fragments.manual) ops.push(ruleOp(fragment, 'manual'));
-  for (const workflow of ctx.workflows) ops.push(workflowOp(workflow));
+  if (!ctx.profile.agents.includes('claude')) {
+    for (const workflow of ctx.workflows) ops.push(workflowSkillOp(workflow));
+  }
   return ops;
 };
 
@@ -34,8 +39,13 @@ function ruleOp(fragment: RenderedFragment, scope: CursorRuleScope): FileOp {
   return fileOp(`.cursor/rules/agentinit-${fragment.id}.mdc`, document(frontmatter(lines), agentRuleBody(fragment)));
 }
 
-function workflowOp(workflow: RenderedWorkflow): FileOp {
-  return fileOp(`.cursor/commands/${workflow.id}.md`, document(workflow.body));
+function workflowSkillOp(workflow: RenderedWorkflow): FileOp {
+  const lines = [`name: ${yamlScalar(workflow.id)}`, `description: ${yamlScalar(workflow.description)}`];
+  if (workflow.argumentHint !== undefined) {
+    lines.push(`argument-hint: ${yamlScalar(workflow.argumentHint)}`);
+  }
+  lines.push('disable-model-invocation: true');
+  return fileOp(`.cursor/skills/${workflow.id}/SKILL.md`, document(frontmatter(lines), workflow.body));
 }
 
 function fileOp(path: string, content: string): FileOp {

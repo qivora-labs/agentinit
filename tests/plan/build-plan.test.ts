@@ -357,8 +357,10 @@ describe('buildPlan', () => {
       relPath.includes('/skills/') ||
       relPath.includes('/workflows/') ||
       relPath.includes('/prompts/');
-    expect(withWorkflows.ops.some((op) => op.path.includes('/commands/'))).toBe(true);
-    expect(withWorkflows.ops.some((op) => op.path.includes('/skills/'))).toBe(true);
+    // Cursor omits workflows when Claude is selected; Claude skills cover Cursor.
+    expect(withWorkflows.ops.some((op) => op.path.includes('/commands/'))).toBe(false);
+    expect(withWorkflows.ops.some((op) => op.path.startsWith('.cursor/skills/'))).toBe(false);
+    expect(withWorkflows.ops.some((op) => op.path.startsWith('.claude/skills/'))).toBe(true);
     expect(withWorkflows.ops.some((op) => op.path.includes('/workflows/'))).toBe(true);
     expect(withWorkflows.ops.some((op) => op.path.includes('/prompts/'))).toBe(true);
     expect(without.ops.every((op) => !isWorkflowPath(op.path))).toBe(true);

@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { contentHash } from '../../src/io/hash.js';
@@ -8,7 +8,7 @@ import { runCli } from '../helpers/run.js';
 import { createTempProject, listFiles, treeDigest } from './project.js';
 
 const temp = createTempProject('agentinit-safety-');
-const WORKFLOW = '.cursor/commands/new-feature.md';
+const WORKFLOW = '.cursor/skills/new-feature/SKILL.md';
 const USER_WORKFLOW = '# My command\n\nThis workflow belongs to the project.\n';
 const STAMP = '20261102T011000000Z';
 
@@ -59,15 +59,43 @@ describe('safety', () => {
     expect(await readFile(agents, 'utf8')).toBe(before);
   });
 
+  it('removes unedited .cursor/commands leftovers from 0.1.0 and keeps edited ones', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+
+    const unedited = '.cursor/commands/new-feature.md';
+    const edited = '.cursor/commands/refactor.md';
+    const uneditedBody = '## Purpose\n\nUnedited leftover command.\n';
+    const editedBody = '## Purpose\n\nHand-edited leftover command.\n';
+    await mkdir(path.join(dir, '.cursor/commands'), { recursive: true });
+    await writeFile(path.join(dir, unedited), uneditedBody);
+    await writeFile(path.join(dir, edited), editedBody);
+
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      files: Record<string, { sha256: string }>;
+    };
+    manifest.files[unedited] = { sha256: contentHash(uneditedBody) };
+    manifest.files[edited] = { sha256: contentHash('original command body\n') };
+    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(again.code).toBe(0);
+    expect(await listFiles(dir)).not.toContain(unedited);
+    expect(await listFiles(dir)).toContain(edited);
+    expect(await readFile(path.join(dir, edited), 'utf8')).toBe(editedBody);
+    expect(again.stdout).toContain('skipped');
+  });
+
   it('An existing same-named workflow file is never overwritten without confirmation or --force', async () => {
     const skipped = await temp.copyFixture('existing-workflow-file');
-    const skip = await runCli(['init', '--yes', '--cwd', skipped]);
+    const skip = await runCli(['init', '--yes', '--agents', 'cursor', '--cwd', skipped]);
     expect(skip.code).toBe(0);
     expect(skip.stdout).toContain('skipped');
     expect(await readFile(path.join(skipped, WORKFLOW), 'utf8')).toBe(USER_WORKFLOW);
 
     const forced = await temp.copyFixture('existing-workflow-file');
-    const force = await runCli(['init', '--yes', '--force', '--cwd', forced], {
+    const force = await runCli(['init', '--yes', '--force', '--agents', 'cursor', '--cwd', forced], {
       now: new Date('2026-11-02T01:10:00.000Z'),
     });
     expect(force.code).toBe(0);

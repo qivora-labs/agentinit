@@ -19,15 +19,21 @@ const RULE_FORMS = [
   { prefix: '.github/instructions/agentinit-', suffix: '.instructions.md' },
 ] as const;
 
-/** Whole-file workflow and manual outputs (`<id>` in the named slot). */
+/**
+ * Whole-file workflow and manual outputs (`<id>` in the named slot).
+ * `.cursor/commands/` stays owned so 0.1.0 leftovers can be deleted as stale.
+ */
 const WORKFLOW_FORMS = [
   { prefix: '.cursor/commands/', suffix: '.md' },
   { prefix: '.windsurf/workflows/', suffix: '.md' },
   { prefix: '.github/prompts/', suffix: '.prompt.md' },
 ] as const;
 
-const CLAUDE_SKILL_PREFIX = '.claude/skills/';
-const CLAUDE_SKILL_SUFFIX = '/SKILL.md';
+/** Skill folders: `.claude/skills/<id>/SKILL.md` and `.cursor/skills/<id>/SKILL.md`. */
+const SKILL_FORMS = [
+  { prefix: '.claude/skills/', suffix: '/SKILL.md' },
+  { prefix: '.cursor/skills/', suffix: '/SKILL.md' },
+] as const;
 
 /**
  * True when `path` is a whole-file output agentinit writes (rules, workflows,
@@ -40,7 +46,10 @@ export function isOwnedPath(path: string): boolean {
   for (const form of WORKFLOW_FORMS) {
     if (idBetween(path, form.prefix, form.suffix) !== undefined) return true;
   }
-  return claudeSkillId(path) !== undefined;
+  for (const form of SKILL_FORMS) {
+    if (idBetween(path, form.prefix, form.suffix) !== undefined) return true;
+  }
+  return false;
 }
 
 /**
@@ -55,13 +64,6 @@ export function isOwnedBlockKey(path: string, blockId: string): boolean {
 function idBetween(path: string, prefix: string, suffix: string): string | undefined {
   if (!path.startsWith(prefix) || !path.endsWith(suffix)) return undefined;
   const id = path.slice(prefix.length, path.length - suffix.length);
-  if (id.includes('/') || !FRAGMENT_ID_PATTERN.test(id)) return undefined;
-  return id;
-}
-
-function claudeSkillId(path: string): string | undefined {
-  if (!path.startsWith(CLAUDE_SKILL_PREFIX) || !path.endsWith(CLAUDE_SKILL_SUFFIX)) return undefined;
-  const id = path.slice(CLAUDE_SKILL_PREFIX.length, path.length - CLAUDE_SKILL_SUFFIX.length);
   if (id.includes('/') || !FRAGMENT_ID_PATTERN.test(id)) return undefined;
   return id;
 }
