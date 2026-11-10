@@ -41,9 +41,12 @@ describe('package.json files', () => {
     await mkdir(path.join(dir, 'registry'), { recursive: true });
     await writeFile(path.join(dir, 'registry', 'keep.md'), '# keep\n');
 
-    const { stdout, stderr } = await execFileAsync('npm', ['pack', '--dry-run'], {
+    // Windows npm is a .cmd shim; execFile cannot resolve bare `npm` (ENOENT).
+    const isWindows = process.platform === 'win32';
+    const { stdout, stderr } = await execFileAsync(isWindows ? 'npm.cmd' : 'npm', ['pack', '--dry-run'], {
       cwd: dir,
       encoding: 'utf8',
+      shell: isWindows,
     });
     // Lines look like: `npm notice 10B dist/cli.js`
     const packed = `${stdout}\n${stderr}`
