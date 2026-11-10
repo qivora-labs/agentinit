@@ -327,12 +327,6 @@ function hasBadPathSegment(filePath: string): boolean {
 function formatIssues(error: ZodError): string {
   const lines: string[] = [];
   for (const issue of error.issues) {
-    if (issue.code === 'unrecognized_keys') {
-      for (const key of issue.keys) {
-        lines.push(formatIssueLine([...issue.path, key], 'unknown key'));
-      }
-      continue;
-    }
     // Record key failures are wrapped. The nested issue has the specific reason.
     if (issue.code === 'invalid_key') {
       for (const inner of issue.issues) {

@@ -406,6 +406,21 @@ describe('doctor', () => {
     expect(parseReport(withExtras.stdout)).toEqual({ ok: true, issues: [], notices: [] });
   });
 
+  it('warns and continues when cliVersion is invalid', async () => {
+    const dir = await initYes('next15-src');
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = 'not-a-version';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(true);
+    expect(report.notices).toEqual([`Set up with agentinit not-a-version · running ${pkg.version}`]);
+    expect(report.issues).toEqual([]);
+  });
+
   it('clears rules-update after init --yes with the current CLI', async () => {
     const dir = await initYes('next15-src');
     const file = '.cursor/rules/agentinit-nextjs-app-router.mdc';

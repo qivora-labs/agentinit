@@ -744,6 +744,7 @@ describe('init', () => {
 
     const blocked = await runCli(['init', '--yes', '--cwd', dir]);
     expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
     expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
     expect(blocked.stderr).toContain('npx @agentinit/cli@0.2.0');
 
@@ -751,6 +752,20 @@ describe('init', () => {
     expect(forced.code).toBe(0);
     const payload = JSON.parse(forced.stdout) as { notices: string[] };
     expect(payload.notices).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
+  });
+
+  it('warns and continues when cliVersion is invalid', async () => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = 'not-a-version';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as { notices: string[] };
+    expect(payload.notices).toContain(`Set up with agentinit not-a-version · running ${pkg.version}`);
   });
 
   it('warns and continues when only the patch is older', async () => {

@@ -47,6 +47,8 @@ export async function remove(ctx: RunContext, logger: Logger, options: RemoveOpt
 
   const compat = assessCliCompat(pkg.version, manifest.cliVersion);
   if (compat.kind === 'behind' && !ctx.force) {
+    // Still emit the version notice before exiting so mixed-version CI logs stay consistent.
+    logger.warn(compat.notice);
     throw new AgentInitError(compat.message);
   }
   const versionNotice = cliCompatNotice(compat);

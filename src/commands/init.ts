@@ -99,7 +99,7 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const spin = canSpin(ctx, options.stdout);
   const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
   const compat = manifest === null ? undefined : assessCliCompat(pkg.version, manifest.cliVersion);
-  enforceWriteCompat(ctx, compat);
+  enforceWriteCompat(ctx, logger, compat);
 
   if (manifest !== null && canTakeUpToDateShortcut(detection, manifest)) {
     const savedSetup = setupFromManifest(ctx, detection, manifest, registry);
@@ -918,9 +918,11 @@ function noticeLines(
 }
 
 /** Older major/minor exits 1 unless `--force`; patch-behind and invalid only warn. */
-function enforceWriteCompat(ctx: RunContext, compat: CliCompat | undefined): void {
+function enforceWriteCompat(ctx: RunContext, logger: Logger, compat: CliCompat | undefined): void {
   if (compat?.kind !== 'behind') return;
   if (ctx.force) return;
+  // Still emit the version notice before exiting so mixed-version CI logs stay consistent.
+  logger.warn(compat.notice);
   throw new AgentInitError(compat.message);
 }
 

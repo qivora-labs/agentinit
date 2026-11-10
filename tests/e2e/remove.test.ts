@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { contentHash } from '../../src/io/hash.js';
 import { MANIFEST_PATH, readManifest } from '../../src/io/manifest.js';
 import { createFakePrompter, type FakeAnswer } from '../../src/ui/prompter.js';
+import pkg from '../../package.json' with { type: 'json' };
 import { runCli } from '../helpers/run.js';
 import { createTempProject, listFiles } from './project.js';
 
@@ -122,12 +123,27 @@ describe('remove --all', () => {
 
     const blocked = await runCli(['remove', '--all', '--yes', '--cwd', dir]);
     expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
     expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
 
     const forced = await runCli(['remove', '--all', '--yes', '--force', '--json', '--cwd', dir]);
     expect(forced.code).toBe(0);
     const payload = JSON.parse(forced.stdout) as { notices: string[] };
     expect(payload.notices.some((notice) => notice.includes('0.2.0'))).toBe(true);
+  });
+
+  it('warns and continues when cliVersion is invalid', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, MANIFEST_PATH);
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as { cliVersion: string };
+    saved.cliVersion = 'not-a-version';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['remove', '--all', '--yes', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const payload = JSON.parse(result.stdout) as { notices: string[] };
+    expect(payload.notices).toContain(`Set up with agentinit not-a-version · running ${pkg.version}`);
   });
 
   it('keeps prior backups and prints their path', async () => {
