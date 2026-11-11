@@ -13,7 +13,7 @@ Decided by the owner on 2026-11-12. It replaces the earlier order (v0.2 lifecycl
 
 | Release | Theme | Items |
 | :--- | :--- | :--- |
-| 0.1.2 | Fixes for projects that are already supported | P1.4a, P1.4b, P1.8, P1.6 |
+| 0.1.2 | Fixes for projects that are already supported | T55–T58 (were P1.4a, P1.4b, P1.8, P1.6) |
 | 0.2 | JavaScript projects and older stacks | J1–J6, P1.1 |
 | 0.3 | Lifecycle and customization | P2.1–P2.6 |
 | 0.4 | Breadth and proof | P3.1–P3.4 |
@@ -42,34 +42,12 @@ Each item lists: **Problem**, **Proposal**, **Open decisions**, **Depends on**, 
 
 Patch release. These fix wrong or unhelpful behavior for TypeScript projects that v0.1 already accepts.
 
-### P1.4a Wrong package versions inside a workspace package
-- **Problem:** inside a pnpm workspace package, the CLI picks rules for the wrong version. Reproduced with 0.1.1 on 2026-11-12: a package with `next: ^16.0.0`, with 16.4.0 installed and in the root lockfile, gets `nextjs-app-router-15`. Running inside a package is the path PRD §3.3 gives monorepo users. Three causes in `src/detect/packages.ts`:
-  - `installedVersion` rejects pnpm's `node_modules/<pkg>` symlink, because its target is outside the package directory.
-  - Lockfiles are read only in the project directory, and a workspace lockfile is at the root.
-  - The pnpm reader looks only at `importers['.']`.
+All four items are task files now (milestone M10 in [`README.md`](README.md#task-index)):
 
-  The version then falls back to the lowest version in the `package.json` range. npm and Yarn workspaces hoist packages to the root `node_modules`, which is not searched either (read from the code, not reproduced).
-- **Proposal:** find the workspace or git root above the project. Read the lockfile there, using the pnpm `importers` entry for the package's relative path. Look up `node_modules/<pkg>` from the project directory up to that root, and accept a symlink whose target stays inside that root.
-- **Open decisions:** which root bounds the lookup and the symlink targets (workspace root or git root). This relaxes the T14 rule that a symlink is read only when its target stays inside the project, so it needs owner sign-off.
-- **Depends on:** —. **Size:** M. **PRD:** §3.3 step 2.
-
-### P1.4b `yarn.lock` and `bun.lock` versions
-- **Problem:** `yarn.lock` and `bun.lock` aren't parsed. Without `node_modules` (for example `doctor` in CI before an install), a Yarn or Bun project falls back to the lowest version in the range, which can select a different version-split fragment than `init` did locally.
-- **Proposal:** parse `yarn.lock` (classic and berry) and the text `bun.lock`. The binary `bun.lockb` stays unparsed.
-- **Open decisions:** whether `yaml` covers Yarn berry, or whether a small parser is needed (no new runtime dependencies without approval).
-- **Depends on:** P1.4a (shares the root lookup). **Size:** M. **PRD:** §3.3 step 2.
-
-### P1.8 Version guard before manifest value checks **(new)**
-- **Problem:** T50 made unknown manifest *keys* tolerant, but an unknown *value* in a known field is still fatal, and it is checked before the CLI-version guard. Reproduced with 0.1.1 on 2026-11-12: a manifest with `cliVersion: "0.2.0"` and `selections.language: "javascript"` makes `init` and `doctor` say *"Fix .agentinit/manifest.json, or delete it"* instead of *"Run `npx @agentinit/cli@0.2.0` or newer"*. v0.2 writes that value (J1).
-- **Proposal:** read `cliVersion` first. When the manifest comes from a newer major or minor and fails validation, report the upgrade message instead of `manifest-invalid`. Accept any kebab-case id for `selections.language` and check it against the registry, so a later language is a lookup miss with a clear message.
-- **Open decisions:** the `doctor` severity and exit code when it cannot read a newer manifest (today `doctor` never blocks on version alone, PRD §6.6).
-- **Depends on:** —. **Size:** S. **PRD:** §3.4, §6.2, §6.5.
-- **Why now:** 0.1.0 and 0.1.1 readers keep the old message. Shipping the fix before 0.2 keeps that window short (same reasoning as PRD §6.2).
-
-### P1.6 Feedback loop without telemetry
-- **Problem:** with no telemetry (PRD §1.2), the only signal is GitHub issues. v0.2 widens the audience, so the channel should exist first.
-- **Proposal:** add issue templates (bug, wrong rule, new fragment request) and a "Report a wrong rule" link in each generated rule file's managed block or in the README. Label issues `data-loss`, `wrong-rule`, and `coverage` to match PRD §11.
-- **Depends on:** —. **Size:** S. **PRD:** §11.
+- ~~P1.4a Wrong package versions inside a workspace package~~ — [T55](T55-workspace-package-detection.md). The task also covers the wrong package manager in generated commands, found while writing it.
+- ~~P1.4b `yarn.lock` and `bun.lock` versions~~ — [T56](T56-yarn-and-bun-lockfiles.md).
+- ~~P1.8 Version guard before manifest value checks~~ — [T57](T57-newer-manifest-guard.md).
+- ~~P1.6 Feedback loop without telemetry~~ — [T58](T58-issue-templates.md).
 
 ---
 
@@ -94,9 +72,9 @@ A JavaScript-only project changes from exit `1` to exit `0`. That is an exit-cod
   - Language is TypeScript when `tsconfig.json` or a `typescript` dependency exists (as today), otherwise `javascript`.
   - `detectSrcDir` also counts `.js`, `.jsx`, `.mjs`, and `.cjs`.
   - Read `jsconfig.json` (`paths`, `checkJs`), tsconfig `allowJs`, and the module system from `package.json` `type`. The profile carries these facts for J2–J4.
-  - The manifest accepts `javascript` in `selections.language` (P1.8).
-- **Open decisions:** how the profile names the new facts; whether they are saved in the manifest; whether a project with `checkJs` gets its own language id (see J4).
-- **Depends on:** P1.8. **Size:** M. **PRD:** §1.6, §3.3 step 1, §3.5, §4.3, §6.2, §8.1.
+  - The manifest accepts `javascript` in `selections.language`. Older CLIs answer with the upgrade message from 0.1.2 on (T57).
+- **Open decisions:** how the profile names the new facts; whether they are saved in the manifest; whether a project with `checkJs` gets its own language id (see J4); whether `selections.language` accepts any language id in the registry, so the next language needs no schema change (deferred here from T57 by the owner on 2026-11-12).
+- **Depends on:** T57. **Size:** M. **PRD:** §1.6, §3.3 step 1, §3.5, §4.3, §6.2, §8.1.
 
 ### J2 Language-aware globs
 - **Problem:** fragment globs list only TypeScript extensions. A JavaScript project gets no scoped rules, and a TypeScript project with `allowJs` gets none on its JavaScript files.
@@ -201,7 +179,7 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
 - **Problem:** monorepo roots exit `1` (PRD §3.3). Most teams with several packages use pnpm, npm, or Turborepo workspaces.
 - **Proposal:** as in PRD §7 v0.4: per-package globs or nested `AGENTS.md` files, plus a `{{pkg}}` placeholder. One manifest at the root with per-package selections.
 - **Open decisions:** nested `AGENTS.md` vs. root-only output with package-prefixed globs (how each agent loads nested files differs and needs verifying per agent).
-- **Depends on:** P1.4a. **Size:** L (split: detection, plan, targets, doctor). **PRD:** §3.3, §7.
+- **Depends on:** T55. **Size:** L (split: detection, plan, targets, doctor). **PRD:** §3.3, §7.
 
 ### P3.2 Coverage expansion, by popularity
 - **Problem:** five frameworks and seven libraries cover a narrow slice of JavaScript and TypeScript projects.
@@ -240,7 +218,7 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
 - **Proposal:** the unit of support is the framework, not the language (owner, 2026-11-12). Each one is a framework fragment, the same as Next.js or Express today, for example Django or FastAPI, Laravel, Spring Boot, Gin, and Flutter. Add one framework at a time, ordered by demand (issues labelled `coverage`). General language support is not a goal: a project in one of these languages without a supported framework is not targeted. Before the first framework, run a design task for how detection and the profile generalize beyond `package.json` (`pyproject.toml`, `composer.json`, `pom.xml` or `build.gradle`, `go.mod`, `pubspec.yaml`). Opt-in remote registries pinned to a commit stay here, as in PRD §7.
 - **Decided (owner, 2026-11-12):**
   - **The language fragment is optional.** The language stays a detected fact in the profile and the manifest (`python`, `php`), because globs and examples need it. A fragment under `registry/languages/` is included when one exists and is not required, so no always-on language rules are written for these projects by default. A language-level rule that a framework depends on goes in that framework's fragment.
-  - **No supported framework exits `1`.** The message names the project file that was found and the frameworks supported for that language, and links to the `coverage` issue template (P1.6). Base rules as in PRD §3.6 are not generated: without a language or framework fragment they would be only an architecture guess tuned to JavaScript folder names plus the workflows. Moving to exit `0` later is a minor-release change.
+  - **No supported framework exits `1`.** The message names the project file that was found and the frameworks supported for that language, and links to the `coverage` issue template (T58). Base rules as in PRD §3.6 are not generated: without a language or framework fragment they would be only an architecture guess tuned to JavaScript folder names plus the workflows. Moving to exit `0` later is a minor-release change.
 - **Open decisions:**
   - Which frameworks come first. The names above are examples, not commitments.
   - Who reviews rule content for each framework (PRD §12).
@@ -276,4 +254,4 @@ Repository and account settings an agent can't change. Tick them off here.
 - [x] Branch protection on `main`: require the CI checks and pull requests (no required approvals while solo).
 - [x] After the first OIDC publish of `0.1.1`, delete the leftover `NPM_TOKEN` repository secret (`release.yml` already uses Trusted Publishing).
 - [x] Record whether the rule-effectiveness eval was re-run after T45 for tasks T1, T3, and T4 (`docs/evals/results-v0.1.md`).
-- [ ] Create the `data-loss`, `wrong-rule`, and `coverage` labels (P1.6 adds the templates).
+- [ ] Create the `data-loss`, `wrong-rule`, and `coverage` labels (T58 adds the templates).
