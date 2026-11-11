@@ -10,7 +10,8 @@ import { createTempProject, listFiles, treeDigest } from './project.js';
 const temp = createTempProject('agentinit-safety-');
 const WORKFLOW = '.cursor/skills/new-feature/SKILL.md';
 const USER_WORKFLOW = '# My command\n\nThis workflow belongs to the project.\n';
-const STAMP = '20261102T011000000Z';
+const SUFFIX = 'a1b2';
+const STAMP = `20261102T011000000Z-${SUFFIX}`;
 
 afterEach(() => temp.cleanup());
 
@@ -81,6 +82,7 @@ describe('safety', () => {
 
     const again = await runCli(['init', '--yes', '--cwd', dir], {
       now: new Date('2026-11-02T01:10:00.000Z'),
+      backupSuffix: SUFFIX,
     });
     expect(again.code).toBe(0);
     expect(await listFiles(dir)).not.toContain(unedited);
@@ -99,6 +101,7 @@ describe('safety', () => {
     const forced = await temp.copyFixture('existing-workflow-file');
     const force = await runCli(['init', '--yes', '--force', '--agents', 'cursor', '--cwd', forced], {
       now: new Date('2026-11-02T01:10:00.000Z'),
+      backupSuffix: SUFFIX,
     });
     expect(force.code).toBe(0);
     expect(await readFile(path.join(forced, WORKFLOW), 'utf8')).not.toBe(USER_WORKFLOW);
@@ -116,6 +119,7 @@ describe('safety', () => {
       stdoutTTY: true,
       prompter: createFakePrompter(answers),
       now: new Date('2026-11-02T01:10:00.000Z'),
+      backupSuffix: SUFFIX,
     });
     expect(confirm.code).toBe(0);
     expect(await readFile(path.join(confirmed, WORKFLOW), 'utf8')).not.toBe(USER_WORKFLOW);

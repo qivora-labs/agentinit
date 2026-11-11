@@ -13,12 +13,14 @@ import {
   editedFix,
   formatDoctorReport,
   issuesFoundMessage,
+  manifestInvalidIssue,
   notInitializedIssue,
   type DoctorCliVersions,
   type DriftChange,
 } from '../../src/doctor/checks.js';
 
 const FIX = 'npx @agentinit/cli init';
+const RECOVER = 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.';
 
 const EDITED_RULE_FIX = editedFix({ path: '.cursor/rules/agentinit-zustand.mdc' });
 const EDITED_BLOCK_FIX = editedFix({ path: 'AGENTS.md', blockId: 'core' });
@@ -420,6 +422,18 @@ describe('doctorChecklist', () => {
         label: 'manifest',
         ok: false,
         issues: [notInitializedIssue()],
+      },
+    ]);
+  });
+
+  it('lists only the failed manifest check when the manifest is invalid', () => {
+    const invalid = manifestInvalidIssue('.agentinit/manifest.json: invalid JSON.', RECOVER);
+    expect(doctorChecklist([invalid])).toEqual([
+      {
+        id: 'manifest',
+        label: 'manifest',
+        ok: false,
+        issues: [invalid],
       },
     ]);
   });

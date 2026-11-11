@@ -25,6 +25,7 @@ const doctorIssueSchema = z
   .object({
     kind: z.enum([
       'not-initialized',
+      'manifest-invalid',
       'missing',
       'edited',
       'outdated',
@@ -596,6 +597,26 @@ describe('doctor', () => {
       message: 'Not initialized',
       fix: FIX,
     });
+  });
+
+  it('exits 2 with manifest-invalid when the manifest is corrupt JSON', async () => {
+    const dir = await initYes('next15-src');
+    await writeFile(path.join(dir, '.agentinit/manifest.json'), '{ not json\n');
+    const digest = await treeDigest(dir);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(false);
+    expect(report.issues).toEqual([
+      {
+        kind: 'manifest-invalid',
+        severity: 'error',
+        message: '.agentinit/manifest.json: invalid JSON.',
+        fix: 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.',
+      },
+    ]);
+    expect(await treeDigest(dir)).toBe(digest);
   });
 
   it('Exits 0 on a freshly initialized project and 2 after adding a supported package to package.json', async () => {

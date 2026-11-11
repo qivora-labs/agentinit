@@ -45,6 +45,7 @@ export async function runCli(
     readonly stdoutTTY?: boolean;
     readonly prompter?: Prompter;
     readonly now?: Date;
+    readonly backupSuffix?: string;
     readonly shouldStop?: () => boolean;
   },
 ): Promise<RunResult> {
@@ -58,6 +59,7 @@ export async function runCli(
   const code = await run(argv, io, {
     ...(options?.prompter === undefined ? {} : { prompter: options.prompter }),
     ...(options?.now === undefined ? {} : { now: options.now }),
+    ...(options?.backupSuffix === undefined ? {} : { backupSuffix: options.backupSuffix }),
     ...(options?.shouldStop === undefined ? {} : { shouldStop: options.shouldStop }),
   });
   return { code, stdout: stdout.text(), stderr: stderr.text() };

@@ -14,7 +14,8 @@ import { choicePrompt, recordingPrompter } from '../ui/recording-prompter.js';
 
 const directories: string[] = [];
 const NOW = new Date('2026-11-02T01:10:00.000Z');
-const STAMP = '20261102T011000000Z';
+const SUFFIX = 'a1b2';
+const STAMP = `20261102T011000000Z-${SUFFIX}`;
 /** Owned whole-file path used by apply unit tests (PRD §5.2). */
 const RULE = '.cursor/rules/agentinit-demo.mdc';
 
@@ -53,7 +54,7 @@ function manifest(files: Record<string, string>): Manifest {
 }
 
 function applyOptions(overrides: Partial<ApplyOptions> = {}): ApplyOptions {
-  return { now: NOW, manifest: META, yes: true, ...overrides };
+  return { now: NOW, backupSuffix: SUFFIX, manifest: META, yes: true, ...overrides };
 }
 
 async function tempDir(): Promise<string> {
@@ -163,6 +164,39 @@ describe('applyChanges defaults', () => {
     expect(result.report[0]?.backupPath).toBe(backup);
     expect(await readFile(path.join(root, backup), 'utf8')).toBe(user);
     expect(await readFile(path.join(root, '.agentinit/.gitignore'), 'utf8')).toContain('backups/');
+  });
+
+  it('writes distinct backup folders when two applies share the same timestamp', async () => {
+    const root = await tempDir();
+    await writeProject(root, RULE, 'first\n');
+    const firstChanges = await planChanges(root, [file(RULE, 'generated-a\n')], null);
+    const first = await applyChanges(
+      root,
+      firstChanges,
+      applyOptions({ force: true, backupSuffix: '1111' }),
+    );
+
+    await writeProject(root, RULE, 'second\n');
+    const secondChanges = await planChanges(
+      root,
+      [file(RULE, 'generated-b\n')],
+      manifest({ [RULE]: contentHash('generated-a\n') }),
+    );
+    const second = await applyChanges(
+      root,
+      secondChanges,
+      applyOptions({ force: true, backupSuffix: '2222' }),
+    );
+
+    const firstBackup = `.agentinit/backups/20261102T011000000Z-1111/${RULE}`;
+    const secondBackup = `.agentinit/backups/20261102T011000000Z-2222/${RULE}`;
+    expect(first.report[0]?.backupPath).toBe(firstBackup);
+    expect(second.report[0]?.backupPath).toBe(secondBackup);
+    expect(await readFile(path.join(root, firstBackup), 'utf8')).toBe('first\n');
+    expect(await readFile(path.join(root, secondBackup), 'utf8')).toBe('second\n');
+    expect(await readdir(path.join(root, '.agentinit/backups'))).toEqual(
+      expect.arrayContaining(['20261102T011000000Z-1111', '20261102T011000000Z-2222']),
+    );
   });
 
   it('backs up an edited file before --force replaces it', async () => {

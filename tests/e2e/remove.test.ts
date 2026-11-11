@@ -9,7 +9,8 @@ import { runCli } from '../helpers/run.js';
 import { createTempProject, listFiles } from './project.js';
 
 const temp = createTempProject('agentinit-remove-');
-const STAMP = '20261106T093700000Z';
+const SUFFIX = 'c3d4';
+const STAMP = `20261106T093700000Z-${SUFFIX}`;
 
 afterEach(() => temp.cleanup());
 
@@ -49,6 +50,7 @@ describe('remove --all', () => {
     await writeFile(path.join(forced, forcedRule), edited);
     const force = await runCli(['remove', '--all', '--yes', '--force', '--cwd', forced], {
       now: new Date('2026-11-06T09:37:00.000Z'),
+      backupSuffix: SUFFIX,
     });
     expect(force.code).toBe(0);
     expect(await listFiles(forced)).not.toContain(forcedRule);
@@ -85,6 +87,7 @@ describe('remove --all', () => {
       stdoutTTY: true,
       prompter: createFakePrompter([{ type: 'select', value: 'backup-replace' }]),
       now: new Date('2026-11-06T09:37:00.000Z'),
+      backupSuffix: SUFFIX,
     });
     expect(del.code).toBe(0);
     expect(await listFiles(removed)).not.toContain(deleteRule);

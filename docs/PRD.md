@@ -543,7 +543,7 @@ Shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCH
 ...generated content...
 <!-- agentinit:end id=core -->
 ```
-Adopting or updating a block leaves every byte outside the markers unchanged. Backup & replace (§6.3) copies the original file to backups, then writes a fresh file; skipped or unchanged blocks from that file are kept.
+Adopting or updating a block leaves every byte outside the markers unchanged. Backup & replace (§6.3) copies the original file to backups, then writes a fresh file; skipped or unchanged blocks from that file are kept. Whole-line markers inside a CommonMark fenced code block (`` ``` `` or `~~~`, three or more characters) are documentation and are ignored when finding blocks, so a user can document agentinit markers in `AGENTS.md` without breaking parse. Writing a managed block still refuses inner content that contains a real marker line.
 
 ### 6.2 Manifest (`.agentinit/manifest.json`, committed)
 ```json
@@ -587,7 +587,7 @@ The conflict prompt names the file by its path. For an unmanaged shared file tha
 
 ### 6.4 Write Guarantees
 - All files are written to a temp path and renamed (atomic); Ctrl-C leaves no partial output.
-- Backups go to `.agentinit/backups/<timestamp>/<original-path>`. AgentInit writes `.agentinit/.gitignore` containing `backups/`, so backups are never committed and the user's `.gitignore` is untouched.
+- Backups go to `.agentinit/backups/<timestamp>-<suffix>/<original-path>`, where `<timestamp>` is the injected clock (UTC, millisecond precision, Windows-safe) and `<suffix>` is four random hex characters so two applies in the same millisecond do not share a folder. AgentInit writes `.agentinit/.gitignore` containing `backups/`, so backups are never committed and the user's `.gitignore` is untouched.
 - Globs always use forward slashes; existing line endings (LF/CRLF) are preserved when merging.
 - Permission errors produce a readable message, not a stack trace.
 
@@ -596,11 +596,12 @@ Compares the manifest, the current project, and the files on disk. Never writes.
 
 | Severity | Exit | Kinds |
 | :--- | :---: | :--- |
-| **error** | `2` | `not-initialized`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `package-removed`, `unsupported-version` |
+| **error** | `2` | `not-initialized`, `manifest-invalid`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `package-removed`, `unsupported-version` |
 | **warning** | `0` | `rules-update`, `legacy-file`, `always-on-tokens` |
 
 Checks:
 - No manifest found (suggests `init`).
+- Manifest present but unreadable or invalid JSON/schema (`manifest-invalid`); later checks are skipped. The fix is to repair or delete `.agentinit/manifest.json` and re-run `init`. `init` and `remove` still exit `1` on the same corrupt file.
 - A managed file or block is missing, or was edited by hand. The `edited` fix depends on the output kind: for a managed block, move text outside the agentinit markers in that file and re-run `init`; for a rule file, re-run `init` and choose Backup & replace, or exclude the fragment under Customize; for a workflow file, re-run `init` and choose Backup & replace, or pass `--no-workflows`.
 - An owned, unedited file whose content differs from what this CLI would generate is `outdated` (error) when `manifest.cliVersion` matches the running CLI, and `rules-update` (warning) when the versions differ — so a newer release that changes rule text does not fail unpinned CI. While the versions differ, doctor cannot tell a rule-text change from a project change that alters generated text; both are warnings until someone re-runs `init` with the current CLI.
 - A detected package has a matching fragment that isn't selected and isn't in `selections.excluded`.

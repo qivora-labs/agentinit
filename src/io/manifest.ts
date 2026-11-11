@@ -10,7 +10,8 @@ import type { AgentTarget, Language } from '../types.js';
 /** Project-relative path of the committed manifest (PRD §6.2). */
 export const MANIFEST_PATH = '.agentinit/manifest.json';
 
-const RECOVER_HINT =
+/** Shared by `init`/`remove` errors and doctor's `manifest-invalid` fix (PRD §6.5). */
+export const MANIFEST_RECOVER_HINT =
   'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.';
 
 const LANGUAGES = ['typescript-strict', 'typescript'] as const satisfies readonly Language[];
@@ -224,11 +225,11 @@ function parseManifest(raw: string): Manifest {
   try {
     data = JSON.parse(raw) as unknown;
   } catch {
-    throw new AgentInitError(`${MANIFEST_PATH}: invalid JSON.`, { hint: RECOVER_HINT });
+    throw new AgentInitError(`${MANIFEST_PATH}: invalid JSON.`, { hint: MANIFEST_RECOVER_HINT });
   }
   const result = manifestSchema.safeParse(data);
   if (!result.success) {
-    throw new AgentInitError(formatIssues(result.error), { hint: RECOVER_HINT });
+    throw new AgentInitError(formatIssues(result.error), { hint: MANIFEST_RECOVER_HINT });
   }
   return toManifest(result.data);
 }

@@ -27,15 +27,28 @@ export interface Block {
 
 /**
  * Whole-line markers only. A marker with trailing text is user content, not a block.
- * Malformed structure throws; the markers are never paired by guesswork.
+ * Marker lines inside a CommonMark fenced code block (``` / ~~~, length ≥ 3) are
+ * documentation, not structure. Malformed structure throws; markers are never paired
+ * by guesswork.
  */
 export function findBlocks(text: string, file: string): Block[] {
   const lines = splitLines(text);
   const blocks: Block[] = [];
   const seen = new Set<string>();
   let open: { id: string; start: number; innerStart: number } | undefined;
+  let fence: FenceOpen | undefined;
 
   for (const line of lines) {
+    if (fence !== undefined) {
+      if (closesFence(line.text, fence)) fence = undefined;
+      continue;
+    }
+    const opened = openFence(line.text);
+    if (opened !== undefined) {
+      fence = opened;
+      continue;
+    }
+
     const begin = BEGIN_MARKER.exec(line.text);
     if (begin !== null) {
       const id = capture(begin);
@@ -74,6 +87,35 @@ export function findBlocks(text: string, file: string): Block[] {
     throw markerError(file, `managed block "${open.id}" is missing its end marker`);
   }
   return blocks;
+}
+
+/** CommonMark: 0–3 spaces, then 3+ backticks or tildes (PRD §6.1). */
+interface FenceOpen {
+  readonly marker: '`' | '~';
+  readonly length: number;
+}
+
+const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE = /^( {0,3})(`{3,}|~{3,})[ \t]*$/;
+
+function openFence(line: string): FenceOpen | undefined {
+  const match = FENCE_OPEN.exec(line);
+  if (match === null) return undefined;
+  const ticks = match[2];
+  if (ticks === undefined) return undefined;
+  const marker = ticks[0];
+  if (marker !== '`' && marker !== '~') return undefined;
+  // Backtick fences cannot include backticks in the info string.
+  if (marker === '`' && (match[3] ?? '').includes('`')) return undefined;
+  return { marker, length: ticks.length };
+}
+
+function closesFence(line: string, open: FenceOpen): boolean {
+  const match = FENCE_CLOSE.exec(line);
+  if (match === null) return false;
+  const ticks = match[2];
+  if (!ticks?.startsWith(open.marker)) return false;
+  return ticks.length >= open.length;
 }
 
 /**
