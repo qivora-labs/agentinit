@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { cp, mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -599,23 +599,48 @@ describe('doctor', () => {
     });
   });
 
-  it('exits 2 with manifest-invalid when the manifest is corrupt JSON', async () => {
+  it.each([
+    {
+      name: 'corrupt JSON',
+      prepare: async (dir: string): Promise<void> => {
+        await writeFile(path.join(dir, '.agentinit/manifest.json'), '{ not json\n');
+      },
+      message: '.agentinit/manifest.json: invalid JSON.',
+    },
+    {
+      name: 'a schema mismatch',
+      prepare: async (dir: string): Promise<void> => {
+        await writeFile(path.join(dir, '.agentinit/manifest.json'), `${JSON.stringify({ cliVersion: '0.1.0' })}\n`);
+      },
+      message: /mode|selections|fragments|files/u,
+    },
+    {
+      name: 'unreadable',
+      prepare: async (dir: string): Promise<void> => {
+        const manifestPath = path.join(dir, '.agentinit/manifest.json');
+        await unlink(manifestPath);
+        await mkdir(manifestPath);
+      },
+      message: '.agentinit/manifest.json is a directory.',
+    },
+  ])('exits 2 with manifest-invalid when the manifest is $name', async ({ prepare, message }) => {
     const dir = await initYes('next15-src');
-    await writeFile(path.join(dir, '.agentinit/manifest.json'), '{ not json\n');
+    await prepare(dir);
     const digest = await treeDigest(dir);
 
     const result = await runCli(['doctor', '--json', '--cwd', dir]);
     expect(result.code).toBe(2);
     const report = parseReport(result.stdout);
     expect(report.ok).toBe(false);
-    expect(report.issues).toEqual([
-      {
-        kind: 'manifest-invalid',
-        severity: 'error',
-        message: '.agentinit/manifest.json: invalid JSON.',
-        fix: 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.',
-      },
-    ]);
+    expect(report.issues).toHaveLength(1);
+    const issue = report.issues[0];
+    expect(issue).toMatchObject({
+      kind: 'manifest-invalid',
+      severity: 'error',
+      fix: 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.',
+    });
+    if (typeof message === 'string') expect(issue?.message).toBe(message);
+    else expect(issue?.message).toMatch(message);
     expect(await treeDigest(dir)).toBe(digest);
   });
 
