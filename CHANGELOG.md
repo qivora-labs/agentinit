@@ -1,5 +1,16 @@
 # @agentinit/cli
 
+## 0.1.1
+
+### Patch Changes
+
+- 0df4e0e: When adopting an existing `AGENTS.md` or `ARCHITECTURE.md` that already has an H1, omit the managed block's heading so the file keeps a single top-level heading.
+- 8005a2f: Cursor workflows move from `.cursor/commands/<id>.md` to `.cursor/skills/<id>/SKILL.md`. When Claude Code is also selected, Cursor skips its own workflow files and uses `.claude/skills/` instead, so each workflow appears once in Cursor's slash menu. Re-running `init` removes leftover `.cursor/commands` files from 0.1.0 (hand-edited ones are backed up first) so Cursor does not keep a second slash entry. Cursor's documented minimum is now 2.4 (Agent Skills).
+- 86ea26d: `doctor` reports rule drift from another CLI version as a `rules-update` warning instead of failing CI. Same-version outdated files and hand edits stay errors.
+- 567a75d: Correct `--no-workflows` help (no false default), kind-specific `doctor` edited fix text, and pack only `dist/cli.js` from `dist/`.
+- 90b4c93: Tolerate unknown manifest keys (and preserve them on rewrite) so mixed CLI versions stay compatible. Older major/minor CLIs refuse to rewrite a newer project unless `--force`.
+- 04381f3: Harden backup folder names with a random suffix, ignore managed-block markers inside fenced code, and report a corrupt manifest from `doctor` as `manifest-invalid` (exit 2) instead of a tool crash.
+
 ## 0.1.0
 
 ### Minor Changes
