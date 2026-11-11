@@ -46,6 +46,9 @@ export interface TargetContext {
   readonly omitBlockH1: ReadonlySet<string>;
 }
 
+/** Default when no shared file should drop its block H1. */
+export const NO_OMIT_H1: ReadonlySet<string> = new Set();
+
 export type TargetAdapter = (ctx: TargetContext) => FileOp[];
 
 /** Raised when the AGENTS.md core block is over the PRD §4.4 budget. */

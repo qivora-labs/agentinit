@@ -10,7 +10,7 @@ import { windsurfAdapter } from '../targets/windsurf.js';
 import type { AgentTarget, FileOp, ProjectProfile } from '../types.js';
 import { renderTargetContext } from './render.js';
 import { alwaysOnTokenWarning, estimateTokens } from './tokens.js';
-import type { Plan, PlanWarning, TargetAdapter } from './types.js';
+import { NO_OMIT_H1, type Plan, type PlanWarning, type TargetAdapter } from './types.js';
 
 const SHARED_ADAPTERS: readonly TargetAdapter[] = [agentsMdAdapter, architectureMdAdapter];
 
@@ -37,8 +37,6 @@ export interface BuildPlanOptions {
    */
   readonly omitBlockH1?: ReadonlySet<string>;
 }
-
-const NO_OMIT_H1: ReadonlySet<string> = new Set();
 
 export function buildPlan(
   profile: ProjectProfile,

@@ -5,7 +5,7 @@ import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../regist
 import type { FragmentScope, ProjectProfile } from '../types.js';
 import { omitSection } from '../registry/parse.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
-import type { RenderedFragment, RenderedWorkflow, ScopedFragments, TargetContext } from './types.js';
+import { NO_OMIT_H1, type RenderedFragment, type RenderedWorkflow, type ScopedFragments, type TargetContext } from './types.js';
 
 /** `src/` or empty, plus the profile's package manager and scripts. */
 export function placeholderContextFor(profile: ProjectProfile): PlaceholderContext {
@@ -15,8 +15,6 @@ export function placeholderContextFor(profile: ProjectProfile): PlaceholderConte
     scripts: profile.scripts,
   };
 }
-
-const NO_OMIT_H1: ReadonlySet<string> = new Set();
 
 /** Render every resolved fragment body and glob for one profile. */
 export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedSelection): TargetContext {

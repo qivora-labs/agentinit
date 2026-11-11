@@ -168,9 +168,29 @@ describe('architectureMdAdapter', () => {
     expect(content.indexOf('- p\\|q/r')).toBeLessThan(content.indexOf('- ``x`y/z``'));
   });
 
-  it('omits the block H1 when the existing file already has one', () => {
+  it.each([
+    {
+      name: 'existing',
+      mode: 'existing' as const,
+      folders: ['domain'] as const,
+      intro: 'Describes the folders',
+      section: '## Layout',
+    },
+    {
+      name: 'greenfield',
+      mode: 'greenfield' as const,
+      folders: ['lib', 'domain'] as const,
+      intro: 'Describes the planned layout',
+      section: '## Planned layout',
+    },
+  ])('omits the block H1 when the $name file already has one', ({ mode, folders, intro, section }) => {
     const base = renderTargetContext(
-      profile({ folders: ['domain'], srcDir: 'src' }),
+      profile({
+        mode,
+        folders: [...folders],
+        srcDir: 'src',
+        packageManager: mode === 'greenfield' ? null : 'pnpm',
+      }),
       resolved([layeredFragment()]),
     );
     const withH1 = architectureMdAdapter(base)[0];
@@ -179,8 +199,8 @@ describe('architectureMdAdapter', () => {
 
     expect(withH1.content.startsWith('# ARCHITECTURE.md\n')).toBe(true);
     expect(withoutH1.content.startsWith('# ARCHITECTURE.md\n')).toBe(false);
-    expect(withoutH1.content.startsWith('Describes the folders')).toBe(true);
-    expect(withoutH1.content).toContain('## Layout');
+    expect(withoutH1.content.startsWith(intro)).toBe(true);
+    expect(withoutH1.content).toContain(section);
     expect(withoutH1.content).toBe(withH1.content.replace(/^# ARCHITECTURE\.md\n\n/u, ''));
   });
 
