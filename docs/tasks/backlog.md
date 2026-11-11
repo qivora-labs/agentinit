@@ -59,7 +59,7 @@ Promoted to [T54](T54-adopt-duplicate-h1.md).
 Repository and account settings an agent can't change. Tick them off here.
 - [ ] Remove the stray `0.0.0-stage` version: `npm unpublish @agentinit/cli@0.0.0-stage` within 72 hours of publishing it, otherwise `npm deprecate`.
 - [ ] Branch protection on `main`: require the CI checks and pull requests (no required approvals while solo).
-- [ ] After the first OIDC publish of `0.1.1`, delete the leftover `NPM_TOKEN` repository secret (`release.yml` already uses Trusted Publishing).
+- [x] After the first OIDC publish of `0.1.1`, delete the leftover `NPM_TOKEN` repository secret (`release.yml` already uses Trusted Publishing).
 - [ ] Record whether the rule-effectiveness eval was re-run after T45 for tasks T1, T3, and T4 (`docs/evals/results-v0.1.md`).
 - [ ] Create the `data-loss`, `wrong-rule`, and `coverage` labels (P1.6 adds the templates).
 
