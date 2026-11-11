@@ -655,7 +655,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 - [ ] Packed-tarball smoke test (`npm pack` → install → run).
 - [ ] Rule-effectiveness check (§8.3) passes.
 - [ ] `README.md` (demo GIF, generated tree, token report, minimum agent versions) and `CONTRIBUTING.md`.
-- [ ] `.github/workflows/release.yml`: changesets release PRs, publish with provenance using the `NPM_TOKEN` secret.
+- [ ] `.github/workflows/release.yml`: changesets release PRs, publish with provenance via npm Trusted Publishing (OIDC).
 - [ ] Dogfood: run `agentinit init` on this repository (hand-written content stays outside managed blocks) and run `agentinit doctor` in CI.
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
