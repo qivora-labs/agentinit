@@ -24,6 +24,7 @@ const FIXTURES = [
   'empty',
   'pnpm-monorepo',
   'existing-claude-md',
+  'existing-agents-md',
   'existing-workflow-file',
   'edited-managed-block',
   'jsonc-tsconfig-extends',

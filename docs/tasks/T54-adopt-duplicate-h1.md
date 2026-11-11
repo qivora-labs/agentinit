@@ -35,12 +35,12 @@ Promoted from `backlog.md` P1.3.
 - Hashes are computed on the final block content, so an adopted block without an H1 has a different hash than a new one. Both are stable across re-runs.
 
 ## Acceptance criteria
-- [ ] Decision recorded under **Notes**, and the PRD updated.
-- [ ] `existing-claude-md`-style fixtures for `AGENTS.md` with an H1: after `init --yes`, the file has exactly one line starting with `# `.
-- [ ] A new project's `AGENTS.md` and `ARCHITECTURE.md` are byte-for-byte unchanged (snapshots).
-- [ ] Re-running prints "Already up to date", and `doctor` reports no issues.
-- [ ] This repository's `AGENTS.md` has one H1 after regenerating.
-- [ ] A `patch` changeset exists.
+- [x] Decision recorded under **Notes**, and the PRD updated.
+- [x] `existing-claude-md`-style fixtures for `AGENTS.md` with an H1: after `init --yes`, the file has exactly one line starting with `# `.
+- [x] A new project's `AGENTS.md` and `ARCHITECTURE.md` are byte-for-byte unchanged (snapshots).
+- [x] Re-running prints "Already up to date", and `doctor` reports no issues.
+- [x] This repository's `AGENTS.md` has one H1 after regenerating.
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -52,3 +52,5 @@ node dist/cli.js init --yes && grep -c '^# ' AGENTS.md ARCHITECTURE.md && node d
 `fix(targets): skip the block heading when adopting a file that has one`
 
 ## Notes
+- **Decision 1:** `io.sharedFilesWithOutsideH1` reads existing `AGENTS.md` / `ARCHITECTURE.md` and detects an ATX H1 outside managed blocks (fences ignored). `init` / `doctor` rebuild the plan with `omitBlockH1` so adapters drop the block H1. New files keep today's H1-in-block output.
+- Edge case: interactive **Backup & replace** of a file that had an outside H1 can write a block without an H1 once; the next `init` adds the H1 because outside content is gone. `--yes` always adopts for shared files, so this path is rare.

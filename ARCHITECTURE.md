@@ -57,8 +57,6 @@ detect ──► resolve ──► plan ──► apply
 - New command → `src/commands/<name>.ts`, registered in `src/main.ts`.
 
 <!-- agentinit:begin id=architecture -->
-# ARCHITECTURE.md
-
 Describes the folders that exist today and the conventions for new code. Existing files stay where they are.
 
 ## Layout

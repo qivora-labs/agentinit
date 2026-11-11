@@ -21,7 +21,7 @@ import {
 } from '../doctor/checks.js';
 import { AgentInitError } from '../errors.js';
 import { DOCTOR_ISSUES, SUCCESS } from '../exit-codes.js';
-import { computeChanges, readProjectText, type Change } from '../io/changes.js';
+import { computeChanges, readProjectText, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
 import { findBlocks } from '../io/managed-block.js';
 import { MANIFEST_RECOVER_HINT, readManifest, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
@@ -123,8 +123,11 @@ async function issuesForManifest(root: string, registry: Registry, manifest: Man
   const detection = detectForDoctor(root, registry, manifest);
   const selection = selectionFrom(manifest);
   const resolved = resolveSelection(registry, selection, factsFor(detection));
-  const plan = buildPlan(profileFor(root, detection, manifest), resolved, {
+  const profile = profileFor(root, detection, manifest);
+  const omitBlockH1 = await sharedFilesWithOutsideH1(root);
+  const plan = buildPlan(profile, resolved, {
     includeWorkflows: manifest.selections.workflows,
+    ...(omitBlockH1.size > 0 ? { omitBlockH1 } : {}),
   });
   const changes = await driftChanges(root, await computeChanges(root, plan, manifest));
   const existing = detection.mode === 'existing';

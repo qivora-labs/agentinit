@@ -16,6 +16,8 @@ export function placeholderContextFor(profile: ProjectProfile): PlaceholderConte
   };
 }
 
+const NO_OMIT_H1: ReadonlySet<string> = new Set();
+
 /** Render every resolved fragment body and glob for one profile. */
 export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedSelection): TargetContext {
   const placeholders = placeholderContextFor(profile);
@@ -42,7 +44,7 @@ export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedS
   const workflows = resolved.workflows.filter(isWorkflow).map((fragment) => renderWorkflow(fragment, placeholders));
   workflows.sort(compareRendered);
 
-  return { profile, fragments, workflows, placeholders };
+  return { profile, fragments, workflows, placeholders, omitBlockH1: NO_OMIT_H1 };
 }
 
 /** The architecture selected on the profile, searched across every scope. */

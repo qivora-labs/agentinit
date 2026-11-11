@@ -40,7 +40,7 @@ export const agentsMdAdapter: TargetAdapter = (ctx) => {
       path: 'AGENTS.md',
       kind: 'managed-block',
       blockId: 'core',
-      content: agentsDocument(sections),
+      content: agentsDocument(sections, ctx.omitBlockH1.has('AGENTS.md')),
       target: 'shared',
     },
   ];
@@ -80,14 +80,14 @@ function renderScript(name: string, placeholders: PlaceholderContext): string | 
   return scriptCommand(placeholders.pm, name);
 }
 
-function agentsDocument(sections: readonly Section[]): string {
+function agentsDocument(sections: readonly Section[], omitH1: boolean): string {
   const visible = sections.map((section) => ({
     title: escapeMarkdownText(section.title),
     body: section.body,
   }));
   const contents = visible.map((section) => `- [${section.title}](#${headingSlug(section.title)})`).join('\n');
   return markdownDocument([
-    '# AGENTS.md',
+    ...(omitH1 ? [] : ['# AGENTS.md']),
     INTRO,
     `## Contents\n\n${contents}`,
     ...visible.map((section) => `## ${section.title}\n\n${section.body.trim()}`),

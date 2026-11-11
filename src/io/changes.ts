@@ -3,8 +3,11 @@ import * as path from 'node:path';
 import { AgentInitError } from '../errors.js';
 import type { AgentTarget, FileOp } from '../types.js';
 import { contentHash } from './hash.js';
-import { findBlocks } from './managed-block.js';
+import { findBlocks, hasOutsideAtxH1 } from './managed-block.js';
 import type { Manifest } from './manifest.js';
+
+/** Shared files whose managed blocks may start with an ATX H1. */
+const H1_BLOCK_PATHS = ['AGENTS.md', 'ARCHITECTURE.md'] as const;
 
 export type ChangeKind =
   | 'create'
@@ -32,6 +35,22 @@ export interface Change {
 
 interface PlanInput {
   readonly ops: readonly FileOp[];
+}
+
+/**
+ * Paths among `AGENTS.md` / `ARCHITECTURE.md` that already exist and have an
+ * ATX H1 outside any managed block. Used to rebuild the plan so adopt does not
+ * add a second H1 (PRD §6.1).
+ */
+export async function sharedFilesWithOutsideH1(root: string): Promise<ReadonlySet<string>> {
+  const found = new Set<string>();
+  await Promise.all(
+    H1_BLOCK_PATHS.map(async (relPath) => {
+      const text = await readProjectText(root, relPath);
+      if (text !== null && hasOutsideAtxH1(text, relPath)) found.add(relPath);
+    }),
+  );
+  return found;
 }
 
 /**

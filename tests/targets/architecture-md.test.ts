@@ -168,6 +168,22 @@ describe('architectureMdAdapter', () => {
     expect(content.indexOf('- p\\|q/r')).toBeLessThan(content.indexOf('- ``x`y/z``'));
   });
 
+  it('omits the block H1 when the existing file already has one', () => {
+    const base = renderTargetContext(
+      profile({ folders: ['domain'], srcDir: 'src' }),
+      resolved([layeredFragment()]),
+    );
+    const withH1 = architectureMdAdapter(base)[0];
+    const withoutH1 = architectureMdAdapter({ ...base, omitBlockH1: new Set(['ARCHITECTURE.md']) })[0];
+    if (withH1 === undefined || withoutH1 === undefined) throw new Error('missing architecture op');
+
+    expect(withH1.content.startsWith('# ARCHITECTURE.md\n')).toBe(true);
+    expect(withoutH1.content.startsWith('# ARCHITECTURE.md\n')).toBe(false);
+    expect(withoutH1.content.startsWith('Describes the folders')).toBe(true);
+    expect(withoutH1.content).toContain('## Layout');
+    expect(withoutH1.content).toBe(withH1.content.replace(/^# ARCHITECTURE\.md\n\n/u, ''));
+  });
+
   it('lists every detected folder as unmatched when the map is not a table', () => {
     const body = ['## Summary', 'Short.', '', '## Map', '- ui → domain → data', '', '## Directives', '- **ALWAYS** depend inward.'].join(
       '\n',

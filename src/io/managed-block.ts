@@ -193,6 +193,43 @@ export function createWithBlock(id: string, inner: string): string {
   return renderBlock(id, inner, '\n');
 }
 
+/**
+ * True when content **outside** managed blocks has an ATX H1 (`# …`), ignoring
+ * lines inside a closed CommonMark fence. The block's own H1 does not count, so
+ * re-runs stay stable after adopt (PRD §6.1).
+ */
+export function hasOutsideAtxH1(text: string, file: string): boolean {
+  return hasAtxH1(textOutsideManagedBlocks(text, file));
+}
+
+function textOutsideManagedBlocks(text: string, file: string): string {
+  const blocks = findBlocks(text, file);
+  if (blocks.length === 0) return text;
+  let outside = '';
+  let cursor = 0;
+  for (const block of blocks) {
+    outside += text.slice(cursor, block.start);
+    cursor = block.end;
+  }
+  return outside + text.slice(cursor);
+}
+
+function hasAtxH1(text: string): boolean {
+  const lines = splitLines(text);
+  const inFence = closedFenceMask(lines);
+  for (let index = 0; index < lines.length; index += 1) {
+    if (inFence[index] === true) continue;
+    const line = lines[index];
+    if (line !== undefined && isAtxH1(line.text)) return true;
+  }
+  return false;
+}
+
+/** CommonMark ATX H1: optional indent, one `#`, then space/tab or end of line. */
+function isAtxH1(line: string): boolean {
+  return /^ {0,3}#(?:[ \t]|$)/u.test(line);
+}
+
 function renderBlock(id: string, inner: string, ending: '\n' | '\r\n', file?: string): string {
   const body = normalizeInner(inner, ending, file);
   return `<!-- agentinit:begin id=${id} -->${ending}${body}<!-- agentinit:end id=${id} -->${ending}`;
