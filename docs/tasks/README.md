@@ -165,7 +165,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | done |
 | [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | done |
 | [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | done |
-| [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | todo |
+| [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | done |
 | [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | todo |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.

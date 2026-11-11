@@ -19,6 +19,8 @@ export interface RemoveOptions {
   readonly prompter?: Prompter;
   readonly stdout?: Writable;
   readonly now?: Date;
+  /** Fixed backup folder suffix for tests (see `ApplyOptions.backupSuffix`). */
+  readonly backupSuffix?: string;
   readonly shouldStop?: () => boolean;
   readonly onAtomicWrite?: (active: boolean) => void;
 }
@@ -57,6 +59,7 @@ export async function remove(ctx: RunContext, logger: Logger, options: RemoveOpt
   const changes = await computeRemoveChanges(root, manifest);
   const applied = await applyRemoveAll(root, changes, {
     now: options.now ?? new Date(),
+    ...(options.backupSuffix === undefined ? {} : { backupSuffix: options.backupSuffix }),
     yes: ctx.yes,
     force: ctx.force,
     dryRun: ctx.dryRun,

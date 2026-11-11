@@ -65,6 +65,8 @@ export interface InitOptions {
   readonly prompter?: Prompter;
   readonly stdout?: Writable;
   readonly now?: Date;
+  /** Fixed backup folder suffix for tests (see `ApplyOptions.backupSuffix`). */
+  readonly backupSuffix?: string;
   readonly registryDir?: string;
   /** When true before rename, temps are removed and the project is unchanged. */
   readonly shouldStop?: () => boolean;
@@ -310,6 +312,7 @@ async function applyPreparedWrite(input: {
   try {
     applied = await applyChanges(root, changes, {
       now: options.now ?? new Date(),
+      ...(options.backupSuffix === undefined ? {} : { backupSuffix: options.backupSuffix }),
       manifest: withPreservedExtras(manifestBody(profile, resolved, excluded, workflows), previous),
       ...(previous === null ? {} : { previousFiles: previous.files }),
       yes: ctx.yes,

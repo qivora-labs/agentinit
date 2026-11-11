@@ -27,15 +27,23 @@ export interface Block {
 
 /**
  * Whole-line markers only. A marker with trailing text is user content, not a block.
- * Malformed structure throws; the markers are never paired by guesswork.
+ * Marker lines inside a *closed* CommonMark fenced code block (``` / ~~~, length ≥ 3)
+ * are documentation, not structure. An unclosed fence opener is ordinary text so a
+ * typo ``` cannot hide later managed blocks (and cause upsert to append a duplicate).
+ * Malformed structure throws; markers are never paired by guesswork.
  */
 export function findBlocks(text: string, file: string): Block[] {
   const lines = splitLines(text);
+  const inFence = closedFenceMask(lines);
   const blocks: Block[] = [];
   const seen = new Set<string>();
   let open: { id: string; start: number; innerStart: number } | undefined;
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    if (inFence[index] === true) continue;
+    const line = lines[index];
+    if (line === undefined) continue;
+
     const begin = BEGIN_MARKER.exec(line.text);
     if (begin !== null) {
       const id = capture(begin);
@@ -74,6 +82,62 @@ export function findBlocks(text: string, file: string): Block[] {
     throw markerError(file, `managed block "${open.id}" is missing its end marker`);
   }
   return blocks;
+}
+
+/** CommonMark: 0–3 spaces, then 3+ backticks or tildes (PRD §6.1). */
+interface FenceOpen {
+  readonly marker: '`' | '~';
+  readonly length: number;
+}
+
+const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE = /^( {0,3})(`{3,}|~{3,})[ \t]*$/;
+
+/**
+ * True for lines that sit inside a closed fence (including the open and close
+ * delimiters). An opener with no matching close does not mark any line.
+ */
+function closedFenceMask(lines: readonly TextLine[]): boolean[] {
+  const mask = Array.from({ length: lines.length }, () => false);
+  let open: FenceOpen | undefined;
+  let openAt: number | undefined;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line === undefined) continue;
+    if (open === undefined) {
+      const opened = openFence(line.text);
+      if (opened === undefined) continue;
+      open = opened;
+      openAt = index;
+      continue;
+    }
+    if (!closesFence(line.text, open) || openAt === undefined) continue;
+    for (let filled = openAt; filled <= index; filled += 1) mask[filled] = true;
+    open = undefined;
+    openAt = undefined;
+  }
+  return mask;
+}
+
+function openFence(line: string): FenceOpen | undefined {
+  const match = FENCE_OPEN.exec(line);
+  if (match === null) return undefined;
+  const ticks = match[2];
+  if (ticks === undefined) return undefined;
+  const marker = ticks[0];
+  if (marker !== '`' && marker !== '~') return undefined;
+  // Backtick fences cannot include backticks in the info string.
+  if (marker === '`' && (match[3] ?? '').includes('`')) return undefined;
+  return { marker, length: ticks.length };
+}
+
+function closesFence(line: string, open: FenceOpen): boolean {
+  const match = FENCE_CLOSE.exec(line);
+  if (match === null) return false;
+  const ticks = match[2];
+  if (!ticks?.startsWith(open.marker)) return false;
+  return ticks.length >= open.length;
 }
 
 /**

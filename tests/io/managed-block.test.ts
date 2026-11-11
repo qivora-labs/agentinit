@@ -29,6 +29,47 @@ describe('findBlocks', () => {
     expect(text.slice(found.start, found.end)).toBe(block('core', 'generated\n'));
     expect(text.slice(found.innerStart, found.innerEnd)).toBe('generated\n');
   });
+
+  it.each([
+    {
+      name: 'backtick fence',
+      fence: '```markdown\n<!-- agentinit:begin id=example -->\ninner\n<!-- agentinit:end id=example -->\n```\n',
+    },
+    {
+      name: 'tilde fence',
+      fence: '~~~\n<!-- agentinit:begin id=example -->\n<!-- agentinit:end id=example -->\n~~~\n',
+    },
+    {
+      name: 'longer closing fence',
+      fence: '````md\n<!-- agentinit:begin id=example -->\n<!-- agentinit:end id=example -->\n`````\n',
+    },
+  ])('ignores marker lines inside a $name', ({ fence }) => {
+    const before = `# Docs\n\n${fence}\n`;
+    const after = '\n# More\n';
+    const text = `${before}${block('core', 'generated\n')}${after}`;
+    const blocks = findBlocks(text, FILE);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]?.id).toBe('core');
+    const next = upsertBlock(text, 'core', 'updated\n', FILE);
+    expect(next.startsWith(before)).toBe(true);
+    expect(next.endsWith(after)).toBe(true);
+    expect(next.slice(0, before.length)).toBe(before);
+    expect(findBlocks(next, FILE)[0]?.inner).toBe('updated\n');
+  });
+
+  it('still finds managed blocks after an unclosed fence opener', () => {
+    const before = '# Docs\n\n```\norphan fence line\n\n';
+    const after = '\n# More\n';
+    const text = `${before}${block('core', 'generated\n')}${after}`;
+    const blocks = findBlocks(text, FILE);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]?.id).toBe('core');
+    const next = upsertBlock(text, 'core', 'updated\n', FILE);
+    expect(next.startsWith(before)).toBe(true);
+    expect(next.endsWith(after)).toBe(true);
+    expect(findBlocks(next, FILE)).toHaveLength(1);
+    expect(findBlocks(next, FILE)[0]?.inner).toBe('updated\n');
+  });
 });
 
 describe('upsertBlock', () => {

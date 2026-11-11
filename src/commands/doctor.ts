@@ -12,6 +12,7 @@ import {
   doctorReport,
   formatDoctorReport,
   issuesFoundMessage,
+  manifestInvalidIssue,
   NO_ISSUES,
   type CheckedFragment,
   type DoctorIssue,
@@ -22,7 +23,7 @@ import { AgentInitError } from '../errors.js';
 import { DOCTOR_ISSUES, SUCCESS } from '../exit-codes.js';
 import { computeChanges, readProjectText, type Change } from '../io/changes.js';
 import { findBlocks } from '../io/managed-block.js';
-import { readManifest, type Manifest } from '../io/manifest.js';
+import { MANIFEST_RECOVER_HINT, readManifest, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { loadRegistry, type Registry } from '../registry/load.js';
 import {
@@ -51,7 +52,14 @@ export interface DoctorOptions {
 export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOptions = {}): Promise<number> {
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
   const root = ctx.cwd;
-  const manifest = await readManifest(root);
+  let manifest: Manifest | null;
+  try {
+    manifest = await readManifest(root);
+  } catch (error) {
+    if (!(error instanceof AgentInitError)) throw error;
+    // Corrupt/unreadable manifest: report as a check failure (exit 2), not a crash (exit 1).
+    return finishDoctor(ctx, logger, options, [manifestInvalidIssue(error.message, MANIFEST_RECOVER_HINT)]);
+  }
   const versionNotice =
     manifest === null
       ? undefined
@@ -62,6 +70,16 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
       ? collectDoctorIssues(uninitializedInput(root, registry))
       : await issuesForManifest(root, registry, manifest);
 
+  return finishDoctor(ctx, logger, options, issues, notices);
+}
+
+function finishDoctor(
+  ctx: RunContext,
+  logger: Logger,
+  options: DoctorOptions,
+  issues: readonly DoctorIssue[],
+  notices: readonly string[] = [],
+): number {
   const report = doctorReport(issues, notices);
   const { errors, warnings } = countBySeverity(issues);
   if (ctx.json) writeStdout(options, `${JSON.stringify(report, null, 2)}\n`);

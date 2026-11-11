@@ -22,6 +22,7 @@ export function editedFix(change: Pick<DriftChange, 'path' | 'blockId'>): string
 
 export const DOCTOR_ISSUE_KINDS = [
   'not-initialized',
+  'manifest-invalid',
   'missing',
   'edited',
   'outdated',
@@ -85,6 +86,7 @@ const CHECK_LABEL: Record<DoctorCheckId, string> = {
 
 const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
   'not-initialized': 'manifest',
+  'manifest-invalid': 'manifest',
   missing: 'managed-files',
   edited: 'managed-files',
   outdated: 'managed-files',
@@ -104,6 +106,7 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
  */
 const SEVERITY_FOR_KIND = {
   'not-initialized': 'error',
+  'manifest-invalid': 'error',
   missing: 'error',
   edited: 'error',
   outdated: 'error',
@@ -120,6 +123,7 @@ const SEVERITY_FOR_KIND = {
 function severityFor(kind: DoctorIssueKind): DoctorSeverity {
   switch (kind) {
     case 'not-initialized':
+    case 'manifest-invalid':
     case 'missing':
     case 'edited':
     case 'outdated':
@@ -189,6 +193,7 @@ export interface DoctorInput {
 
 const GROUP_TITLE: Record<DoctorIssueKind, string> = {
   'not-initialized': 'Not initialized',
+  'manifest-invalid': 'Invalid manifest',
   missing: 'Missing',
   edited: 'Edited',
   outdated: 'Out of date',
@@ -249,14 +254,17 @@ export function countBySeverity(issues: readonly DoctorIssue[]): {
  * Without a manifest, later checks never ran — list only the failed manifest row.
  */
 export function doctorChecklist(issues: readonly DoctorIssue[]): DoctorCheck[] {
-  const notInitialized = issues.filter((issue) => issue.kind === 'not-initialized');
-  if (notInitialized.length > 0) {
+  // Without a usable manifest, later checks never ran — list only the failed row.
+  const manifestOnly = issues.filter(
+    (issue) => issue.kind === 'not-initialized' || issue.kind === 'manifest-invalid',
+  );
+  if (manifestOnly.length > 0) {
     return [
       {
         id: 'manifest',
         label: CHECK_LABEL.manifest,
         ok: false,
-        issues: notInitialized,
+        issues: manifestOnly,
       },
     ];
   }
@@ -310,6 +318,11 @@ export function formatDoctorReport(issues: readonly DoctorIssue[]): string {
 
 export function notInitializedIssue(): DoctorIssue {
   return issue('not-initialized', { message: 'Not initialized', fix: INIT_FIX });
+}
+
+/** Corrupt or unreadable manifest; `detail` is the parse/read error message. */
+export function manifestInvalidIssue(detail: string, fix: string): DoctorIssue {
+  return issue('manifest-invalid', { message: detail, fix });
 }
 
 export function checkChanges(

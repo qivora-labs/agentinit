@@ -52,6 +52,11 @@ export interface ApplyResult {
 export interface ApplyOptions {
   /** Backup folder timestamp. Tests pass a fixed clock. */
   readonly now: Date;
+  /**
+   * Short hex after the timestamp in `.agentinit/backups/<stamp>-<suffix>/`.
+   * Tests pass a fixed value; omitted → four random hex chars (PRD §6.4).
+   */
+  readonly backupSuffix?: string;
   /** Written last, with `manifestFiles` from this apply. Omitted on a dry run. */
   readonly manifest: Omit<Manifest, 'files'>;
   /**
@@ -82,6 +87,8 @@ export interface ApplyOptions {
 
 export interface RemoveAllOptions {
   readonly now: Date;
+  /** Same as `ApplyOptions.backupSuffix`. */
+  readonly backupSuffix?: string;
   readonly prompter?: Prompter;
   readonly yes?: boolean;
   readonly force?: boolean;
@@ -136,7 +143,7 @@ export async function applyChanges(
   }
   const originals = await readOriginals(root, changes);
   const resolved = await resolveAll(changes, originals, options, 'sync');
-  const outcome = settleAll(resolved, originals, backupStamp(options.now));
+  const outcome = settleAll(resolved, originals, backupStamp(options.now, options.backupSuffix));
   const manifestFiles = withPreservedFileExtras(
     manifestRecord(outcome.flatMap((item) => item.files)),
     options.previousFiles,
@@ -172,7 +179,7 @@ export async function applyRemoveAll(
   }
   const originals = await readOriginals(root, changes);
   const resolved = await resolveAll(changes, originals, options, 'remove');
-  const outcome = settleAll(resolved, originals, backupStamp(options.now));
+  const outcome = settleAll(resolved, originals, backupStamp(options.now, options.backupSuffix));
   const report = outcome.flatMap((item) => item.entries);
   const backupsPath = (await backupsDirHasFiles(root)) ? BACKUPS_DIR : undefined;
   if (options.dryRun === true) return { report, ...(backupsPath === undefined ? {} : { backupsPath }) };
@@ -636,9 +643,12 @@ function backupPath(relPath: string, stamp: string, include: boolean): string | 
   return backupRel(relPath, stamp);
 }
 
-function backupStamp(now: Date): string {
-  // Colons are illegal in Windows directory names. The injected clock keeps tests stable.
-  return now.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.', '');
+function backupStamp(now: Date, suffix: string | undefined): string {
+  // Colons are illegal in Windows directory names. Clock + suffix keep folders unique
+  // when two applies share a millisecond; tests inject both for stable paths.
+  const stamp = now.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.', '');
+  const hex = suffix ?? randomBytes(2).toString('hex');
+  return `${stamp}-${hex}`;
 }
 
 function manifestRecord(records: readonly { key: string; sha256: string }[]): Record<string, ManifestFileEntry> {

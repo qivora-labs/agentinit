@@ -32,11 +32,11 @@ Promoted from `backlog.md` P1.2.
 - T50 changes manifest parsing; build the `doctor` error mapping on its final error types.
 
 ## Acceptance criteria
-- [ ] Decision recorded under **Notes**, and the PRD updated.
-- [ ] Two applies with the same injected timestamp write to different backup folders.
-- [ ] An `AGENTS.md` with a marker line inside a fenced code block adopts and updates normally, and the fenced lines are unchanged (decision "ignore").
-- [ ] Invalid JSON in `.agentinit/manifest.json`: `doctor` exits `2` with `manifest-invalid`, and `--json` reports it with `severity: "error"`.
-- [ ] A `patch` changeset exists.
+- [x] Decision recorded under **Notes**, and the PRD updated.
+- [x] Two applies with the same injected timestamp write to different backup folders.
+- [x] An `AGENTS.md` with a marker line inside a fenced code block adopts and updates normally, and the fenced lines are unchanged (decision "ignore").
+- [x] Invalid JSON in `.agentinit/manifest.json`: `doctor` exits `2` with `manifest-invalid`, and `--json` reports it with `severity: "error"`.
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -47,3 +47,6 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `fix(io): harden backups, fenced markers, and corrupt manifest reporting`
 
 ## Notes
+- **Decision 1:** ignore marker lines inside CommonMark fenced code (` ``` ` / `~~~`, length ≥ 3). Writing a block still refuses inner content that contains a real marker line.
+- Backup folders are `<stamp>-<4-hex>`; `backupSuffix` is injectable on apply options (and through `run` for tests) the same way as `now`.
+- `manifest-invalid` uses `MANIFEST_RECOVER_HINT` from `src/io/manifest.ts`; checklist skips later checks like `not-initialized`.

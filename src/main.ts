@@ -34,6 +34,8 @@ export interface RunOptions {
   readonly prompter?: Prompter;
   /** Backup timestamps. Tests pass a fixed clock. */
   readonly now?: Date;
+  /** Backup folder hex suffix. Tests pass a fixed value with `now`. */
+  readonly backupSuffix?: string;
   /** When true before rename, `init` deletes temp files and writes nothing. */
   readonly shouldStop?: () => boolean;
   /** True while temp files exist and the process must not exit yet. */
@@ -78,6 +80,7 @@ export async function run(argv: string[], io: CommandIo = defaultIo, options: Ru
       removeIds: commandName === 'remove' ? positionalArgs(cli.args) : [],
       prompter: options.prompter,
       now: options.now,
+      backupSuffix: options.backupSuffix,
       shouldStop: options.shouldStop,
       onAtomicWrite: options.onAtomicWrite,
     });
@@ -231,6 +234,7 @@ async function dispatch(
     removeIds: readonly string[];
     prompter: Prompter | undefined;
     now: Date | undefined;
+    backupSuffix: string | undefined;
     shouldStop: (() => boolean) | undefined;
     onAtomicWrite: ((active: boolean) => void) | undefined;
   },
@@ -241,6 +245,7 @@ async function dispatch(
         stdout: io.stdout,
         ...(io.prompter === undefined ? {} : { prompter: io.prompter }),
         ...(io.now === undefined ? {} : { now: io.now }),
+        ...(io.backupSuffix === undefined ? {} : { backupSuffix: io.backupSuffix }),
         ...(io.shouldStop === undefined ? {} : { shouldStop: io.shouldStop }),
         ...(io.onAtomicWrite === undefined ? {} : { onAtomicWrite: io.onAtomicWrite }),
       });
@@ -255,6 +260,7 @@ async function dispatch(
         ids: io.removeIds,
         ...(io.prompter === undefined ? {} : { prompter: io.prompter }),
         ...(io.now === undefined ? {} : { now: io.now }),
+        ...(io.backupSuffix === undefined ? {} : { backupSuffix: io.backupSuffix }),
         ...(io.shouldStop === undefined ? {} : { shouldStop: io.shouldStop }),
         ...(io.onAtomicWrite === undefined ? {} : { onAtomicWrite: io.onAtomicWrite }),
       });
