@@ -2,7 +2,7 @@
 
 Manual check from PRD §8.3 / §11. Before each minor release, run the five fixed tasks in [tasks.md](./tasks.md) in **two agents**, **with** and **without** generated rules, on an extended copy of `tests/fixtures/next15-src`. Ship only if rules reduce violations in **at least 4 of 5** tasks.
 
-An agent can prepare these materials. **A human reviews the results and signs go/no-go.** Automation is out of scope until v0.4+.
+An agent can prepare these materials. **A human reviews the results and signs go/no-go.** Automation is out of scope until v0.5+.
 
 ## Agents
 

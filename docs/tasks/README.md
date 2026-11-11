@@ -174,7 +174,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 
 **M9 — 0.1.1 patch** comes from the follow-ups in T48's Notes and a post-launch review after `0.1.0` shipped on 2026-11-09. Ship `0.1.1` once T49–T52 are merged; T53 and T54 can follow in `0.1.1` or `0.1.2`. Each task adds a `patch` changeset, so the release PR collects them. T50, T51, T53, and T54 have **Decisions (owner, before starting)** sections.
 
-**After launch:** the remaining Phase 1–3 plans (v0.1.x patches, v0.2 lifecycle, v0.3+ breadth) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
+**After launch:** the plans for `0.1.2` and later (0.1.2 fixes, v0.2 JavaScript, v0.3 lifecycle, v0.4 breadth, v0.5+ other ecosystems) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
 
 ## Task File Template
 Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.

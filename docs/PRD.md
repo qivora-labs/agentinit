@@ -65,8 +65,8 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 | **2** | **Pre-Built Workflows** | Generates structured slash commands (§5.5) so developers can trigger senior-level workflows without writing prompts. | `.cursor/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.windsurf/workflows/*.md`, `.github/prompts/*.prompt.md` |
 | **3** | **Architecture Map** | Describes the project's **current** layout, what belongs where, and allowed dependency directions. Target conventions apply to new code only. No folders are created or moved. | `ARCHITECTURE.md` |
 | **4** | **Composable Fragment Registry** | Atomic, version-aware Markdown fragments with validated frontmatter and cited sources, bundled in the npm package and contributed via PRs. | Internal `registry/**/*.md` |
-| **5** | **Zero-API Customizer** *(v0.2)* | A slash command that uses the developer's own IDE agent to interview them about business logic and write domain rules into a managed section. | `/agentinit-customize` in every target |
-| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, idempotent re-runs, `remove --all`, and a read-only `doctor` check (v0.1); `add` / `remove <id>` / `update` in v0.2. | `.agentinit/manifest.json` |
+| **5** | **Zero-API Customizer** *(v0.3)* | A slash command that uses the developer's own IDE agent to interview them about business logic and write domain rules into a managed section. | `/agentinit-customize` in every target |
+| **6** | **Safe Lifecycle & Drift Detection** | Managed blocks, a manifest with content hashes, idempotent re-runs, `remove --all`, and a read-only `doctor` check (v0.1); `add` / `remove <id>` / `update` in v0.3. | `.agentinit/manifest.json` |
 
 ---
 
@@ -100,7 +100,7 @@ npx @agentinit/cli remove --all
 # Skip slash-command workflow files
 npx @agentinit/cli init --no-workflows
 
-# Lifecycle (v0.2)
+# Lifecycle (v0.3)
 npx @agentinit/cli add zustand tanstack-query
 npx @agentinit/cli remove zustand
 npx @agentinit/cli update
@@ -240,9 +240,9 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   │   ├── init.ts
 │   │   ├── list.ts
 │   │   ├── doctor.ts
-│   │   ├── add.ts                   # v0.2
-│   │   ├── remove.ts                # v0.2
-│   │   └── update.ts                # v0.2
+│   │   ├── add.ts                   # v0.3
+│   │   ├── remove.ts                # v0.3
+│   │   └── update.ts                # v0.3
 │   ├── detect/
 │   │   ├── index.ts                 # Orchestrator → ProjectProfile
 │   │   ├── typescript-gate.ts
@@ -253,7 +253,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   │   └── existing-agents.ts
 │   ├── registry/
 │   │   ├── schema.ts                # zod schema for frontmatter
-│   │   ├── load.ts                  # Bundled registry (+ team fragments in v0.2)
+│   │   ├── load.ts                  # Bundled registry (+ team fragments in v0.3)
 │   │   └── resolve.ts               # Compatibility, appliesTo, requires/conflicts
 │   ├── plan/
 │   │   ├── build-plan.ts            # Fragments → FileOp[]
@@ -277,7 +277,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   ├── frameworks/      nextjs-app-router.md · nextjs-app-router-15.md · nextjs-pages-router.md · react-vite.md · express.md · express-4.md · fastify.md
 │   ├── libraries/       tailwind.md · shadcn.md · tanstack-query.md · zustand.md · react-hook-form-zod.md · vitest.md · playwright.md
 │   ├── workflows/       new-feature.md · review-arch.md · refactor.md · write-tests.md
-│   └── meta/            customize.md (v0.2)
+│   └── meta/            customize.md (v0.3)
 ├── tests/
 │   ├── fixtures/                    # Sample repos (§8)
 │   └── *.test.ts
@@ -615,9 +615,9 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 
 ### 6.6 Lifecycle Commands
 **v0.1**
-- **`remove --all`:** deletes every AgentInit-owned file and unedited managed block. Edited files and blocks: interactive mode asks *Keep* (default) or *Delete after backup*; `--yes` keeps them and reports them; `--force` backs them up and deletes them. Then deletes the manifest and `.agentinit/.gitignore`. If `.agentinit/backups/` is not empty, it is kept and its path is printed; otherwise `.agentinit/` is removed. Supports `--dry-run` and `--json`. After a managed block is removed, a shared file that contains only whitespace is deleted. `remove` with fragment ids is not available yet (see v0.2). Same CLI-version guard as §3.4: an older major/minor exits `1` unless `--force`; a patch-only lag or invalid `cliVersion` only warns. `doctor` never blocks on version alone — it only warns (and still applies §6.5 content checks).
+- **`remove --all`:** deletes every AgentInit-owned file and unedited managed block. Edited files and blocks: interactive mode asks *Keep* (default) or *Delete after backup*; `--yes` keeps them and reports them; `--force` backs them up and deletes them. Then deletes the manifest and `.agentinit/.gitignore`. If `.agentinit/backups/` is not empty, it is kept and its path is printed; otherwise `.agentinit/` is removed. Supports `--dry-run` and `--json`. After a managed block is removed, a shared file that contains only whitespace is deleted. `remove` with fragment ids is not available yet (see v0.3). Same CLI-version guard as §3.4: an older major/minor exits `1` unless `--force`; a patch-only lag or invalid `cliVersion` only warns. `doctor` never blocks on version alone — it only warns (and still applies §6.5 content checks).
 
-**v0.2**
+**v0.3**
 - **`add <id...>` / `remove <id...>`:** update selections in the manifest and regenerate affected files. Unknown ids get fuzzy suggestions.
 - **`update`:** non-interactive re-sync (equivalent to `init --yes` with a manifest) that also lists fragment version changes since the last run.
 
@@ -659,21 +659,26 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 - [ ] Dogfood: run `agentinit init` on this repository (hand-written content stays outside managed blocks) and run `agentinit doctor` in CI.
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
-### v0.2 — Lifecycle
+The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript support moved from v0.4+ to v0.2, and lifecycle, breadth, and other ecosystems each moved one release later. Item-level plans are in [`docs/tasks/backlog.md`](tasks/backlog.md).
+
+### v0.2 — JavaScript and older stacks
+- JavaScript projects: language detection replaces the TypeScript gate, scoped globs follow the project's language, and each rule fragment carries a JavaScript example beside the TypeScript one. JSDoc rules belong to the `javascript` language fragment; when they apply is decided in its task.
+- Older majors: React 18 / Vite 5, Zustand 4, Vitest 2.
+
+### v0.3 — Lifecycle
 - `add`, `remove <id...>`, `update`.
 - Team fragments in `.agentinit/fragments/*.md`, compiled to every target alongside registry fragments.
 - `/agentinit-customize` workflow (Pillar 5) writing into a managed `project-domain` block.
 - Opt-in inline mode for Copilot surfaces that ignore `AGENTS.md`.
 
-### v0.3 — Breadth
+### v0.4 — Breadth
 - Full monorepo support (per-package globs or nested `AGENTS.md`), with a `{{pkg}}` placeholder.
-- More frameworks (Angular, Vue/Nuxt, NestJS, Expo, and a `node-library` fragment for TypeScript CLIs and libraries) and libraries (Redux Toolkit, Prisma, Drizzle, Tailwind v3).
+- More frameworks (Angular, Vue/Nuxt, NestJS, Expo / React Native, and a `node-library` fragment for CLIs and libraries) and libraries (Redux Toolkit, Prisma, Drizzle, Tailwind v3).
 - Gemini CLI target (`GEMINI.md` or `.gemini/settings.json` → `AGENTS.md`).
 - Optional, opt-in folder scaffolding.
 
-### v0.4+ — Ecosystem
-- JavaScript projects (JSDoc rules).
-- Python (`pyproject.toml`), Go (`go.mod`), Flutter (`pubspec.yaml`).
+### v0.5+ — Ecosystem
+- Python (`pyproject.toml`), Go (`go.mod`), Flutter (`pubspec.yaml`), Java, PHP. One ecosystem at a time, ordered by demand.
 - Opt-in remote registries (`--registry <git-url>`, pinned to a commit and recorded in the manifest).
 - Automated rule-effectiveness evaluation harness.
 
@@ -722,7 +727,7 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
 
 ### 8.3 Rule-Effectiveness Check (release gate)
-Before each minor release, run 5 fixed tasks (e.g., "add a feature with a form and server action") in two agents on a fixture project, with and without generated rules. Record convention violations per run in `docs/evals/`. Ship only if the rules reduce violations in at least 4 of 5 tasks. This is manual in v0.1 and automated in v0.4+.
+Before each minor release, run 5 fixed tasks (e.g., "add a feature with a form and server action") in two agents on a fixture project, with and without generated rules. Record convention violations per run in `docs/evals/`. Ship only if the rules reduce violations in at least 4 of 5 tasks. This is manual in v0.1 and automated in v0.5+.
 
 ---
 
@@ -736,7 +741,7 @@ The registry is **bundled in the npm package** rather than fetched at runtime:
 
 **Version coverage:** each framework is covered for its current major and the previous one. When guidance differs across that span, a new fragment id is added per range (published ids are never renamed). v0.1 ships `nextjs-app-router` (`next >=16.3.0`), `nextjs-app-router-15` (`>=15.0.0 <16.3.0`), `express` (`>=5`), and `express-4` (`>=4 <5`), alongside `nextjs-pages-router`, `react-vite`, and `fastify`.
 
-Rule fixes ship as patch releases via changesets. Team fragments (v0.2) and opt-in remote registries (v0.4+) provide extensibility.
+Rule fixes ship as patch releases via changesets. Team fragments (v0.3) and opt-in remote registries (v0.5+) provide extensibility.
 
 ---
 
@@ -784,7 +789,7 @@ There is no telemetry, so every metric uses public signals. Targets are for the 
 
 ## 13. Known Limitations (v0.1)
 
-- **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. An opt-in inline mode is planned for v0.2.
+- **Copilot surfaces that ignore `AGENTS.md`** (e.g., some JetBrains features) only see the pointer in `copilot-instructions.md`. An opt-in inline mode is planned for v0.3.
 - **Glob-scoped rules in Claude Code** may not load when a new file is being created. Claude has no description-based rule activation, so `auto` falls back to globs there.
 - **Copilot on GitHub.com** reads `applyTo` on path-specific instructions, so those rules may not load when a new file is being created. VS Code loads the same file when `description` matches the task.
 - **Monorepos** are detected but not compiled; users run the CLI inside one package.

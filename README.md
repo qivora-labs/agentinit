@@ -192,7 +192,7 @@ npx @agentinit/cli remove --all    # delete every owned file and managed block
 
 **Exit codes:** `0` success · `1` error · `2` `doctor` found issues · `130` cancelled.
 
-`remove --all` undoes an init. It deletes every generated file and managed block plus the manifest. Hand-edited files are kept and reported (interactive mode asks; `--force` backs them up and deletes them), and `.agentinit/backups/` is kept if it holds anything. Per-id `add` / `remove` / `update` are planned for v0.2.
+`remove --all` undoes an init. It deletes every generated file and managed block plus the manifest. Hand-edited files are kept and reported (interactive mode asks; `--force` backs them up and deletes them), and `.agentinit/backups/` is kept if it holds anything. Per-id `add` / `remove` / `update` are planned for v0.3.
 
 ### Leaving out a fragment
 
@@ -266,7 +266,7 @@ Supported with base rules. agentinit skips framework-specific library fragments 
 Not supported in v0.1. Use a TypeScript project (strict recommended).
 
 **Copilot surfaces that ignore `AGENTS.md`?**  
-Some JetBrains Copilot features only see the pointer in `.github/copilot-instructions.md`. An opt-in inline mode is planned for v0.2.
+Some JetBrains Copilot features only see the pointer in `.github/copilot-instructions.md`. An opt-in inline mode is planned for v0.3.
 
 ## Contributing
 
