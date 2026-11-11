@@ -14,7 +14,7 @@ After the release workflow lands on `main`, confirm the Release Action opens or 
    - [ ] Every v0.1 task in `docs/tasks/README.md` is `done`, including every M8 (launch readiness) task, T41–T48.
    - [ ] CI (including smoke) is green on `main`, and the latest Release workflow run's `verify` and `smoke` jobs passed.
    - [ ] Rule-effectiveness check (T33) passed and is recorded under `docs/evals/`.
-   - [ ] Re-run and record eval cells T1, T3, and T4 after the `typescript-strict` return-type exemption for React components and framework entry files (T45 chose decision B, so this re-run is required).
+   - [x] Re-run and record eval cells T1, T3, and T4 after the `typescript-strict` return-type exemption for React components and framework entry files (T45 chose decision B, so this re-run is required).
 
 2. **Secret scan**
    - [ ] `gitleaks detect` over the full history reports no findings.

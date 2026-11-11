@@ -6,10 +6,11 @@
 | :--- | :--- |
 | CLI commit (initial 20) | `49f7f7a` (`docs: add rule-effectiveness eval materials`) |
 | CLI commit (T1+T5 re-run) | `de4db2f` (includes `18bdb96`, the `typescript-strict` return-type tightening) |
-| Eval date | 2026-11-03 |
+| CLI commit (T45 T1/T3/T4 re-run) | `c8d32da` (includes `f5b76ca`, the T45 `typescript-strict` 1.1.0 component/entry exemption) |
+| Eval date | 2026-11-03 (initial + T1/T5); 2026-11-11 (T45 T1/T3/T4) |
 | Cursor model | `composer-2.5-fast` (Cursor Task `generalPurpose`) |
 | Claude model | `claude-sonnet-5-5-high` (Cursor Task `generalPurpose`; Claude Code was not installed) |
-| Fixture notes | Extended `next15-src` per README (zustand, `@tanstack/react-query`, RHF, zod, `@hookform/resolvers`, vitest + seed files). Initial workdirs under `/tmp/agentinit-eval-v01/`. |
+| Fixture notes | Extended `next15-src` per README (zustand, `@tanstack/react-query`, RHF, zod, `@hookform/resolvers`, vitest + seed files). Initial workdirs under `/tmp/agentinit-eval-v01/`. T45 re-run under `/tmp/agentinit-eval-t45/` (`typescript` pinned to `5.9.2` because `5.9.0` is unpublished on npm). |
 | Owner | Tajnur |
 
 ### Methodology notes
@@ -75,7 +76,7 @@ T1’s follow-up is that fragment change. T5’s follow-up is an instrument chan
 | R7 | Claude | T5-write-tests | with | 0 | — | Mocks `./rates`; observable assertions only |
 | R8 | Claude | T5-write-tests | without | 2 | 5.1, 5.2 | Test named `loads the rate once…` + `toHaveBeenCalledTimes` |
 
-### Per-task summary (final)
+### Per-task summary (after T1+T5 re-run; superseded for T1/T3/T4 by T45 addendum)
 
 | Task | total_with | total_without | Pass? | Source |
 | :--- | ---: | ---: | :--- | :--- |
@@ -85,7 +86,38 @@ T1’s follow-up is that fragment change. T5’s follow-up is an instrument chan
 | T4-refactor-rsc | 0 | 1 | yes | initial |
 | T5-write-tests | 0 | 3 | yes | re-run |
 
-**Tasks passed:** 5 / 5
+**Tasks passed (pre-T45):** 5 / 5
+
+## Addendum — T1 + T3 + T4 re-run after T45 (2026-11-11)
+
+T45 decision B softened `typescript-strict` so React components and framework entry files (`page`, `layout`, route handlers) may omit return types (`f5b76ca`, fragment `1.1.0`). That invalidates return-type checklist hits on those shapes, so cells T1, T3, and T4 were re-run. Baselines rebuilt at `c8d32da` (`pnpm build`, then `init --yes` on a fresh extended fixture). Workdirs under `/tmp/agentinit-eval-t45/`. Same models as Meta. Scoring applied the post-T45 exception for items 1.5 / 3.6 / 4.6.
+
+| Run | Agent | Task | Rules | Violations | Hit items | Notes |
+| :--- | :--- | :--- | :--- | ---: | :--- | :--- |
+| T45-1 | Cursor | T1-form-server-action | with | 0 | — | [RHF+Zod](1ca0707b-1e3f-4572-9c39-1a0150ebfa7e); typed `parse*` + action; under `features/newsletter/` |
+| T45-2 | Cursor | T1-form-server-action | without | 1 | 1.7 | [Native form + server `safeParse`](ab923866-ddd3-4fbb-9f8f-5be46963f884); schema in `src/lib/` |
+| T45-3 | Claude | T1-form-server-action | with | 0 | — | [RHF+Zod](78df5be8-eb86-409b-af63-d28b96914ee3); typed `parse*` + action; under `features/newsletter/` |
+| T45-4 | Claude | T1-form-server-action | without | 0 | — | [`useActionState` + Zod](a5e229c3-de0f-4d42-ad05-dc1fc08beaf5); action typed; components exempt |
+| T45-5 | Cursor | T3-data-hook | with | 1 | 3.7 | [`queryOptions` + Suspense](eaa72421-4979-4991-be62-4c9f705c705f); helpers under `src/queries/` |
+| T45-6 | Cursor | T3-data-hook | without | 3 | 3.2, 3.6, 3.7 | [Inline `useQuery`](ad630846-4fce-408a-a536-1cfe34c3440e); `usePost` untyped; `src/lib/` + `src/providers/` |
+| T45-7 | Claude | T3-data-hook | with | 0 | — | [`queryOptions` + Suspense under `features/posts/`](cdca13c0-0d74-4776-aac7-916885e7fb95) |
+| T45-8 | Claude | T3-data-hook | without | 2 | 3.2, 3.6 | [Inline `useQuery`](ee68b4f1-6849-4034-b96b-beca3c1ebe0e); `usePost` missing return type |
+| T45-9 | Cursor | T4-refactor-rsc | with | 0 | — | [Server load + client toggle leaf](2b5845d3-9f87-4f64-ba17-2831448db7b0) |
+| T45-10 | Cursor | T4-refactor-rsc | without | 0 | — | [Same split](c3bdf3dd-8a93-4bc0-b7c1-5bd86fd0f35c); prior 4.6 hits were component return types (now exempt) |
+| T45-11 | Claude | T4-refactor-rsc | with | 0 | — | [Server `getUser` + client leaf](704571e9-1cee-4647-8c66-c2fd99ed028b) |
+| T45-12 | Claude | T4-refactor-rsc | without | 0 | — | [Same](760bde06-8a8e-45c1-a382-05510cb0b876); `getUser` typed; components exempt |
+
+### Per-task summary (final)
+
+| Task | total_with | total_without | Pass? | Source |
+| :--- | ---: | ---: | :--- | :--- |
+| T1-form-server-action | 0 | 1 | yes | T45 re-run |
+| T2-ui-store | 0 | 2 | yes | initial |
+| T3-data-hook | 1 | 5 | yes | T45 re-run |
+| T4-refactor-rsc | 0 | 0 | no (tie) | T45 re-run |
+| T5-write-tests | 0 | 3 | yes | T1+T5 re-run |
+
+**Tasks passed:** 4 / 5 — T4 ties after the return-type exemption removes the only prior without-rules hits on that task.
 
 ## Decision
 
@@ -94,4 +126,4 @@ T1’s follow-up is that fragment change. T5’s follow-up is an instrument chan
 
 v0.1 uses the Task stand-ins in Meta (`composer-2.5-fast` for Cursor, `claude-sonnet-5-5-high` for Claude). Later minors keep that pair. Claude Code was not installed on the eval host.
 
-Owner sign-off: Tajnur — accepted the v0.1 stand-in pair and the recorded scores. Date: 2026-11-03
+Owner sign-off: Tajnur — accepted the v0.1 stand-in pair and the recorded scores. Date: 2026-11-03. T45 T1/T3/T4 re-run recorded 2026-11-11 (still go at 4/5).

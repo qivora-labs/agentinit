@@ -82,5 +82,6 @@ Note: Mocking `./rates` at top level is allowed when the assertion is still an o
 
 - Zustand globs (`stores/**`, `*.store.ts`, `*.store.tsx`) and TanStack Query globs (`hooks/**`, `queries/**`) only decide where those library rules load. They are not placement requirements. `src/stores/` and `src/queries/` are outside the flat layout, so they count for **2.7** / **3.7**.
 - If the agent skips a library entirely (e.g. no Zod on task 1), still score the items that apply to what it wrote; missing validation when a Server Action accepts input is **1.2** / **1.4**.
+- Return-type items (**1.5**, **2.6**, **3.6**, **4.6**): after T45, do **not** score missing return types on React components or framework entry files (`page`, `layout`, route handlers). Other exported functions still count.
 - Formatting-only edits do not create violations.
 - When unsure between 0 and 1, mark **1** and explain in notes so the owner can downgrade.

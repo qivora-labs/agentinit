@@ -1,5 +1,5 @@
 {
-  "cliVersion": "0.1.0",
+  "cliVersion": "0.1.1",
   "mode": "existing",
   "selections": {
     "language": "typescript-strict",
