@@ -97,6 +97,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # npm Trusted Publishing (OIDC). Do not set NPM_TOKEN / NODE_AUTH_TOKEN —
+      # a classic automation token fails when the package requires 2FA for writes.
       id-token: write
     steps:
       - name: Checkout
@@ -112,6 +114,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      # Trusted publishing needs npm ≥ 11.5.1; Node 22's bundled npm can be older.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@^11.5.1
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -119,11 +125,9 @@ jobs:
         id: changesets
         uses: changesets/action@v2
         with:
-          # pnpm release = build + changeset publish (provenance via publishConfig).
+          # pnpm release = build + changeset publish. Provenance comes from OIDC
+          # Trusted Publishing (and publishConfig.provenance) — no long-lived token.
           # Build only here on publish runs — avoid a second pnpm build before the action.
           # v2 configures GitHub auth via github-token (not a GITHUB_TOKEN env var).
           github-token: ${{ secrets.GITHUB_TOKEN }}
           publish-script: pnpm release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
