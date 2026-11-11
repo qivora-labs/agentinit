@@ -27,27 +27,22 @@ export interface Block {
 
 /**
  * Whole-line markers only. A marker with trailing text is user content, not a block.
- * Marker lines inside a CommonMark fenced code block (``` / ~~~, length ≥ 3) are
- * documentation, not structure. Malformed structure throws; markers are never paired
- * by guesswork.
+ * Marker lines inside a *closed* CommonMark fenced code block (``` / ~~~, length ≥ 3)
+ * are documentation, not structure. An unclosed fence opener is ordinary text so a
+ * typo ``` cannot hide later managed blocks (and cause upsert to append a duplicate).
+ * Malformed structure throws; markers are never paired by guesswork.
  */
 export function findBlocks(text: string, file: string): Block[] {
   const lines = splitLines(text);
+  const inFence = closedFenceMask(lines);
   const blocks: Block[] = [];
   const seen = new Set<string>();
   let open: { id: string; start: number; innerStart: number } | undefined;
-  let fence: FenceOpen | undefined;
 
-  for (const line of lines) {
-    if (fence !== undefined) {
-      if (closesFence(line.text, fence)) fence = undefined;
-      continue;
-    }
-    const opened = openFence(line.text);
-    if (opened !== undefined) {
-      fence = opened;
-      continue;
-    }
+  for (let index = 0; index < lines.length; index += 1) {
+    if (inFence[index] === true) continue;
+    const line = lines[index];
+    if (line === undefined) continue;
 
     const begin = BEGIN_MARKER.exec(line.text);
     if (begin !== null) {
@@ -97,6 +92,33 @@ interface FenceOpen {
 
 const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 const FENCE_CLOSE = /^( {0,3})(`{3,}|~{3,})[ \t]*$/;
+
+/**
+ * True for lines that sit inside a closed fence (including the open and close
+ * delimiters). An opener with no matching close does not mark any line.
+ */
+function closedFenceMask(lines: readonly TextLine[]): boolean[] {
+  const mask = Array.from({ length: lines.length }, () => false);
+  let open: FenceOpen | undefined;
+  let openAt: number | undefined;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line === undefined) continue;
+    if (open === undefined) {
+      const opened = openFence(line.text);
+      if (opened === undefined) continue;
+      open = opened;
+      openAt = index;
+      continue;
+    }
+    if (!closesFence(line.text, open) || openAt === undefined) continue;
+    for (let filled = openAt; filled <= index; filled += 1) mask[filled] = true;
+    open = undefined;
+    openAt = undefined;
+  }
+  return mask;
+}
 
 function openFence(line: string): FenceOpen | undefined {
   const match = FENCE_OPEN.exec(line);
