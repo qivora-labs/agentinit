@@ -5,7 +5,7 @@ import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../regist
 import type { FragmentScope, ProjectProfile } from '../types.js';
 import { omitSection } from '../registry/parse.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
-import type { RenderedFragment, RenderedWorkflow, ScopedFragments, TargetContext } from './types.js';
+import { NO_OMIT_H1, type RenderedFragment, type RenderedWorkflow, type ScopedFragments, type TargetContext } from './types.js';
 
 /** `src/` or empty, plus the profile's package manager and scripts. */
 export function placeholderContextFor(profile: ProjectProfile): PlaceholderContext {
@@ -42,7 +42,7 @@ export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedS
   const workflows = resolved.workflows.filter(isWorkflow).map((fragment) => renderWorkflow(fragment, placeholders));
   workflows.sort(compareRendered);
 
-  return { profile, fragments, workflows, placeholders };
+  return { profile, fragments, workflows, placeholders, omitBlockH1: NO_OMIT_H1 };
 }
 
 /** The architecture selected on the profile, searched across every scope. */

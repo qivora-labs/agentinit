@@ -28,4 +28,17 @@ describe('agentsMdAdapter', () => {
     expect(op.content).not.toContain('](http://evil.test)](#');
     expect(op.content).not.toContain('\n## Injected');
   });
+
+  it('omits the block H1 when the existing file already has one', () => {
+    const base = renderTargetContext(profile({ scripts: {} }), resolved([layeredFragment()]));
+    const withH1 = agentsMdAdapter(base)[0];
+    const withoutH1 = agentsMdAdapter({ ...base, omitBlockH1: new Set(['AGENTS.md']) })[0];
+    if (withH1 === undefined || withoutH1 === undefined) throw new Error('missing agents op');
+
+    expect(withH1.content.startsWith('# AGENTS.md\n')).toBe(true);
+    expect(withoutH1.content.startsWith('# AGENTS.md\n')).toBe(false);
+    expect(withoutH1.content.startsWith('Always-on rules')).toBe(true);
+    expect(withoutH1.content).toContain('## Contents');
+    expect(withoutH1.content).toBe(withH1.content.replace(/^# AGENTS\.md\n\n/u, ''));
+  });
 });

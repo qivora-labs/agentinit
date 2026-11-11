@@ -54,8 +54,6 @@ Agents without slash commands can open the matching file in `docs/workflows/` an
 Public API rules for fragments, the manifest, `--json`, and exit codes: [`CONTRIBUTING.md`](CONTRIBUTING.md#compatibility) (PRD §6.2, §9). In short: published fragment ids are never renamed; manifest changes in 0.x stay additive; `--json` / exit-code breaks need a minor release and a `BREAKING CHANGE` changeset note.
 
 <!-- agentinit:begin id=core -->
-# AGENTS.md
-
 Always-on rules for this project. Scoped rules and workflows stay in each agent's own files.
 
 ## Contents

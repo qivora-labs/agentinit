@@ -49,6 +49,36 @@ describe('safety', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('adopting AGENTS.md / ARCHITECTURE.md with an H1 keeps a single top-level heading', async () => {
+    const dir = await temp.copyFixture('existing-agents-md');
+    const beforeAgents = await readFile(path.join(dir, 'AGENTS.md'), 'utf8');
+    const beforeArch = await readFile(path.join(dir, 'ARCHITECTURE.md'), 'utf8');
+    expect(beforeAgents.startsWith('# AGENTS.md —')).toBe(true);
+    expect(beforeArch.startsWith('# ARCHITECTURE.md —')).toBe(true);
+
+    const first = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(first.code).toBe(0);
+
+    const agents = await readFile(path.join(dir, 'AGENTS.md'), 'utf8');
+    const architecture = await readFile(path.join(dir, 'ARCHITECTURE.md'), 'utf8');
+    expect(removeBlock(agents, 'core', 'AGENTS.md')).toBe(beforeAgents);
+    expect(removeBlock(architecture, 'architecture', 'ARCHITECTURE.md')).toBe(beforeArch);
+    expect(agents.match(/^# /gmu)?.length).toBe(1);
+    expect(architecture.match(/^# /gmu)?.length).toBe(1);
+    expect(agents).not.toContain('# AGENTS.md\n');
+    expect(architecture).not.toContain('# ARCHITECTURE.md\n');
+
+    const digest = await treeDigest(dir);
+    const again = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(again.code).toBe(0);
+    expect(again.stdout).toContain('Already up to date.');
+    expect(await treeDigest(dir)).toBe(digest);
+
+    const doctor = await runCli(['doctor', '--cwd', dir]);
+    expect(doctor.code).toBe(0);
+    expect(doctor.stdout).toBe('No issues found.\n');
+  });
+
   it('A hand-edited managed block is never overwritten with --yes', async () => {
     const dir = await temp.copyFixture('edited-managed-block');
     const agents = path.join(dir, 'AGENTS.md');

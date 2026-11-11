@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AgentInitError } from '../../src/errors.js';
-import { computeChanges } from '../../src/io/changes.js';
+import { computeChanges, sharedFilesWithOutsideH1 } from '../../src/io/changes.js';
 import { contentHash } from '../../src/io/hash.js';
 import { createWithBlock } from '../../src/io/managed-block.js';
 import type { Manifest } from '../../src/io/manifest.js';
@@ -225,5 +225,20 @@ describe('computeChanges', () => {
     await expect(computeChanges(root, { ops: [block('AGENTS.md', 'core', 'rules\n')] }, null)).rejects.toThrow(
       /AGENTS\.md is a directory/,
     );
+  });
+});
+
+describe('sharedFilesWithOutsideH1', () => {
+  it('returns only existing shared files that already have an outside H1', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'AGENTS.md'), '# AGENTS.md — app\n\nNotes.\n');
+    await writeFile(path.join(root, 'ARCHITECTURE.md'), 'No heading here.\n');
+    await expect(sharedFilesWithOutsideH1(root)).resolves.toEqual(new Set(['AGENTS.md']));
+  });
+
+  it('ignores an H1 that lives only inside the managed block', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'AGENTS.md'), createWithBlock('core', '# AGENTS.md\n\n## Contents\n'));
+    await expect(sharedFilesWithOutsideH1(root)).resolves.toEqual(new Set());
   });
 });

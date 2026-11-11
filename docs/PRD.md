@@ -543,7 +543,7 @@ Shared files (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `ARCH
 ...generated content...
 <!-- agentinit:end id=core -->
 ```
-Adopting or updating a block leaves every byte outside the markers unchanged. Backup & replace (§6.3) copies the original file to backups, then writes a fresh file; skipped or unchanged blocks from that file are kept. Whole-line markers inside a CommonMark fenced code block (`` ``` `` or `~~~`, three or more characters) are documentation and are ignored when finding blocks, so a user can document agentinit markers in `AGENTS.md` without breaking parse. Writing a managed block still refuses inner content that contains a real marker line.
+Adopting or updating a block leaves every byte outside the markers unchanged. Backup & replace (§6.3) copies the original file to backups, then writes a fresh file; skipped or unchanged blocks from that file are kept. Whole-line markers inside a CommonMark fenced code block (`` ``` `` or `~~~`, three or more characters) are documentation and are ignored when finding blocks, so a user can document agentinit markers in `AGENTS.md` without breaking parse. Writing a managed block still refuses inner content that contains a real marker line. When adopting `AGENTS.md` or `ARCHITECTURE.md` whose content **outside** the managed block already has an ATX H1 (`# …`, outside fenced code), the managed block omits its own H1 so the file keeps a single top-level heading. New files, and adopted files with no outside H1, still get the H1 inside the block. The "has H1" fact is measured on outside content only, so the block's own H1 never flips the choice on a re-run.
 
 ### 6.2 Manifest (`.agentinit/manifest.json`, committed)
 ```json
@@ -577,7 +577,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 
 ### 6.3 Conflicts With Existing Files
 For each existing file AgentInit wants to write that it doesn't already own:
-- **Adopt** — keep the user's content and add the managed block (shared files only; the `--yes` default for them).
+- **Adopt** — keep the user's content and add the managed block (shared files only; the `--yes` default for them). For `AGENTS.md` / `ARCHITECTURE.md` that already have an outside ATX H1, the block omits its H1 (§6.1).
 - **Backup & replace** — back up (§6.4), then write a fresh file. For a managed block, the file contains that block plus any skipped or unchanged blocks from the original.
 - **Skip** — leave the file untouched (the `--yes` default for non-shared files, including same-named workflows).
 
@@ -717,7 +717,7 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 ### 8.2 Fixture Repositories
 `tests/fixtures/`, each minimal but realistic. Full generated trees, covering every target, are snapshotted for `next15-src`, `vite-react`, and `express-ts` under `tests/__snapshots__/e2e/`.
 
-`next15-src` (Next 16.3 App Router) · `next15-app` (Next 15.5 App Router + Tailwind 4) · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` (Express 5) · `express4-ts` (Express 4) · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
+`next15-src` (Next 16.3 App Router) · `next15-app` (Next 15.5 App Router + Tailwind 4) · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` (Express 5) · `express4-ts` (Express 4) · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-agents-md` (adopt keeps a single H1) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
 

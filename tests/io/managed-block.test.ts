@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { AgentInitError } from '../../src/errors.js';
-import { createWithBlock, findBlocks, removeBlock, upsertBlock } from '../../src/io/managed-block.js';
+import {
+  createWithBlock,
+  findBlocks,
+  hasOutsideAtxH1,
+  removeBlock,
+  upsertBlock,
+} from '../../src/io/managed-block.js';
 
 const FILE = 'AGENTS.md';
 
@@ -288,6 +294,38 @@ describe('removeBlock', () => {
     const after = '\n# More\n';
     const text = `${block('core', 'generated\n')}${after}`;
     expect(removeBlock(text, 'core', FILE)).toBe(after);
+  });
+});
+
+describe('hasOutsideAtxH1', () => {
+  it.each([
+    {
+      name: 'user H1 before an empty file',
+      text: '# AGENTS.md — my-app\n\nNotes.\n',
+      expected: true,
+    },
+    {
+      name: 'user H1 outside a managed block that also has an H1',
+      text: `# Title\n\n${block('core', '# AGENTS.md\n\n## Contents\n')}`,
+      expected: true,
+    },
+    {
+      name: 'only the managed block H1',
+      text: block('core', '# AGENTS.md\n\n## Contents\n'),
+      expected: false,
+    },
+    {
+      name: 'H1 only inside a fenced code block',
+      text: 'Intro.\n\n```md\n# Not a heading\n```\n',
+      expected: false,
+    },
+    {
+      name: 'no H1 at all',
+      text: 'Just prose.\n\n## Section\n',
+      expected: false,
+    },
+  ])('detects $name', ({ text, expected }) => {
+    expect(hasOutsideAtxH1(text, FILE)).toBe(expected);
   });
 });
 

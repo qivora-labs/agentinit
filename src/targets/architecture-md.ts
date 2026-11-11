@@ -33,10 +33,11 @@ export const architectureMdAdapter: TargetAdapter = (ctx) => {
   const directives = sections.get('Directives')?.trim() ?? '';
   const architectureRows = parseMapRows(map);
   const rows = [...frameworkMapRows(ctx), ...architectureRows];
+  const omitH1 = ctx.omitBlockH1.has('ARCHITECTURE.md');
   const content =
     ctx.profile.mode === 'greenfield'
-      ? greenfieldDocument(map, architectureRows, directives)
-      : existingDocument(ctx.profile, rows, directives);
+      ? greenfieldDocument(map, architectureRows, directives, omitH1)
+      : existingDocument(ctx.profile, rows, directives, omitH1);
 
   return [
     {
@@ -66,7 +67,12 @@ function frameworkMapRows(ctx: TargetContext): MapRow[] {
   return rows;
 }
 
-function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], directives: string): string {
+function existingDocument(
+  profile: ProjectProfile,
+  rows: readonly MapRow[],
+  directives: string,
+  omitH1: boolean,
+): string {
   const folders = uniqueFolders(profile.folders);
   const matched: MatchedFolder[] = [];
   const unmatched: string[] = [];
@@ -95,7 +101,7 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
           ].join('\n');
 
   const blocks = [
-    '# ARCHITECTURE.md',
+    ...(omitH1 ? [] : ['# ARCHITECTURE.md']),
     'Describes the folders that exist today and the conventions for new code. Existing files stay where they are.',
     `## Layout\n\n${layout}`,
   ];
@@ -110,7 +116,7 @@ function existingDocument(profile: ProjectProfile, rows: readonly MapRow[], dire
   return markdownDocument(blocks);
 }
 
-function greenfieldDocument(map: string, rows: readonly MapRow[], directives: string): string {
+function greenfieldDocument(map: string, rows: readonly MapRow[], directives: string, omitH1: boolean): string {
   const layout =
     rows.length > 0
       ? markdownTable(
@@ -119,7 +125,7 @@ function greenfieldDocument(map: string, rows: readonly MapRow[], directives: st
         )
       : map;
   const blocks = [
-    '# ARCHITECTURE.md',
+    ...(omitH1 ? [] : ['# ARCHITECTURE.md']),
     'Describes the planned layout and the conventions for new code.',
     `## Planned layout\n\n${layout}`,
   ];

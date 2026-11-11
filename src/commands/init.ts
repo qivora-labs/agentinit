@@ -12,7 +12,7 @@ import { findGitRoot } from '../detect/workspace.js';
 import { AgentInitError } from '../errors.js';
 import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
-import { computeChanges, type Change } from '../io/changes.js';
+import { computeChanges, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
 import { readManifest, withPreservedExtras, type Manifest } from '../io/manifest.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { ALWAYS_ON_TOKEN_LIMIT } from '../plan/tokens.js';
@@ -434,9 +434,26 @@ async function prepareWrite(
     ctx.isInteractive,
     prompts,
   );
-  const plan = buildPlan(profile, resolved, { includeWorkflows: setup.workflows });
+  const plan = await planForDisk(root, profile, resolved, setup.workflows);
   const changes = await computeChanges(root, plan, manifest);
   return { profile, resolved, plan, changes };
+}
+
+/**
+ * Build the plan, then rebuild when an existing shared file already has an H1
+ * outside the managed block so adopt does not duplicate the heading.
+ */
+async function planForDisk(
+  root: string,
+  profile: ProjectProfile,
+  resolved: ResolvedSelection,
+  workflows: boolean,
+): Promise<Plan> {
+  const options = { includeWorkflows: workflows };
+  const draft = buildPlan(profile, resolved, options);
+  const omitBlockH1 = await sharedFilesWithOutsideH1(root);
+  if (omitBlockH1.size === 0) return draft;
+  return buildPlan(profile, resolved, { ...options, omitBlockH1 });
 }
 
 type ReviewLoopResult =

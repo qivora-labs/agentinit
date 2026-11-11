@@ -10,7 +10,7 @@ import { windsurfAdapter } from '../targets/windsurf.js';
 import type { AgentTarget, FileOp, ProjectProfile } from '../types.js';
 import { renderTargetContext } from './render.js';
 import { alwaysOnTokenWarning, estimateTokens } from './tokens.js';
-import type { Plan, PlanWarning, TargetAdapter } from './types.js';
+import { NO_OMIT_H1, type Plan, type PlanWarning, type TargetAdapter } from './types.js';
 
 const SHARED_ADAPTERS: readonly TargetAdapter[] = [agentsMdAdapter, architectureMdAdapter];
 
@@ -31,6 +31,11 @@ export const agentAdapters: Partial<Record<AgentTarget, TargetAdapter | undefine
 export interface BuildPlanOptions {
   /** When false, adapters emit no workflow FileOps. Defaults to true. */
   readonly includeWorkflows?: boolean;
+  /**
+   * Shared paths (`AGENTS.md`, `ARCHITECTURE.md`) whose existing content outside
+   * the managed block already has an ATX H1. Adapters omit the block H1 there.
+   */
+  readonly omitBlockH1?: ReadonlySet<string>;
 }
 
 export function buildPlan(
@@ -40,7 +45,10 @@ export function buildPlan(
 ): Plan {
   const includeWorkflows = options.includeWorkflows !== false;
   const selection = includeWorkflows ? resolved : { ...resolved, workflows: [] };
-  const ctx = renderTargetContext(profile, selection);
+  const ctx = {
+    ...renderTargetContext(profile, selection),
+    omitBlockH1: options.omitBlockH1 ?? NO_OMIT_H1,
+  };
   const ops: FileOp[] = [];
   for (const adapter of SHARED_ADAPTERS) {
     ops.push(...adapter(ctx));

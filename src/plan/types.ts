@@ -39,7 +39,15 @@ export interface TargetContext {
   readonly fragments: ScopedFragments;
   readonly workflows: readonly RenderedWorkflow[];
   readonly placeholders: PlaceholderContext;
+  /**
+   * Shared paths whose content outside the managed block already has an ATX H1.
+   * Adapters omit their block H1 for those paths so adopt keeps a single heading.
+   */
+  readonly omitBlockH1: ReadonlySet<string>;
 }
+
+/** Default when no shared file should drop its block H1. */
+export const NO_OMIT_H1: ReadonlySet<string> = new Set();
 
 export type TargetAdapter = (ctx: TargetContext) => FileOp[];
 

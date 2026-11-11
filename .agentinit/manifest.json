@@ -1,5 +1,5 @@
 {
-  "cliVersion": "0.0.0",
+  "cliVersion": "0.1.0",
   "mode": "existing",
   "selections": {
     "language": "typescript-strict",
@@ -40,10 +40,10 @@
       "sha256": "ac7d68143636c6bedb2fd146b8593983b9d23a59b4aa2aec56107570a1ac8e6c"
     },
     "AGENTS.md#core": {
-      "sha256": "34ff1075b7195771cdecc3c24b6a6f6fd1db0980bc27bd790f0112b4d8d7e2d4"
+      "sha256": "406403affe81a5844efe528bc40f58d5c6340ab5d6359bd3c60150beade67e95"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "d4a7b23bc6633d73911e2992e9574b8983251e0046ac4e33ae9f8b4748272a5b"
+      "sha256": "ca4032ae3be801f4eab128114516d7fec7a7fc98a56f2cad30e3712ed4256915"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
