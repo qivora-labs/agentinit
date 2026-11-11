@@ -659,7 +659,7 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 - [ ] Dogfood: run `agentinit init` on this repository (hand-written content stays outside managed blocks) and run `agentinit doctor` in CI.
 - [ ] Publish `@agentinit/cli@0.1.0`.
 
-The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript support moved from v0.4+ to v0.2, and lifecycle, breadth, and other ecosystems each moved one release later. Item-level plans are in [`docs/tasks/backlog.md`](tasks/backlog.md).
+The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript support moved from v0.4+ to v0.2, and lifecycle, breadth, and frameworks in other languages each moved one release later. Item-level plans are in [`docs/tasks/backlog.md`](tasks/backlog.md).
 
 ### v0.2 — JavaScript and older stacks
 - JavaScript projects: language detection replaces the TypeScript gate, scoped globs follow the project's language, and each rule fragment carries a JavaScript example beside the TypeScript one. JSDoc rules belong to the `javascript` language fragment; when they apply is decided in its task.
@@ -677,8 +677,8 @@ The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript s
 - Gemini CLI target (`GEMINI.md` or `.gemini/settings.json` → `AGENTS.md`).
 - Optional, opt-in folder scaffolding.
 
-### v0.5+ — Ecosystem
-- Python (`pyproject.toml`), Go (`go.mod`), Flutter (`pubspec.yaml`), Java, PHP. One ecosystem at a time, ordered by demand.
+### v0.5+ — Frameworks beyond JavaScript and TypeScript
+- Frameworks in Python (`pyproject.toml`), PHP (`composer.json`), Java (`pom.xml`, `build.gradle`), Go (`go.mod`), and Dart (`pubspec.yaml`, Flutter). Support is per framework, not per language: each is a framework fragment, added one at a time and ordered by demand. A language fragment is optional for these projects, and a project with no supported framework exits `1` with a link to request one.
 - Opt-in remote registries (`--registry <git-url>`, pinned to a commit and recorded in the manifest).
 - Automated rule-effectiveness evaluation harness.
 

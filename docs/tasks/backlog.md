@@ -17,15 +17,15 @@ Decided by the owner on 2026-11-12. It replaces the earlier order (v0.2 lifecycl
 | 0.2 | JavaScript projects and older stacks | J1–J6, P1.1 |
 | 0.3 | Lifecycle and customization | P2.1–P2.6 |
 | 0.4 | Breadth and proof | P3.1–P3.4 |
-| 0.5+ | Other ecosystems | P3.5 |
+| 0.5+ | Frameworks beyond JavaScript and TypeScript | P3.5 |
 | Unscheduled | Low impact, or blocked on a third party | P1.5, P1.7 |
 
 Decisions behind this order:
 
-- **JavaScript moves from v0.4+ to v0.2.** The tool should be useful for real JavaScript and TypeScript projects before it gains lifecycle commands or other languages.
+- **JavaScript moves from v0.4+ to v0.2.** The tool should be useful for real JavaScript and TypeScript projects before it gains lifecycle commands or frameworks in other languages.
 - **One set of fragments for both languages.** JavaScript support reuses the existing fragments: globs follow the project's language (J2) and each fragment carries a JavaScript example beside the TypeScript one (J3). There are no `express-js`-style fragment ids.
 - **Older majors ship with JavaScript** (P1.1). Jest and Tailwind v3 stay in coverage expansion (P3.2).
-- **Other languages come after breadth.** Python, Go, Java, PHP, and Flutter are v0.5 or later, ordered by demand (P3.5).
+- **Beyond JavaScript and TypeScript, support is per framework, not per language.** Frameworks in Python, PHP, Java, Go, and Dart come in v0.5 or later, ordered by demand (P3.5).
 
 ## Promoting an item to a task file
 
@@ -213,7 +213,7 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
   - Others: Storybook, MSW, Tailwind v3, and a `node-library` fragment for CLIs and libraries.
 - **Open decisions:** the maintainer budget per fragment (PRD §12); whether community fragments need the effectiveness gate.
 - **Depends on:** T42 policy, J3. **Size:** one task per fragment (M each). **PRD:** §4.2, §7.
-- React Native is listed here and not in P3.5: it is a `package.json` project, so it is a framework fragment, not a new ecosystem.
+- React Native is listed here and not in P3.5: it is a `package.json` project, so it needs no new detection.
 
 ### P3.3 More targets
 - **Problem:** only four agents get native files.
@@ -233,13 +233,18 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
 
 ---
 
-## v0.5+ — Other ecosystems
+## v0.5+ — Frameworks beyond JavaScript and TypeScript
 
-### P3.5 Languages beyond JavaScript and TypeScript
-- **Problem:** detection and the profile are built on `package.json` (`packages`, `packageManager`, `scripts`). Python, Go, Java, PHP, and Flutter each need their own detector, version resolution, and reviewed rule content. Java and PHP were added to the list by the owner on 2026-11-12.
-- **Proposal:** add one ecosystem at a time, ordered by demand (issues labelled `coverage`). Before the first one, run a design task for how detection and the profile generalize beyond `package.json`. Opt-in remote registries pinned to a commit stay here, as in PRD §7.
-- **Open decisions:** the order; who reviews rule content for each language (PRD §12).
-- **Depends on:** P3.2 data. **Size:** L per ecosystem. **PRD:** §7.
+### P3.5 Frameworks in Python, PHP, Java, Go, and Dart
+- **Problem:** developers in these languages mostly work inside a framework, and the framework's conventions are what an agent gets wrong. Detection and the profile are built on `package.json` (`packages`, `packageManager`, `scripts`), so no framework outside npm can be detected.
+- **Proposal:** the unit of support is the framework, not the language (owner, 2026-11-12). Each one is a framework fragment, the same as Next.js or Express today, for example Django or FastAPI, Laravel, Spring Boot, Gin, and Flutter. Add one framework at a time, ordered by demand (issues labelled `coverage`). General language support is not a goal: a project in one of these languages without a supported framework is not targeted. Before the first framework, run a design task for how detection and the profile generalize beyond `package.json` (`pyproject.toml`, `composer.json`, `pom.xml` or `build.gradle`, `go.mod`, `pubspec.yaml`). Opt-in remote registries pinned to a commit stay here, as in PRD §7.
+- **Decided (owner, 2026-11-12):**
+  - **The language fragment is optional.** The language stays a detected fact in the profile and the manifest (`python`, `php`), because globs and examples need it. A fragment under `registry/languages/` is included when one exists and is not required, so no always-on language rules are written for these projects by default. A language-level rule that a framework depends on goes in that framework's fragment.
+  - **No supported framework exits `1`.** The message names the project file that was found and the frameworks supported for that language, and links to the `coverage` issue template (P1.6). Base rules as in PRD §3.6 are not generated: without a language or framework fragment they would be only an architecture guess tuned to JavaScript folder names plus the workflows. Moving to exit `0` later is a minor-release change.
+- **Open decisions:**
+  - Which frameworks come first. The names above are examples, not commitments.
+  - Who reviews rule content for each framework (PRD §12).
+- **Depends on:** P3.2 data. **Size:** L for the detection design, then L for the first framework in each language and M for each further one. **PRD:** §7.
 
 ---
 
