@@ -1,6 +1,6 @@
 {
   "name": "@agentinit/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Bootstrap scoped AI coding agent rules, workflows, and architecture docs for Cursor, Claude Code, Windsurf, and GitHub Copilot",
   "keywords": [
     "ai",

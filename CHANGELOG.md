@@ -1,5 +1,13 @@
 # @agentinit/cli
 
+## 0.1.2
+
+### Patch Changes
+
+- 1bdd95f: When a manifest fails the schema but records a newer `cliVersion`, report an upgrade message instead of suggesting the file is corrupt or should be deleted.
+- e8ae7f6: Resolve installed package versions and the package manager from the workspace lookup root when running inside a workspace package. If you previously initialized inside a monorepo package, re-run `init` — `doctor` may now report a different framework fragment for the version that is really installed.
+- 27d7b97: Read locked package versions from `yarn.lock` (classic and berry) and text `bun.lock` when `node_modules` is absent, so `doctor` in CI selects the same fragments as a local `init`. Binary `bun.lockb` is still not parsed.
+
 ## 0.1.1
 
 ### Patch Changes
