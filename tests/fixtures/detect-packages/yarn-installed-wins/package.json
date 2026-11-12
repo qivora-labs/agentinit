@@ -1,0 +1,6 @@
+{
+  "name": "yarn-installed-wins",
+  "dependencies": {
+    "next": "^16.0.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "yarn-berry-two-versions",
+  "dependencies": {
+    "next": "^16.0.0"
+  }
+}

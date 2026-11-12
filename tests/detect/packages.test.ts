@@ -146,12 +146,50 @@ describe('resolveVersions', () => {
     });
   });
 
+  it('reads yarn classic lockfile versions by descriptor, including scoped and multi-descriptor entries', async () => {
+    const root = await copyFixture('yarn-classic-versions');
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({
+      next: '16.4.0',
+      '@tanstack/react-query': '5.107.1',
+    });
+  });
+
+  it('reads yarn berry lockfile versions through npm: descriptors', async () => {
+    const root = await copyFixture('yarn-berry-versions');
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({
+      next: '16.4.0',
+      '@tanstack/react-query': '5.107.1',
+    });
+  });
+
   it.each([
-    { fixture: 'lockfile-yarn', behavior: 'falls back to the range when yarn.lock is present' },
-    { fixture: 'lockfile-bun', behavior: 'falls back to the range when bun.lock is present' },
-    { fixture: 'lockfile-bunb', behavior: 'falls back to the range when bun.lockb is present' },
+    { fixture: 'yarn-classic-two-versions', behavior: 'yarn classic picks the descriptor that matches package.json' },
+    { fixture: 'yarn-berry-two-versions', behavior: 'yarn berry picks the npm: descriptor that matches package.json' },
   ] as const)('$behavior', async ({ fixture }) => {
     const root = await copyFixture(fixture);
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '16.4.0' });
+  });
+
+  it('reads bun.lock versions from packages entries, including scoped names', async () => {
+    const root = await copyFixture('bun-lock-versions');
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({
+      next: '16.4.0',
+      '@tanstack/react-query': '5.107.1',
+    });
+  });
+
+  it('prefers a bun workspace-scoped packages entry over the hoisted one', async () => {
+    const root = await copyFixture('bun-workspace-lock');
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ ms: '2.1.3' });
+  });
+
+  it('falls back to the range when only bun.lockb is present', async () => {
+    const root = await copyFixture('lockfile-bunb');
 
     expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
   });
@@ -172,6 +210,32 @@ describe('resolveVersions', () => {
     expect(resolveVersions(invalidPnpm, loadPackage(invalidPnpm))).toEqual({
       next: '15.1.0',
     });
+
+    const invalidYarn = await copyFixture('invalid-yarn-lock');
+    expect(resolveVersions(invalidYarn, loadPackage(invalidYarn))).toEqual({
+      next: '16.0.0',
+    });
+
+    const invalidBun = await copyFixture('invalid-bun-lock');
+    expect(resolveVersions(invalidBun, loadPackage(invalidBun))).toEqual({
+      next: '16.0.0',
+    });
+  });
+
+  it('prefers the installed version over yarn.lock', async () => {
+    const root = await copyFixture('yarn-installed-wins');
+
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '16.1.0' });
+  });
+
+  it('falls back to the range when yarn.lock has no descriptor matching package.json', async () => {
+    const root = await copyFixture('lockfile-yarn');
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
+  });
+
+  it('falls back to the range when bun.lock packages entry is not name@version', async () => {
+    const root = await copyFixture('lockfile-bun');
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
   });
 
   it('ignores dependency names that resolve outside node_modules', async () => {

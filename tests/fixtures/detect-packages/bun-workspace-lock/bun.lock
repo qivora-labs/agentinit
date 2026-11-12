@@ -1,0 +1,21 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "bun-ws",
+      "dependencies": {
+        "ms": "2.0.0",
+      },
+    },
+    "packages/web": {
+      "name": "web",
+      "dependencies": {
+        "ms": "2.1.3",
+      },
+    },
+  },
+  "packages": {
+    "ms": ["ms@2.0.0", "", {}, "sha512-root"],
+    "web/ms": ["ms@2.1.3", "", {}, "sha512-web"],
+  },
+}

@@ -1,0 +1,6 @@
+{
+  "name": "web",
+  "dependencies": {
+    "ms": "2.1.3"
+  }
+}

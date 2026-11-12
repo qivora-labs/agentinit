@@ -4,6 +4,7 @@ import { minVersion, valid, validRange } from 'semver';
 import { parse as parseYaml } from 'yaml';
 import { AgentInitError } from '../errors.js';
 import type { PackageManager } from '../types.js';
+import { jsoncToJson } from './jsonc.js';
 import { findGitRoot, type PackageWorkspaces } from './workspace.js';
 
 const KNOWN_SCRIPTS = ['build', 'dev', 'lint', 'test', 'typecheck'] as const;
@@ -91,9 +92,10 @@ export function findLookupRoot(root: string): string {
 export function resolveVersions(root: string, pkgJson: PackageJson): Record<string, string | null> {
   const projectRoot = path.resolve(root);
   const lookupRoot = findLookupRoot(projectRoot);
-  const locked = readLockfileVersions(projectRoot, lookupRoot);
+  const specifiers = dependencySpecifiers(pkgJson);
+  const locked = readLockfileVersions(projectRoot, lookupRoot, specifiers, pkgJson.name);
   const versions: Record<string, string | null> = {};
-  for (const [name, specifier] of dependencySpecifiers(pkgJson)) {
+  for (const [name, specifier] of specifiers) {
     versions[name] =
       installedVersion(projectRoot, lookupRoot, name) ??
       locked.get(name) ??
@@ -202,23 +204,192 @@ function installedVersionAt(dir: string, lookupRoot: string, name: string): stri
 }
 
 /**
- * `yarn.lock` and `bun.lock` / `bun.lockb` are not parsed in v0.1; those
- * projects fall through to the range in package.json. When `pnpm-lock.yaml`
- * exists it is the only lockfile consulted, even if `package-lock.json` is
- * also present. Unknown or invalid lockfiles contribute no versions. Lockfiles
- * are read at the lookup root; pnpm uses that project's importer, and npm
+ * First existing lockfile at the lookup root wins, in the same order as
+ * package-manager detection except `bun.lockb` (binary; never parsed). Yarn
+ * matches each dependency by its package.json descriptor; Bun prefers a
+ * workspace-scoped `packages` entry when one exists. Unknown or invalid
+ * lockfiles contribute no versions. pnpm uses the project's importer; npm
  * prefers a nested `packages` entry over a hoisted one.
  */
 function readLockfileVersions(
   projectRoot: string,
   lookupRoot: string,
+  specifiers: ReadonlyMap<string, string>,
+  packageName: string | undefined,
 ): ReadonlyMap<string, string> {
   const importerPath = posixRelative(lookupRoot, projectRoot);
   const pnpmLock = path.join(lookupRoot, 'pnpm-lock.yaml');
   if (isFile(pnpmLock)) return readPnpmLockVersions(pnpmLock, importerPath);
+  const yarnLock = path.join(lookupRoot, 'yarn.lock');
+  if (isFile(yarnLock)) return readYarnLockVersions(yarnLock, specifiers);
+  const bunLock = path.join(lookupRoot, 'bun.lock');
+  if (isFile(bunLock)) return readBunLockVersions(bunLock, specifiers, packageName);
   const npmLock = path.join(lookupRoot, 'package-lock.json');
   if (isFile(npmLock)) return readNpmLockVersions(npmLock, importerPath);
   return new Map();
+}
+
+/**
+ * Classic (`# yarn lockfile v1`) vs berry (`__metadata`). A lockfile can hold
+ * several versions of one package; the package.json specifier picks the entry.
+ */
+function readYarnLockVersions(
+  filePath: string,
+  specifiers: ReadonlyMap<string, string>,
+): Map<string, string> {
+  const versions = new Map<string, string>();
+  let raw: string;
+  try {
+    raw = readFileSync(filePath, 'utf8');
+  } catch {
+    return versions;
+  }
+
+  const byDescriptor =
+    isYarnBerryLock(raw) ? parseYarnBerryDescriptors(raw) : parseYarnClassicDescriptors(raw);
+  if (byDescriptor === null) return versions;
+
+  for (const [name, specifier] of specifiers) {
+    const classicKey = `${name}@${specifier}`;
+    const berryKey = `${name}@npm:${specifier}`;
+    const version = byDescriptor.get(classicKey) ?? byDescriptor.get(berryKey);
+    if (version !== undefined) versions.set(name, version);
+  }
+  return versions;
+}
+
+function isYarnBerryLock(raw: string): boolean {
+  return /(?:^|\n)__metadata\s*:/.test(raw);
+}
+
+function parseYarnBerryDescriptors(raw: string): Map<string, string> | null {
+  let data: unknown;
+  try {
+    data = parseYaml(raw);
+  } catch {
+    return null;
+  }
+  const record = asRecord(data);
+  if (record === null) return null;
+
+  const byDescriptor = new Map<string, string>();
+  for (const [key, entry] of Object.entries(record)) {
+    if (key === '__metadata') continue;
+    const version = yarnEntryVersion(entry);
+    if (version === null) continue;
+    for (const descriptor of splitYarnDescriptors(key)) {
+      byDescriptor.set(descriptor, version);
+    }
+  }
+  return byDescriptor;
+}
+
+/** Line parser: entry keys are non-indented; `version "x.y.z"` is indented. */
+function parseYarnClassicDescriptors(raw: string): Map<string, string> | null {
+  if (
+    !/(?:^|\n)#\s*yarn lockfile v1\b/.test(raw) &&
+    !raw.includes('yarn lockfile') &&
+    !/^[^:\s][^:]*:/.test(raw.trim())
+  ) {
+    // Unknown yarn format — refuse rather than guess.
+    return null;
+  }
+
+  const byDescriptor = new Map<string, string>();
+  const lines = raw.split(/\r?\n/);
+  let pending: string[] | null = null;
+
+  for (const line of lines) {
+    if (line.trim() === '' || line.startsWith('#')) {
+      pending = null;
+      continue;
+    }
+
+    if (!line.startsWith(' ') && !line.startsWith('\t') && line.endsWith(':')) {
+      pending = splitYarnDescriptors(line.slice(0, -1));
+      continue;
+    }
+
+    if (pending === null) continue;
+    const match = /^\s+version\s+"([^"]+)"\s*$/.exec(line);
+    if (match === null) continue;
+    const version = valid(match[1] ?? '');
+    if (version !== null) {
+      for (const descriptor of pending) {
+        byDescriptor.set(descriptor, version);
+      }
+    }
+    pending = null;
+  }
+
+  return byDescriptor;
+}
+
+function splitYarnDescriptors(key: string): string[] {
+  const descriptors: string[] = [];
+  for (const part of key.split(',')) {
+    const trimmed = part.trim().replace(/^"|"$/g, '');
+    if (trimmed !== '') descriptors.push(trimmed);
+  }
+  return descriptors;
+}
+
+function yarnEntryVersion(entry: unknown): string | null {
+  const record = asRecord(entry);
+  if (record === null) return null;
+  if (typeof record.version === 'number') return valid(String(record.version));
+  if (typeof record.version === 'string') return valid(record.version);
+  return null;
+}
+
+/**
+ * Bun text lockfile: JSONC `packages[<name>][0]` is `name@version`. Workspace
+ * packages may also store `packages["<pkgName>/<name>"]`; that entry wins when
+ * the project package.json `name` matches.
+ */
+function readBunLockVersions(
+  filePath: string,
+  specifiers: ReadonlyMap<string, string>,
+  packageName: string | undefined,
+): Map<string, string> {
+  const versions = new Map<string, string>();
+  const data = parseJsoncRecord(filePath);
+  if (data === null) return versions;
+  const packages = asRecord(data.packages);
+  if (packages === null) return versions;
+
+  for (const name of specifiers.keys()) {
+    const scopedKey =
+      packageName !== undefined && packageName !== '' ? `${packageName}/${name}` : null;
+    const entry =
+      scopedKey !== null && scopedKey in packages ? packages[scopedKey] : packages[name];
+    const version = bunPackageVersion(entry);
+    if (version !== null) versions.set(name, version);
+  }
+  return versions;
+}
+
+function bunPackageVersion(entry: unknown): string | null {
+  if (!Array.isArray(entry) || entry.length === 0) return null;
+  const first: unknown = entry[0];
+  if (typeof first !== 'string') return null;
+  const at = first.lastIndexOf('@');
+  if (at <= 0) return null;
+  return valid(first.slice(at + 1));
+}
+
+function parseJsoncRecord(filePath: string): Record<string, unknown> | null {
+  let raw: string;
+  try {
+    raw = readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+  try {
+    return asRecord(JSON.parse(jsoncToJson(raw)) as unknown);
+  } catch {
+    return null;
+  }
 }
 
 function readNpmLockVersions(filePath: string, importerPath: string): Map<string, string> {
