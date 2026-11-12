@@ -85,6 +85,10 @@ Public contracts after `0.1.0`:
 
 See also the short pointer in [`AGENTS.md`](AGENTS.md) and PRD §6.2 / §9.
 
+## Report a problem
+
+Use the [issue chooser](https://github.com/qivora-labs/agentinit/issues/new/choose) for bugs, wrong rules, missing coverage, and data loss. Details are in the README [Report a problem](README.md#report-a-problem) section.
+
 ## Support
 
 Code contributions (especially registry fragments) are the most useful help. Financial support goes through [GitHub Sponsors](https://github.com/sponsors/qivora-labs).

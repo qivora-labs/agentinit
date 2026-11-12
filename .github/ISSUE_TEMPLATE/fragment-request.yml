@@ -1,0 +1,45 @@
+name: Fragment request
+description: Ask for rules for a framework or library that agentinit does not cover yet.
+labels: [coverage]
+body:
+  - type: input
+    id: framework
+    attributes:
+      label: Framework or library
+      description: The common name people use for it.
+      placeholder: Astro
+    validations:
+      required: true
+  - type: input
+    id: package-name
+    attributes:
+      label: Package name
+      description: The npm package name (or equivalent) used to detect it.
+      placeholder: astro
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions in use
+      description: Major or exact versions you need covered.
+      placeholder: 5.x
+    validations:
+      required: true
+  - type: input
+    id: docs-url
+    attributes:
+      label: Official documentation URL
+      placeholder: https://…
+    validations:
+      required: true
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Willing to contribute the fragment?
+      description: Most fragments are one Markdown file under `registry/`. See CONTRIBUTING.md.
+      options:
+        - "Yes"
+        - "No / not sure"
+    validations:
+      required: true

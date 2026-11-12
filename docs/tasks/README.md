@@ -173,7 +173,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T55](T55-workspace-package-detection.md) | Versions & package manager inside a workspace package | M10 | — | M | done |
 | [T56](T56-yarn-and-bun-lockfiles.md) | Locked versions from `yarn.lock` and `bun.lock` | M10 | T55 | M | done |
 | [T57](T57-newer-manifest-guard.md) | Version guard before manifest value checks | M10 | — | S | done |
-| [T58](T58-issue-templates.md) | Issue templates & a wrong-rule report path | M10 | — | S | todo |
+| [T58](T58-issue-templates.md) | Issue templates & a wrong-rule report path | M10 | — | S | done |
 
 **M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
 

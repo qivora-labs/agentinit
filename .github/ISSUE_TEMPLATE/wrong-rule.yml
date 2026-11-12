@@ -1,0 +1,47 @@
+name: Wrong rule
+description: A generated rule or directive does not match the official docs.
+labels: [wrong-rule]
+body:
+  - type: input
+    id: fragment-id
+    attributes:
+      label: Fragment id
+      description: From `npx @agentinit/cli list`, or the `agentinit-<id>` file name without the prefix.
+      placeholder: nextjs
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: Detected package version
+      description: The installed version of the package this fragment is about (from `package.json` or the lockfile).
+      placeholder: 15.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      options:
+        - Cursor
+        - Claude Code
+        - Windsurf
+        - GitHub Copilot
+        - AGENTS.md / other
+    validations:
+      required: true
+  - type: textarea
+    id: directive
+    attributes:
+      label: Directive that is wrong
+      description: Paste the rule or directive text that is incorrect.
+    validations:
+      required: true
+  - type: input
+    id: docs-url
+    attributes:
+      label: Official documentation URL
+      description: A link that shows the correct behavior.
+      placeholder: https://…
+    validations:
+      required: true

@@ -268,11 +268,20 @@ Not supported in v0.1. Use a TypeScript project (strict recommended).
 **Copilot surfaces that ignore `AGENTS.md`?**  
 Some JetBrains Copilot features only see the pointer in `.github/copilot-instructions.md`. An opt-in inline mode is planned for v0.3.
 
+## Report a problem
+
+Open an issue from the [issue chooser](https://github.com/qivora-labs/agentinit/issues/new/choose):
+
+- **Bug** — something broke or behaved incorrectly
+- **Wrong rule** — a generated directive does not match the official docs
+- **Fragment request** — a framework or library is missing (`coverage`)
+- **Data loss** — content you expected to keep was overwritten or removed
+
+Security reports stay private: [SECURITY.md](SECURITY.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Adding a library or framework is usually one Markdown file under `registry/`.
-
-Security reports: [SECURITY.md](SECURITY.md).
 
 ## Support
 

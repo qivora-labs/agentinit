@@ -1,0 +1,72 @@
+name: Bug report
+description: Something broke or behaved incorrectly when running agentinit.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: agentinit version
+      description: Output of `npx @agentinit/cli --version` (or the version of your installed copy).
+      placeholder: 0.1.1
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command and flags
+      description: The exact command you ran.
+      placeholder: npx @agentinit/cli init --yes
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      description: Output of `node --version`.
+      placeholder: v22.18.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: package-manager
+    attributes:
+      label: Package manager
+      options:
+        - npm
+        - pnpm
+        - yarn
+        - bun
+        - unknown / none
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you saw (errors, unexpected files, wrong behavior).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Prefer `--json` when the command supports it. Paste the relevant terminal output.
+      render: shell
+    validations:
+      required: false
