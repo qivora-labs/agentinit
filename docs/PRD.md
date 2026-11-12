@@ -158,9 +158,10 @@ Triggered when `package.json` exists in the target directory.
 
 1. **TypeScript Gate:** the project must have `tsconfig.json` or a `typescript` dependency. Otherwise the CLI prints *"JavaScript projects aren't supported yet"* and exits with code `1`, writing nothing.
 2. **Repository Scan:**
-   - **Packages:** resolves real versions from `node_modules/<pkg>/package.json`, then the lockfile, then the semver range in `package.json` (handles `^`, `~`, `workspace:*`, `catalog:`, `npm:` aliases).
-   - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`).
-   - **Package manager:** `packageManager` field, then lockfile (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`).
+   - **Lookup root:** the nearest directory that has a recognised lockfile (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`, `package-lock.json`), starting at the project directory and never above the git root. With no git repository, only the project directory is used. A workspace marker alone does not extend the search. When the project has its own lockfile, or none is found, the lookup root is the project.
+   - **Packages:** resolves real versions from `node_modules/<pkg>/package.json` (project directory, then each parent up to the lookup root), then the lockfile at the lookup root, then the semver range in `package.json` (handles `^`, `~`, `workspace:*`, `catalog:`, `npm:` aliases). A `node_modules` symlink is read only when its canonical target stays inside the lookup root; otherwise the lockfile is used. For pnpm, the importer is the POSIX path from the lookup root to the project (`.` when they are the same). For npm, a nested `packages["<path>/node_modules/<pkg>"]` entry wins over a hoisted `packages["node_modules/<pkg>"]` entry.
+   - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`). Marker files, `tsconfig.json`, and layout stay in the project directory.
+   - **Package manager:** the project's `packageManager` field, then the `packageManager` field of the `package.json` at the lookup root, then the lockfile at the lookup root (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`).
    - **Scripts:** only scripts that actually exist (`build`, `dev`, `lint`, `test`, `typecheck`) are documented, using the detected package manager.
    - **TypeScript:** parses `tsconfig.json` as JSONC, resolves `extends`, reads `strict` (suggests `typescript-strict` when `true`) and `paths` aliases.
    - **Layout:** `src/` vs. root; Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.

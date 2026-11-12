@@ -53,15 +53,15 @@ Record the answers under **Notes** and in the PRD.
 - The `pnpm-monorepo` fixture already has `packages/web` and `packages/api`.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] pnpm workspace package with `next: ^16.0.0` and a symlinked install of 16.4.0: `init --yes` selects `nextjs-app-router`.
-- [ ] The same package without `node_modules`: the version comes from `importers['packages/web']` in the root `pnpm-lock.yaml`. A `catalog:` specifier resolves from that entry.
-- [ ] npm workspace package: a hoisted root `node_modules/<pkg>` is read. Without `node_modules`, the root `package-lock.json` is read, and a `packages/web/node_modules/<pkg>` entry wins over the hoisted entry.
-- [ ] A workspace package with no `packageManager` field and no lockfile of its own gets the root's package manager in `AGENTS.md` and the workflows (`pnpm test`, not `npm run test`).
-- [ ] A symlink whose target is outside the lookup root is ignored, and the version falls through to the lockfile.
-- [ ] A project that is not in a workspace resolves exactly as before. A lockfile above the git root is not read, and with no git repository no parent directory is read.
-- [ ] Inside the workspace package, `init --yes` followed by `doctor` exits `0`.
-- [ ] A `patch` changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] pnpm workspace package with `next: ^16.0.0` and a symlinked install of 16.4.0: `init --yes` selects `nextjs-app-router`.
+- [x] The same package without `node_modules`: the version comes from `importers['packages/web']` in the root `pnpm-lock.yaml`. A `catalog:` specifier resolves from that entry.
+- [x] npm workspace package: a hoisted root `node_modules/<pkg>` is read. Without `node_modules`, the root `package-lock.json` is read, and a `packages/web/node_modules/<pkg>` entry wins over the hoisted entry.
+- [x] A workspace package with no `packageManager` field and no lockfile of its own gets the root's package manager in `AGENTS.md` and the workflows (`pnpm test`, not `npm run test`).
+- [x] A symlink whose target is outside the lookup root is ignored, and the version falls through to the lockfile.
+- [x] A project that is not in a workspace resolves exactly as before. A lockfile above the git root is not read, and with no git repository no parent directory is read.
+- [x] Inside the workspace package, `init --yes` followed by `doctor` exits `0`.
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -75,3 +75,5 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 Owner decisions, 2026-11-12. The PRD is updated when the task is implemented.
 - **Decision 1:** the lookup root is the nearest directory with a recognised lockfile, starting at the project directory and never above the git root. With no git repository, only the project directory is used. A workspace marker alone does not extend the search.
 - **Decision 2:** a `node_modules` symlink is read when its canonical target is inside the lookup root. A target outside it is ignored and falls through to the lockfile. This widens the T14 rule from the project to the lookup root.
+
+Implemented 2026-11-12: `findLookupRoot` in `src/detect/packages.ts`; installed versions walk project→lookup root; pnpm importer / npm nested-vs-hoisted lockfile keys; package manager falls through to the lookup root. PRD §3.3 step 2 documents the lookup root and symlink rule. Symlinks for pnpm-style installs are created in temp dirs (not committed) for Windows CI.

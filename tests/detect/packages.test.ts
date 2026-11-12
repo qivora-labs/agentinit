@@ -7,6 +7,7 @@ import {
   detectPackageManager,
   detectScripts,
   existingFiles,
+  findLookupRoot,
   readPackageJson,
   resolveVersions,
   type PackageJson,
@@ -206,6 +207,208 @@ describe('resolveVersions', () => {
 
     expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.3.2' });
   });
+
+  it('reads a pnpm-style symlink whose target is under the lookup root, not the package', async () => {
+    const repo = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    await writeFile(path.join(repo, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n');
+    await writeFile(
+      path.join(repo, 'package.json'),
+      JSON.stringify({ name: 'repo', private: true, packageManager: 'pnpm@9.0.0' }),
+    );
+    await writeFile(
+      path.join(repo, 'pnpm-lock.yaml'),
+      [
+        "lockfileVersion: '9.0'",
+        'importers:',
+        '  packages/web:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^16.0.0',
+        '        version: 16.0.0',
+        '',
+      ].join('\n'),
+    );
+    const pkg = path.join(repo, 'packages', 'web');
+    await mkdir(pkg, { recursive: true });
+    await writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({ name: 'web', dependencies: { next: '^16.0.0' } }),
+    );
+    const store = path.join(repo, 'node_modules', '.pnpm', 'next@16.4.0', 'node_modules', 'next');
+    await mkdir(store, { recursive: true });
+    await writeFile(path.join(store, 'package.json'), JSON.stringify({ version: '16.4.0' }));
+    await mkdir(path.join(pkg, 'node_modules'), { recursive: true });
+    await symlink(store, path.join(pkg, 'node_modules', 'next'), 'dir');
+
+    expect(resolveVersions(pkg, loadPackage(pkg))).toEqual({ next: '16.4.0' });
+  });
+
+  it('reads pnpm importers for a workspace package and resolves catalog: from that entry', async () => {
+    const repo = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    await writeFile(
+      path.join(repo, 'package.json'),
+      JSON.stringify({ name: 'repo', private: true, packageManager: 'pnpm@9.0.0' }),
+    );
+    await writeFile(
+      path.join(repo, 'pnpm-lock.yaml'),
+      [
+        "lockfileVersion: '9.0'",
+        'importers:',
+        '  .:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^15.0.0',
+        '        version: 15.0.0',
+        '  packages/web:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^16.0.0',
+        '        version: 16.4.0',
+        '      react:',
+        '        specifier: "catalog:"',
+        '        version: 19.1.0',
+        '',
+      ].join('\n'),
+    );
+    const pkg = path.join(repo, 'packages', 'web');
+    await mkdir(pkg, { recursive: true });
+    await writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({
+        name: 'web',
+        dependencies: { next: '^16.0.0', react: 'catalog:' },
+      }),
+    );
+
+    expect(resolveVersions(pkg, loadPackage(pkg))).toEqual({
+      next: '16.4.0',
+      react: '19.1.0',
+    });
+  });
+
+  it('reads a hoisted npm workspace install and prefers a nested lockfile entry', async () => {
+    const repo = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    await writeFile(
+      path.join(repo, 'package.json'),
+      JSON.stringify({ name: 'repo', private: true, workspaces: ['packages/*'] }),
+    );
+    await writeFile(
+      path.join(repo, 'package-lock.json'),
+      JSON.stringify({
+        name: 'repo',
+        lockfileVersion: 3,
+        packages: {
+          '': { name: 'repo' },
+          'node_modules/next': { version: '16.0.0' },
+          'packages/web/node_modules/next': { version: '16.4.0' },
+          'node_modules/react': { version: '19.0.0' },
+        },
+      }),
+    );
+    const pkg = path.join(repo, 'packages', 'web');
+    await mkdir(pkg, { recursive: true });
+    await writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({ name: 'web', dependencies: { next: '^16.0.0', react: '^19.0.0' } }),
+    );
+
+    expect(resolveVersions(pkg, loadPackage(pkg))).toEqual({
+      next: '16.4.0',
+      react: '19.0.0',
+    });
+
+    await mkdir(path.join(repo, 'node_modules', 'next'), { recursive: true });
+    await writeFile(
+      path.join(repo, 'node_modules', 'next', 'package.json'),
+      JSON.stringify({ version: '16.3.1' }),
+    );
+    expect(resolveVersions(pkg, loadPackage(pkg))).toEqual({
+      next: '16.3.1',
+      react: '19.0.0',
+    });
+  });
+
+  it('ignores a symlink whose target leaves the lookup root and falls through to the lockfile', async () => {
+    const repo = await tempDir();
+    const outside = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    await writeFile(path.join(repo, 'package.json'), JSON.stringify({ name: 'repo', private: true }));
+    await writeFile(
+      path.join(repo, 'pnpm-lock.yaml'),
+      [
+        "lockfileVersion: '9.0'",
+        'importers:',
+        '  packages/web:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^16.0.0',
+        '        version: 16.4.0',
+        '',
+      ].join('\n'),
+    );
+    const pkg = path.join(repo, 'packages', 'web');
+    await mkdir(path.join(pkg, 'node_modules', 'next'), { recursive: true });
+    await writeFile(path.join(outside, 'package.json'), JSON.stringify({ version: '9.9.9' }));
+    await symlink(
+      path.join(outside, 'package.json'),
+      path.join(pkg, 'node_modules', 'next', 'package.json'),
+    );
+    await writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({ name: 'web', dependencies: { next: '^16.0.0' } }),
+    );
+
+    expect(resolveVersions(pkg, loadPackage(pkg))).toEqual({ next: '16.4.0' });
+  });
+
+  it('does not read a lockfile above the git root, and without git does not walk parents', async () => {
+    const outer = await tempDir();
+    await writeFile(
+      path.join(outer, 'pnpm-lock.yaml'),
+      [
+        "lockfileVersion: '9.0'",
+        'importers:',
+        '  .:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^16.0.0',
+        '        version: 16.4.0',
+        '',
+      ].join('\n'),
+    );
+
+    const noGit = path.join(outer, 'project');
+    await mkdir(noGit);
+    await writeFile(
+      path.join(noGit, 'package.json'),
+      JSON.stringify({ dependencies: { next: '^16.0.0' } }),
+    );
+    expect(findLookupRoot(noGit)).toBe(path.resolve(noGit));
+    expect(resolveVersions(noGit, loadPackage(noGit))).toEqual({ next: '16.0.0' });
+
+    const withGit = path.join(outer, 'repo');
+    await mkdir(path.join(withGit, '.git'), { recursive: true });
+    await writeFile(
+      path.join(withGit, 'package.json'),
+      JSON.stringify({ dependencies: { next: '^15.1.0' } }),
+    );
+    expect(findLookupRoot(withGit)).toBe(path.resolve(withGit));
+    expect(resolveVersions(withGit, loadPackage(withGit))).toEqual({ next: '15.1.0' });
+  });
+});
+
+describe('findLookupRoot', () => {
+  it('returns the project when it has a lockfile or when no lockfile is found', async () => {
+    const withLock = await copyFixture('pnpm-lock');
+    expect(findLookupRoot(withLock)).toBe(path.resolve(withLock));
+
+    const bare = await tempDir();
+    await writeFile(path.join(bare, 'package.json'), JSON.stringify({ name: 'app' }));
+    expect(findLookupRoot(bare)).toBe(path.resolve(bare));
+  });
 });
 
 describe('detectPackageManager', () => {
@@ -258,6 +461,24 @@ describe('detectPackageManager', () => {
   ] as const)('$behavior', async ({ fixture, manager }) => {
     const root = await copyFixture(fixture);
     expect(detectPackageManager(root, loadPackage(root))).toBe(manager);
+  });
+
+  it('uses the lookup root packageManager and lockfile for a workspace package', async () => {
+    const repo = await tempDir();
+    await mkdir(path.join(repo, '.git'));
+    await writeFile(
+      path.join(repo, 'package.json'),
+      JSON.stringify({ name: 'repo', private: true, packageManager: 'pnpm@10.14.0' }),
+    );
+    await writeFile(path.join(repo, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\nimporters: {}\n");
+    const pkg = path.join(repo, 'packages', 'web');
+    await mkdir(pkg, { recursive: true });
+    await writeFile(path.join(pkg, 'package.json'), JSON.stringify({ name: 'web' }));
+
+    expect(detectPackageManager(pkg, loadPackage(pkg))).toBe('pnpm');
+
+    await writeFile(path.join(repo, 'package.json'), JSON.stringify({ name: 'repo', private: true }));
+    expect(detectPackageManager(pkg, loadPackage(pkg))).toBe('pnpm');
   });
 });
 
