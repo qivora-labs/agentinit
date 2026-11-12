@@ -135,6 +135,34 @@ describe('remove --all', () => {
     expect(payload.notices.some((notice) => notice.includes('0.2.0'))).toBe(true);
   });
 
+  it('exits 1 with the upgrade message when the manifest is newer and unreadable', async () => {
+    const dir = await temp.copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, MANIFEST_PATH);
+    const before = await readFile(manifestPath);
+    const saved = JSON.parse(before.toString('utf8')) as {
+      cliVersion: string;
+      selections: { language: string };
+    };
+    saved.cliVersion = '0.2.0';
+    saved.selections.language = 'javascript';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+    const afterWrite = await readFile(manifestPath);
+
+    const blocked = await runCli(['remove', '--all', '--yes', '--cwd', dir]);
+    expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
+    expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
+    expect(blocked.stderr).toContain('npx @agentinit/cli@0.2.0');
+    expect(blocked.stderr).not.toContain('Fix .agentinit/manifest.json');
+    expect(blocked.stderr).not.toContain('delete it');
+
+    const forced = await runCli(['remove', '--all', '--yes', '--force', '--cwd', dir]);
+    expect(forced.code).toBe(1);
+    expect(forced.stderr).toContain('This project was set up with agentinit 0.2.0');
+    expect(await readFile(manifestPath)).toEqual(afterWrite);
+  });
+
   it('warns and continues when cliVersion is invalid', async () => {
     const dir = await temp.copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
@@ -257,33 +285,5 @@ describe('init --no-workflows', () => {
     expect(result.code).toBe(0);
     expect(await listFiles(dir)).not.toContain(workflow);
     expect((await readManifest(dir, pkg.version))?.selections.workflows).toBe(false);
-  });
-
-  it('exits 1 with the upgrade message when the manifest is newer and unreadable', async () => {
-    const dir = await temp.copyFixture('next15-src');
-    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
-    const manifestPath = path.join(dir, MANIFEST_PATH);
-    const before = await readFile(manifestPath);
-    const saved = JSON.parse(before.toString('utf8')) as {
-      cliVersion: string;
-      selections: { language: string };
-    };
-    saved.cliVersion = '0.2.0';
-    saved.selections.language = 'javascript';
-    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
-    const afterWrite = await readFile(manifestPath);
-
-    const blocked = await runCli(['remove', '--all', '--yes', '--cwd', dir]);
-    expect(blocked.code).toBe(1);
-    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
-    expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
-    expect(blocked.stderr).toContain('npx @agentinit/cli@0.2.0');
-    expect(blocked.stderr).not.toContain('Fix .agentinit/manifest.json');
-    expect(blocked.stderr).not.toContain('delete it');
-
-    const forced = await runCli(['remove', '--all', '--yes', '--force', '--cwd', dir]);
-    expect(forced.code).toBe(1);
-    expect(forced.stderr).toContain('This project was set up with agentinit 0.2.0');
-    expect(await readFile(manifestPath)).toEqual(afterWrite);
   });
 });
