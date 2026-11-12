@@ -30,7 +30,7 @@ const ONLY_ALL = 'Only `remove --all` is available in this version.';
 
 /**
  * Tear down every owned file and managed block. v0.1 only supports `--all`;
- * per-id remove is v0.2.
+ * per-id remove is v0.3.
  */
 export async function remove(ctx: RunContext, logger: Logger, options: RemoveOptions = {}): Promise<number> {
   requireInteractiveOrYes(ctx);

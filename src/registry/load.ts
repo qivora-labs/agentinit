@@ -71,7 +71,7 @@ export async function loadRegistry(dir: string = defaultRegistryDir()): Promise<
 }
 
 /**
- * `meta/` holds the v0.2 customize fragment (PRD §4.2). v0.1 skips the folder
+ * `meta/` holds the v0.3 customize fragment (PRD §4.2). v0.1 skips the folder
  * so unpublished content there cannot fail the load.
  */
 function isMetaPath(relativePath: string): boolean {
