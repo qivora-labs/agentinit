@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
 
-const ALLOWED_LABELS = new Set(['bug', 'wrong-rule', 'coverage', 'data-loss']);
+const EXPECTED_FORMS = {
+  'bug.yml': 'bug',
+  'wrong-rule.yml': 'wrong-rule',
+  'fragment-request.yml': 'coverage',
+  'data-loss.yml': 'data-loss',
+} as const satisfies Record<string, string>;
 
 const templateDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -27,10 +32,13 @@ interface FormField {
 describe('issue templates', () => {
   it('parses every form with name, description, body, unique field ids, and allowed labels only', async () => {
     const entries = await readdir(templateDir);
-    const formFiles = entries.filter((name) => name.endsWith('.yml') && name !== 'config.yml');
-    expect(formFiles.length).toBeGreaterThan(0);
+    const formFiles = entries
+      .filter((name) => name.endsWith('.yml') && name !== 'config.yml')
+      .sort();
+    expect(formFiles).toEqual(Object.keys(EXPECTED_FORMS).sort());
 
     for (const file of formFiles) {
+      const expectedLabel = EXPECTED_FORMS[file as keyof typeof EXPECTED_FORMS];
       const raw = await readFile(path.join(templateDir, file), 'utf8');
       const parsed: unknown = parseYaml(raw);
       expect(parsed, file).toBeTypeOf('object');
@@ -44,11 +52,7 @@ describe('issue templates', () => {
       expect(Array.isArray(form.body), file).toBe(true);
       expect((form.body as unknown[]).length, file).toBeGreaterThan(0);
 
-      const labels = normalizeLabels(form.labels);
-      expect(labels.length, file).toBeGreaterThan(0);
-      for (const label of labels) {
-        expect(ALLOWED_LABELS.has(label), `${file} label ${label}`).toBe(true);
-      }
+      expect(normalizeLabels(form.labels), file).toEqual([expectedLabel]);
 
       const ids = (form.body as FormField[])
         .map((field) => field.id)
