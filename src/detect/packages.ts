@@ -440,8 +440,9 @@ function isFile(filePath: string): boolean {
 }
 
 /**
- * `statSync` follows symlinks. The canonical path has to stay inside `root`,
- * or a link can name a file outside the project.
+ * `statSync` follows symlinks. The canonical path has to stay inside `root`
+ * (the project, or the lookup root for installed packages), or a link can
+ * name a file outside that boundary.
  */
 function isFileInside(root: string, filePath: string): boolean {
   const real = realpathInside(root, filePath);

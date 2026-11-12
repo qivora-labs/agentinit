@@ -120,6 +120,11 @@ describe('detection', () => {
     expect(agents).toContain('pnpm test');
     expect(agents).not.toContain('npm run test');
 
+    // Default agents include Claude, so Cursor defers to `.claude/skills/` (PRD §5.2).
+    const workflow = await readFile(path.join(pkg, '.claude/skills/new-feature/SKILL.md'), 'utf8');
+    expect(workflow).toContain('pnpm test');
+    expect(workflow).not.toContain('npm run test');
+
     const doctor = await runCli(['doctor', '--cwd', pkg]);
     expect(doctor.code).toBe(0);
     expect(doctor.stdout).toContain('No issues found.');
