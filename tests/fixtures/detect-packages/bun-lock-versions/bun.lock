@@ -1,0 +1,17 @@
+{
+  "lockfileVersion": 1,
+  // trimmed from a real `bun install`
+  "workspaces": {
+    "": {
+      "name": "bun-lock-versions",
+      "dependencies": {
+        "@tanstack/react-query": "^5.59.0",
+        "next": "^16.0.0",
+      },
+    },
+  },
+  "packages": {
+    "@tanstack/react-query": ["@tanstack/react-query@5.107.1", "", {}, "sha512-dev"],
+    "next": ["next@16.4.0", "", {}, "sha512-dev"],
+  },
+}

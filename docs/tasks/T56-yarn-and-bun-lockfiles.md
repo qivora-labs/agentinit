@@ -38,14 +38,14 @@ Promoted from `backlog.md` P1.4b.
 - Fixtures go under `tests/fixtures/detect-packages/`. Generate each lockfile with the real tool once and trim it; don't write one from memory.
 
 ## Acceptance criteria
-- [ ] Yarn classic fixture without `node_modules`: `next@^16.0.0` locked at 16.4.0 resolves to 16.4.0. A scoped package and an entry with several descriptors resolve too.
-- [ ] Yarn berry fixture: the same cases resolve through `npm:` descriptors.
-- [ ] A `yarn.lock` with two versions of one package resolves the one that matches the `package.json` specifier.
-- [ ] `bun.lock` fixture with comments and trailing commas resolves, including a scoped package.
-- [ ] `bun.lockb` alone falls back to the range. A malformed `yarn.lock` or `bun.lock` yields no versions and does not throw.
-- [ ] An installed version still wins over every lockfile.
-- [ ] End to end: a Yarn project selects the same framework fragment with and without `node_modules`, and `init --yes` followed by `doctor` exits `0` without `node_modules`.
-- [ ] A `patch` changeset exists.
+- [x] Yarn classic fixture without `node_modules`: `next@^16.0.0` locked at 16.4.0 resolves to 16.4.0. A scoped package and an entry with several descriptors resolve too.
+- [x] Yarn berry fixture: the same cases resolve through `npm:` descriptors.
+- [x] A `yarn.lock` with two versions of one package resolves the one that matches the `package.json` specifier.
+- [x] `bun.lock` fixture with comments and trailing commas resolves, including a scoped package.
+- [x] `bun.lockb` alone falls back to the range. A malformed `yarn.lock` or `bun.lock` yields no versions and does not throw.
+- [x] An installed version still wins over every lockfile.
+- [x] End to end: a Yarn project selects the same framework fragment with and without `node_modules`, and `init --yes` followed by `doctor` exits `0` without `node_modules`.
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -56,3 +56,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `fix(detect): read locked versions from yarn.lock and bun.lock`
 
 ## Notes
+Implemented 2026-11-12: `readLockfileVersions` now reads `yarn.lock` (classic line parser / berry via `yaml`) and text `bun.lock` (shared `jsoncToJson`) in detection order after pnpm; `bun.lockb` stays unread. Yarn resolves by package.json descriptor; Bun prefers `packages["<pkgName>/<name>"]` when present. Fixtures trimmed from real yarn classic, yarn berry, and bun lockfiles. PRD §3.3 step 2 lists the lockfiles read for versions.

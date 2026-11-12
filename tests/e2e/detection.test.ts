@@ -130,6 +130,57 @@ describe('detection', () => {
     expect(doctor.stdout).toContain('No issues found.');
   });
 
+  it('A Yarn project selects the same Next fragment with and without node_modules; doctor stays clean', async () => {
+    async function yarnNextProject(withNodeModules: boolean): Promise<string> {
+      const dir = await temp.empty();
+      await writeFile(
+        path.join(dir, 'package.json'),
+        JSON.stringify({
+          name: 'yarn-next',
+          dependencies: { next: '^16.0.0' },
+          devDependencies: { typescript: '5.9.0' },
+        }),
+      );
+      await writeFile(
+        path.join(dir, 'yarn.lock'),
+        ['# yarn lockfile v1', '', 'next@^16.0.0:', '  version "16.4.0"', ''].join('\n'),
+      );
+      await writeFile(path.join(dir, 'tsconfig.json'), '{}\n');
+      await mkdir(path.join(dir, 'src', 'app'), { recursive: true });
+      await writeFile(path.join(dir, 'src', 'app', 'page.ts'), 'export default function Page() {}\n');
+      if (withNodeModules) {
+        await mkdir(path.join(dir, 'node_modules', 'next'), { recursive: true });
+        await writeFile(
+          path.join(dir, 'node_modules', 'next', 'package.json'),
+          JSON.stringify({ name: 'next', version: '16.4.0' }),
+        );
+      }
+      return dir;
+    }
+
+    const withModules = await yarnNextProject(true);
+    const withoutModules = await yarnNextProject(false);
+
+    const installed = await runCli(['init', '--yes', '--cwd', withModules]);
+    expect(installed.code).toBe(0);
+    const installedManifest = JSON.parse(
+      await readFile(path.join(withModules, '.agentinit/manifest.json'), 'utf8'),
+    ) as { selections: { frameworks: string[] } };
+    expect(installedManifest.selections.frameworks).toContain('nextjs-app-router');
+    expect(installedManifest.selections.frameworks).not.toContain('nextjs-app-router-15');
+
+    const locked = await runCli(['init', '--yes', '--cwd', withoutModules]);
+    expect(locked.code).toBe(0);
+    const lockedManifest = JSON.parse(
+      await readFile(path.join(withoutModules, '.agentinit/manifest.json'), 'utf8'),
+    ) as { selections: { frameworks: string[] } };
+    expect(lockedManifest.selections.frameworks).toEqual(installedManifest.selections.frameworks);
+
+    const doctor = await runCli(['doctor', '--cwd', withoutModules]);
+    expect(doctor.code).toBe(0);
+    expect(doctor.stdout).toContain('No issues found.');
+  });
+
   it('A tsconfig.json with comments, trailing commas, and extends is parsed correctly', async () => {
     const dir = await temp.copyFixture('jsonc-tsconfig-extends');
     const result = await runCli(['init', '--yes', '--cwd', dir]);

@@ -171,7 +171,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | done |
 | [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | done |
 | [T55](T55-workspace-package-detection.md) | Versions & package manager inside a workspace package | M10 | — | M | done |
-| [T56](T56-yarn-and-bun-lockfiles.md) | Locked versions from `yarn.lock` and `bun.lock` | M10 | T55 | M | todo |
+| [T56](T56-yarn-and-bun-lockfiles.md) | Locked versions from `yarn.lock` and `bun.lock` | M10 | T55 | M | done |
 | [T57](T57-newer-manifest-guard.md) | Version guard before manifest value checks | M10 | — | S | todo |
 | [T58](T58-issue-templates.md) | Issue templates & a wrong-rule report path | M10 | — | S | todo |
 
