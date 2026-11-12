@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { NO_FRAMEWORK_NOTICE } from '../../src/ui/format.js';
@@ -60,6 +60,74 @@ describe('detection', () => {
       selections: { frameworks: string[] };
     };
     expect(manifest.selections.frameworks).toContain('nextjs-app-router');
+  });
+
+  it('Inside a workspace package, init selects the installed Next version and doctor stays clean', async () => {
+    const root = await temp.copyFixture('pnpm-monorepo');
+    await mkdir(path.join(root, '.git'));
+    await writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({
+        name: 'pnpm-monorepo',
+        private: true,
+        packageManager: 'pnpm@10.14.0',
+      }),
+    );
+    await writeFile(
+      path.join(root, 'pnpm-lock.yaml'),
+      [
+        "lockfileVersion: '9.0'",
+        'importers:',
+        '  packages/web:',
+        '    dependencies:',
+        '      next:',
+        '        specifier: ^16.0.0',
+        '        version: 16.4.0(react@19.0.0)',
+        '    devDependencies:',
+        '      typescript:',
+        '        specifier: 5.9.0',
+        '        version: 5.9.0',
+        '',
+      ].join('\n'),
+    );
+    const pkg = path.join(root, 'packages/web');
+    await writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({
+        name: 'web',
+        scripts: { test: 'vitest run' },
+        dependencies: { next: '^16.0.0' },
+        devDependencies: { typescript: '5.9.0' },
+      }),
+    );
+    await mkdir(path.join(pkg, 'src', 'app'), { recursive: true });
+    await writeFile(path.join(pkg, 'src', 'app', 'page.ts'), 'export default function Page() {}\n');
+    const store = path.join(root, 'node_modules', '.pnpm', 'next@16.4.0', 'node_modules', 'next');
+    await mkdir(store, { recursive: true });
+    await writeFile(path.join(store, 'package.json'), JSON.stringify({ name: 'next', version: '16.4.0' }));
+    await mkdir(path.join(pkg, 'node_modules'), { recursive: true });
+    await symlink(store, path.join(pkg, 'node_modules', 'next'), 'dir');
+
+    const init = await runCli(['init', '--yes', '--cwd', pkg]);
+    expect(init.code).toBe(0);
+    const manifest = JSON.parse(await readFile(path.join(pkg, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[] };
+    };
+    expect(manifest.selections.frameworks).toContain('nextjs-app-router');
+    expect(manifest.selections.frameworks).not.toContain('nextjs-app-router-15');
+
+    const agents = await readFile(path.join(pkg, 'AGENTS.md'), 'utf8');
+    expect(agents).toContain('pnpm test');
+    expect(agents).not.toContain('npm run test');
+
+    // Default agents include Claude, so Cursor defers to `.claude/skills/` (PRD §5.2).
+    const workflow = await readFile(path.join(pkg, '.claude/skills/new-feature/SKILL.md'), 'utf8');
+    expect(workflow).toContain('pnpm test');
+    expect(workflow).not.toContain('npm run test');
+
+    const doctor = await runCli(['doctor', '--cwd', pkg]);
+    expect(doctor.code).toBe(0);
+    expect(doctor.stdout).toContain('No issues found.');
   });
 
   it('A tsconfig.json with comments, trailing commas, and extends is parsed correctly', async () => {

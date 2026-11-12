@@ -4,7 +4,7 @@ import { minVersion, valid, validRange } from 'semver';
 import { parse as parseYaml } from 'yaml';
 import { AgentInitError } from '../errors.js';
 import type { PackageManager } from '../types.js';
-import type { PackageWorkspaces } from './workspace.js';
+import { findGitRoot, type PackageWorkspaces } from './workspace.js';
 
 const KNOWN_SCRIPTS = ['build', 'dev', 'lint', 'test', 'typecheck'] as const;
 
@@ -59,26 +59,67 @@ export function readPackageJson(root: string): PackageJson | null {
 }
 
 /**
+ * Nearest directory that has a recognised lockfile, starting at the project
+ * and never above the git root. With no git repository only the project is
+ * considered, so a lockfile in a home directory is never read. When the
+ * project has its own lockfile, or none is found, the lookup root is the
+ * project and non-workspace behavior is unchanged.
+ */
+export function findLookupRoot(root: string): string {
+  const projectRoot = path.resolve(root);
+  if (hasRecognisedLockfile(projectRoot)) return projectRoot;
+
+  const gitRoot = findGitRoot(projectRoot);
+  if (gitRoot === null) return projectRoot;
+
+  let current = projectRoot;
+  for (;;) {
+    if (current === gitRoot) return projectRoot;
+    const parent = path.dirname(current);
+    if (parent === current || !isInsideOrSame(gitRoot, parent)) return projectRoot;
+    current = parent;
+    if (hasRecognisedLockfile(current)) return current;
+  }
+}
+
+/**
  * Installed `node_modules/<name>/package.json` wins, then a parsed lockfile, then
  * `semver.minVersion` of the range. Unresolvable specifiers are `null`.
  * The same name in both dependency maps keeps the `dependencies` specifier.
+ * Installed packages and lockfiles are resolved from the lookup root (§3.3).
  */
 export function resolveVersions(root: string, pkgJson: PackageJson): Record<string, string | null> {
-  const locked = readLockfileVersions(root);
+  const projectRoot = path.resolve(root);
+  const lookupRoot = findLookupRoot(projectRoot);
+  const locked = readLockfileVersions(projectRoot, lookupRoot);
   const versions: Record<string, string | null> = {};
   for (const [name, specifier] of dependencySpecifiers(pkgJson)) {
     versions[name] =
-      installedVersion(root, name) ?? locked.get(name) ?? versionFromSpecifier(specifier);
+      installedVersion(projectRoot, lookupRoot, name) ??
+      locked.get(name) ??
+      versionFromSpecifier(specifier);
   }
   return versions;
 }
 
-/** `packageManager` field, then the first known lockfile, then `npm`. */
+/**
+ * Project `packageManager` field, then the lookup root's field, then the
+ * lockfile at the lookup root, then `npm`.
+ */
 export function detectPackageManager(root: string, pkgJson: PackageJson): PackageManager {
   const fromField = packageManagerFromField(pkgJson.packageManager);
   if (fromField !== null) return fromField;
+
+  const projectRoot = path.resolve(root);
+  const lookupRoot = findLookupRoot(projectRoot);
+  if (lookupRoot !== projectRoot) {
+    const rootPkg = readPackageJson(lookupRoot);
+    const fromRootField = packageManagerFromField(rootPkg?.packageManager);
+    if (fromRootField !== null) return fromRootField;
+  }
+
   for (const [file, manager] of LOCKFILES) {
-    if (isFile(path.join(root, file))) return manager;
+    if (isFile(path.join(lookupRoot, file))) return manager;
   }
   return 'npm';
 }
@@ -118,19 +159,30 @@ function dependencySpecifiers(pkgJson: PackageJson): Map<string, string> {
 }
 
 /**
- * A dependency name is a path under `node_modules`. Names that resolve outside
- * that directory are ignored so detection cannot read arbitrary files.
- * `readFileSync` follows symlinks, so the canonical target must also stay
- * inside the project. Missing or unreadable install manifests fall through
- * to the lockfile.
+ * Walks `node_modules/<name>/package.json` from the project up to the lookup
+ * root (Node's resolution order). A dependency name is a path under that
+ * directory; names that resolve outside it are ignored. Symlinks are followed
+ * only when the canonical target stays inside the lookup root. Missing or
+ * unreadable install manifests fall through to the lockfile.
  */
-function installedVersion(root: string, name: string): string | null {
-  const projectRoot = path.resolve(root);
-  const modulesRoot = path.resolve(projectRoot, 'node_modules');
+function installedVersion(projectRoot: string, lookupRoot: string, name: string): string | null {
+  let current = projectRoot;
+  for (;;) {
+    const version = installedVersionAt(current, lookupRoot, name);
+    if (version !== null) return version;
+    if (current === lookupRoot) return null;
+    const parent = path.dirname(current);
+    if (parent === current || !isInsideOrSame(lookupRoot, parent)) return null;
+    current = parent;
+  }
+}
+
+function installedVersionAt(dir: string, lookupRoot: string, name: string): string | null {
+  const modulesRoot = path.resolve(dir, 'node_modules');
   const manifestPath = path.resolve(modulesRoot, name, 'package.json');
   if (!isInside(modulesRoot, manifestPath)) return null;
 
-  const realManifest = realpathInside(projectRoot, manifestPath);
+  const realManifest = realpathInside(lookupRoot, manifestPath);
   if (realManifest === null) return null;
 
   let raw: string;
@@ -153,44 +205,74 @@ function installedVersion(root: string, name: string): string | null {
  * `yarn.lock` and `bun.lock` / `bun.lockb` are not parsed in v0.1; those
  * projects fall through to the range in package.json. When `pnpm-lock.yaml`
  * exists it is the only lockfile consulted, even if `package-lock.json` is
- * also present. Unknown or invalid lockfiles contribute no versions.
+ * also present. Unknown or invalid lockfiles contribute no versions. Lockfiles
+ * are read at the lookup root; pnpm uses that project's importer, and npm
+ * prefers a nested `packages` entry over a hoisted one.
  */
-function readLockfileVersions(root: string): ReadonlyMap<string, string> {
-  const pnpmLock = path.join(root, 'pnpm-lock.yaml');
-  if (isFile(pnpmLock)) return readPnpmLockVersions(pnpmLock);
-  const npmLock = path.join(root, 'package-lock.json');
-  if (isFile(npmLock)) return readNpmLockVersions(npmLock);
+function readLockfileVersions(
+  projectRoot: string,
+  lookupRoot: string,
+): ReadonlyMap<string, string> {
+  const importerPath = posixRelative(lookupRoot, projectRoot);
+  const pnpmLock = path.join(lookupRoot, 'pnpm-lock.yaml');
+  if (isFile(pnpmLock)) return readPnpmLockVersions(pnpmLock, importerPath);
+  const npmLock = path.join(lookupRoot, 'package-lock.json');
+  if (isFile(npmLock)) return readNpmLockVersions(npmLock, importerPath);
   return new Map();
 }
 
-function readNpmLockVersions(filePath: string): Map<string, string> {
+function readNpmLockVersions(filePath: string, importerPath: string): Map<string, string> {
   const versions = new Map<string, string>();
   const data = parseJsonRecord(filePath);
   if (data === null) return versions;
   const packages = asRecord(data.packages);
   if (packages === null) return versions;
 
-  for (const [key, entry] of Object.entries(packages)) {
-    if (!key.startsWith('node_modules/')) continue;
-    const name = key.slice('node_modules/'.length);
-    if (name === '' || name.includes('/node_modules/')) continue;
-    const version = lockEntryVersion(entry);
-    if (version !== null) versions.set(name, version);
+  const nestedPrefix =
+    importerPath === '.' ? null : `${importerPath}/node_modules/`;
+  if (nestedPrefix !== null) {
+    collectNpmLockVersions(packages, nestedPrefix, versions);
   }
+  collectNpmLockVersions(packages, 'node_modules/', versions);
   return versions;
 }
 
-function readPnpmLockVersions(filePath: string): Map<string, string> {
+function collectNpmLockVersions(
+  packages: Readonly<Record<string, unknown>>,
+  prefix: string,
+  versions: Map<string, string>,
+): void {
+  for (const [key, entry] of Object.entries(packages)) {
+    if (!key.startsWith(prefix)) continue;
+    const name = key.slice(prefix.length);
+    if (name === '' || name.includes('/node_modules/') || versions.has(name)) continue;
+    const version = lockEntryVersion(entry);
+    if (version !== null) versions.set(name, version);
+  }
+}
+
+function readPnpmLockVersions(filePath: string, importerPath: string): Map<string, string> {
   const versions = new Map<string, string>();
   const data = parseYamlRecord(filePath);
   if (data === null) return versions;
   const importers = asRecord(data.importers);
-  const importer = importers === null ? null : asRecord(importers['.']);
+  const importer = importers === null ? null : asRecord(importers[importerPath]);
   if (importer === null) return versions;
 
   collectPnpmVersions(importer.dependencies, versions);
   collectPnpmVersions(importer.devDependencies, versions);
   return versions;
+}
+
+function hasRecognisedLockfile(dir: string): boolean {
+  return LOCKFILES.some(([file]) => isFile(path.join(dir, file)));
+}
+
+/** Forward-slash relative path; `.` when `from` and `to` are the same directory. */
+function posixRelative(from: string, to: string): string {
+  const relative = path.relative(from, to);
+  if (relative === '') return '.';
+  return relative.split(path.sep).join('/');
 }
 
 function collectPnpmVersions(value: unknown, versions: Map<string, string>): void {
@@ -343,6 +425,12 @@ function isInside(root: string, candidate: string): boolean {
   return !relative.startsWith(`..${path.sep}`);
 }
 
+function isInsideOrSame(root: string, candidate: string): boolean {
+  const resolvedRoot = path.resolve(root);
+  const resolvedCandidate = path.resolve(candidate);
+  return resolvedRoot === resolvedCandidate || isInside(resolvedRoot, resolvedCandidate);
+}
+
 function isFile(filePath: string): boolean {
   try {
     return statSync(filePath).isFile();
@@ -352,8 +440,9 @@ function isFile(filePath: string): boolean {
 }
 
 /**
- * `statSync` follows symlinks. The canonical path has to stay inside `root`,
- * or a link can name a file outside the project.
+ * `statSync` follows symlinks. The canonical path has to stay inside `root`
+ * (the project, or the lookup root for installed packages), or a link can
+ * name a file outside that boundary.
  */
 function isFileInside(root: string, filePath: string): boolean {
   const real = realpathInside(root, filePath);
