@@ -2,6 +2,7 @@ import type { Writable } from 'node:stream';
 import {
   assessCliCompat,
   cliCompatNotice,
+  formatCliVersionNotice,
   type CliCompat,
 } from '../cli-compat.js';
 import { requireInteractiveOrYes, type RunContext } from '../context.js';
@@ -9,7 +10,7 @@ import { detectProject, type DetectionResult } from '../detect/index.js';
 import { findExistingAgentFiles } from '../detect/existing-agents.js';
 import { readPackageJson } from '../detect/packages.js';
 import { findGitRoot } from '../detect/workspace.js';
-import { AgentInitError } from '../errors.js';
+import { AgentInitError, NewerUnreadableManifestError } from '../errors.js';
 import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
@@ -99,7 +100,14 @@ export async function init(ctx: RunContext, logger: Logger, options: InitOptions
   const registry = options.registryDir === undefined ? await loadRegistry() : await loadRegistry(options.registryDir);
   const prompts = prompterFor(options, logger.theme);
   const spin = canSpin(ctx, options.stdout);
-  const { root, detection, manifest } = await settleProject(ctx, registry, prompts, spin);
+  let settled: Awaited<ReturnType<typeof settleProject>>;
+  try {
+    settled = await settleProject(ctx, registry, prompts, spin);
+  } catch (error) {
+    reportNewerUnreadableManifest(logger, error);
+    throw error;
+  }
+  const { root, detection, manifest } = settled;
   const compat = manifest === null ? undefined : assessCliCompat(pkg.version, manifest.cliVersion);
   enforceWriteCompat(ctx, logger, compat);
 
@@ -668,7 +676,7 @@ async function readProject(
 ): Promise<{ detection: DetectionResult; manifest: Manifest | null }> {
   const reading = spin ? startSpin(prompts, 'Reading the project') : undefined;
   try {
-    const manifest = await readManifest(root);
+    const manifest = await readManifest(root, pkg.version);
     const detection = detectForInit(root, registry, manifest);
     reading?.stop('Read the project');
     return { detection, manifest };
@@ -944,6 +952,15 @@ function enforceWriteCompat(ctx: RunContext, logger: Logger, compat: CliCompat |
   // Still emit the version notice before exiting so mixed-version CI logs stay consistent.
   logger.warn(compat.notice);
   throw new AgentInitError(compat.message);
+}
+
+/**
+ * Unreadable newer manifest: same notice as `behind`, but `--force` cannot continue
+ * because there are no selections to rewrite with.
+ */
+function reportNewerUnreadableManifest(logger: Logger, error: unknown): void {
+  if (!(error instanceof NewerUnreadableManifestError)) return;
+  logger.warn(formatCliVersionNotice(error.manifestVersion, pkg.version));
 }
 
 function unique(lines: readonly string[]): string[] {

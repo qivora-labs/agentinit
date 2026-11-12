@@ -19,6 +19,20 @@ export class AgentInitError extends Error {
   }
 }
 
+/**
+ * Schema failed, but `cliVersion` is valid semver newer than the running CLI.
+ * Carries no recover-hint: the file is not corrupt; the user must upgrade.
+ */
+export class NewerUnreadableManifestError extends AgentInitError {
+  readonly manifestVersion: string;
+
+  constructor(message: string, manifestVersion: string) {
+    super(message);
+    this.name = 'NewerUnreadableManifestError';
+    this.manifestVersion = manifestVersion;
+  }
+}
+
 export class UnsupportedProjectError extends AgentInitError {
   constructor(message: string, hint?: string) {
     super(message, hint === undefined ? { exitCode: ERROR } : { exitCode: ERROR, hint });

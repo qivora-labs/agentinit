@@ -2,8 +2,9 @@ import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ZodError } from 'zod';
 import * as z from 'zod';
+import { isManifestNewerThanRunning, olderCliMessage } from '../cli-compat.js';
 import { compareText } from '../compare-text.js';
-import { AgentInitError } from '../errors.js';
+import { AgentInitError, NewerUnreadableManifestError } from '../errors.js';
 import { isOwnedBlockKey, isOwnedPath } from '../owned-paths.js';
 import type { AgentTarget, Language } from '../types.js';
 
@@ -123,8 +124,12 @@ export interface Manifest {
   readonly extras?: ManifestExtras;
 }
 
-/** `null` when the manifest file is absent. Invalid JSON or schema throws. */
-export async function readManifest(root: string): Promise<Manifest | null> {
+/**
+ * `null` when the manifest file is absent. Invalid JSON or schema throws.
+ * Pass the running CLI version so a newer unreadable file becomes an upgrade
+ * error instead of a recover-hint schema failure (PRD §3.4 / §6.5).
+ */
+export async function readManifest(root: string, runningVersion: string): Promise<Manifest | null> {
   const absolute = path.join(root, MANIFEST_PATH);
   let raw: string;
   try {
@@ -135,7 +140,7 @@ export async function readManifest(root: string): Promise<Manifest | null> {
       hint: 'Check that the manifest is a readable file.',
     });
   }
-  return parseManifest(raw);
+  return parseManifest(raw, runningVersion);
 }
 
 /**
@@ -220,7 +225,7 @@ export function withPreservedFileExtras(
   return next;
 }
 
-function parseManifest(raw: string): Manifest {
+function parseManifest(raw: string, runningVersion: string): Manifest {
   let data: unknown;
   try {
     data = JSON.parse(raw) as unknown;
@@ -229,9 +234,21 @@ function parseManifest(raw: string): Manifest {
   }
   const result = manifestSchema.safeParse(data);
   if (!result.success) {
+    const peeked = peekCliVersion(data);
+    if (peeked !== undefined && isManifestNewerThanRunning(runningVersion, peeked)) {
+      throw new NewerUnreadableManifestError(olderCliMessage(peeked), peeked);
+    }
     throw new AgentInitError(formatIssues(result.error), { hint: MANIFEST_RECOVER_HINT });
   }
   return toManifest(result.data);
+}
+
+/** Top-level `cliVersion` string when present; used only after a schema failure. */
+function peekCliVersion(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return undefined;
+  if (!('cliVersion' in data)) return undefined;
+  const value: unknown = data.cliVersion;
+  return typeof value === 'string' ? value : undefined;
 }
 
 function toManifest(parsed: z.infer<typeof manifestSchema>): Manifest {

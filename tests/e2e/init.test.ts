@@ -754,6 +754,65 @@ describe('init', () => {
     expect(payload.notices).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
   });
 
+  it.each([
+    {
+      name: 'unknown language',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.selections.language = 'javascript';
+      },
+    },
+    {
+      name: 'unknown agent',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.selections.agents = ['cursor', 'codex'];
+      },
+    },
+    {
+      name: 'unknown mode',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.mode = 'workspace';
+      },
+    },
+  ])('exits 1 with the upgrade message when the newer manifest has $name', async ({ mutate }) => {
+    const dir = await copyFixture('next15-src');
+    expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      cliVersion: string;
+      mode: string;
+      selections: { language: string; agents: string[] };
+    };
+    saved.cliVersion = '0.2.0';
+    mutate(saved);
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+    const before = await readFile(manifestPath);
+
+    const blocked = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(blocked.code).toBe(1);
+    expect(blocked.stderr).toContain(`Set up with agentinit 0.2.0 · running ${pkg.version}`);
+    expect(blocked.stderr).toContain('This project was set up with agentinit 0.2.0');
+    expect(blocked.stderr).toContain('npx @agentinit/cli@0.2.0');
+    expect(blocked.stderr).not.toContain('Fix .agentinit/manifest.json');
+    expect(blocked.stderr).not.toContain('delete it');
+
+    const forced = await runCli(['init', '--yes', '--force', '--cwd', dir]);
+    expect(forced.code).toBe(1);
+    expect(forced.stderr).toContain('This project was set up with agentinit 0.2.0');
+    expect(await readFile(manifestPath)).toEqual(before);
+  });
+
   it('warns and continues when cliVersion is invalid', async () => {
     const dir = await copyFixture('next15-src');
     expect((await runCli(['init', '--yes', '--cwd', dir])).code).toBe(0);

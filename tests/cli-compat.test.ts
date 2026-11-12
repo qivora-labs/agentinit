@@ -3,6 +3,7 @@ import {
   assessCliCompat,
   cliCompatNotice,
   formatCliVersionNotice,
+  isManifestNewerThanRunning,
   olderCliMessage,
 } from '../src/cli-compat.js';
 
@@ -73,5 +74,19 @@ describe('assessCliCompat', () => {
     if (kind === 'behind' && compat.kind === 'behind') {
       expect(compat.message).toBe(olderCliMessage(manifest));
     }
+  });
+});
+
+describe('isManifestNewerThanRunning', () => {
+  it.each([
+    { name: 'newer major', running: '0.1.1', manifest: '1.0.0', expected: true },
+    { name: 'newer minor', running: '0.1.1', manifest: '0.2.0', expected: true },
+    { name: 'newer patch', running: '0.1.1', manifest: '0.1.2', expected: true },
+    { name: 'same', running: '0.1.1', manifest: '0.1.1', expected: false },
+    { name: 'older', running: '0.2.0', manifest: '0.1.9', expected: false },
+    { name: 'invalid manifest', running: '0.1.1', manifest: 'nope', expected: false },
+    { name: 'invalid running', running: 'dev', manifest: '0.2.0', expected: false },
+  ])('$name → $expected', ({ running, manifest, expected }) => {
+    expect(isManifestNewerThanRunning(running, manifest)).toBe(expected);
   });
 });
