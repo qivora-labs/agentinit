@@ -1,0 +1,45 @@
+name: My content was overwritten or lost
+description: agentinit changed or removed content you expected to keep.
+labels: [data-loss]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: agentinit version
+      description: Output of `npx @agentinit/cli --version` (or the version of your installed copy).
+      placeholder: 0.1.1
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command and flags
+      description: The exact command you ran.
+      placeholder: npx @agentinit/cli init --yes
+    validations:
+      required: true
+  - type: input
+    id: file
+    attributes:
+      label: Which file changed
+      description: Path relative to the project root.
+      placeholder: AGENTS.md
+    validations:
+      required: true
+  - type: dropdown
+    id: backup
+    attributes:
+      label: Is there a copy under `.agentinit/backups/`?
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did before the content was lost, and what you expected to remain.
+    validations:
+      required: true

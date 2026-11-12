@@ -43,13 +43,13 @@ Record the answers under **Notes**.
 - The request form is what the "no supported framework" message will link to later (backlog P3.5).
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**.
-- [ ] The forms exist, parse as YAML, and pass the new test.
-- [ ] The forms apply only `bug`, `wrong-rule`, `coverage`, and `data-loss`.
-- [ ] `config.yml` exists and follows decision 3.
-- [ ] The README links to `https://github.com/qivora-labs/agentinit/issues/new/choose`.
-- [ ] Under decision 1 "README only": no generated output changes, and the end-to-end snapshots are untouched.
-- [ ] The labels exist on GitHub, or the open owner operation is noted under **Notes**.
+- [x] Decisions recorded under **Notes**.
+- [x] The forms exist, parse as YAML, and pass the new test.
+- [x] The forms apply only `bug`, `wrong-rule`, `coverage`, and `data-loss`.
+- [x] `config.yml` exists and follows decision 3.
+- [x] The README links to `https://github.com/qivora-labs/agentinit/issues/new/choose`.
+- [x] Under decision 1 "README only": no generated output changes, and the end-to-end snapshots are untouched.
+- [x] The labels exist on GitHub, or the open owner operation is noted under **Notes**.
 
 ## Verify
 ```bash
@@ -64,3 +64,7 @@ Owner decisions, 2026-11-12.
 - **Decision 1:** the report link lives in the README and `CONTRIBUTING.md` only. Generated files are not changed.
 - **Decision 2:** a fourth template, "My content was overwritten or lost", applies `data-loss`.
 - **Decision 3:** blank issues stay enabled, with a contact link that sends security reports to the private advisory form.
+
+Implementation, 2026-11-13.
+- Forms: `bug.yml`, `wrong-rule.yml`, `fragment-request.yml`, `data-loss.yml`, plus `config.yml`.
+- `bug` already exists on GitHub. `data-loss`, `wrong-rule`, and `coverage` do not; the owner operation in `backlog.md` stays open until they are created (templates can only apply labels that exist).
