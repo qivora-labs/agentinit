@@ -1,5 +1,11 @@
 import type { Writable } from 'node:stream';
-import { assessCliCompat, cliCompatNotice } from '../cli-compat.js';
+import {
+  assessCliCompat,
+  cliCompatNotice,
+  formatCliVersionNotice,
+  newerUnreadableManifestDoctorFix,
+  newerUnreadableManifestMessage,
+} from '../cli-compat.js';
 import type { RunContext } from '../context.js';
 import { detectProject, type DetectionResult } from '../detect/index.js';
 import { findExistingAgentFiles, findLegacyFiles } from '../detect/existing-agents.js';
@@ -19,7 +25,7 @@ import {
   type DriftChange,
   type NamedFragment,
 } from '../doctor/checks.js';
-import { AgentInitError } from '../errors.js';
+import { AgentInitError, NewerUnreadableManifestError } from '../errors.js';
 import { DOCTOR_ISSUES, SUCCESS } from '../exit-codes.js';
 import { computeChanges, readProjectText, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
 import { findBlocks } from '../io/managed-block.js';
@@ -54,10 +60,20 @@ export async function doctor(ctx: RunContext, logger: Logger, options: DoctorOpt
   const root = ctx.cwd;
   let manifest: Manifest | null;
   try {
-    manifest = await readManifest(root);
+    manifest = await readManifest(root, pkg.version);
   } catch (error) {
     if (!(error instanceof AgentInitError)) throw error;
     // Corrupt/unreadable manifest: report as a check failure (exit 2), not a crash (exit 1).
+    if (error instanceof NewerUnreadableManifestError) {
+      const version = error.manifestVersion;
+      return finishDoctor(
+        ctx,
+        logger,
+        options,
+        [manifestInvalidIssue(newerUnreadableManifestMessage(version), newerUnreadableManifestDoctorFix(version))],
+        [formatCliVersionNotice(version, pkg.version)],
+      );
+    }
     return finishDoctor(ctx, logger, options, [manifestInvalidIssue(error.message, MANIFEST_RECOVER_HINT)]);
   }
   const versionNotice =

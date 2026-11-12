@@ -47,6 +47,26 @@ export function olderCliMessage(manifestVersion: string): string {
   );
 }
 
+/**
+ * True when both versions are valid semver and the manifest is strictly newer
+ * (major, minor, or patch). Used when the schema fails so the upgrade path
+ * still fires for a patch-only bump that would only warn on a readable file.
+ */
+export function isManifestNewerThanRunning(running: string, manifestVersion: string): boolean {
+  if (valid(running) === null || valid(manifestVersion) === null) return false;
+  return isRunningOlder(running, manifestVersion);
+}
+
+/** Doctor `manifest-invalid` message when the file is from a newer CLI we cannot parse. */
+export function newerUnreadableManifestMessage(manifestVersion: string): string {
+  return `\`.agentinit/manifest.json\` was written by a newer agentinit (${manifestVersion}).`;
+}
+
+/** Doctor fix when the file is from a newer CLI we cannot parse. */
+export function newerUnreadableManifestDoctorFix(manifestVersion: string): string {
+  return `Run doctor with \`@agentinit/cli@${manifestVersion}\` or newer.`;
+}
+
 /** Notice string for every non-`same` result; `undefined` when versions match. */
 export function cliCompatNotice(compat: CliCompat): string | undefined {
   switch (compat.kind) {

@@ -42,14 +42,14 @@ Record the answers under **Notes** and in the PRD.
 - Read `.cursor/rules/io-safety.mdc`. This path must write nothing, including the manifest.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] `cliVersion: "0.2.0"` with `selections.language: "javascript"`, running 0.1.2: `init --yes` exits `1` with the upgrade message and no "delete it" hint. `init --yes --force` does the same. The manifest is byte-for-byte unchanged.
-- [ ] `remove --all --yes` behaves the same way on that manifest.
-- [ ] `doctor` on that manifest follows decision 1, in text and in `--json`.
-- [ ] An unknown `selections.agents` value and an unknown `mode` from a newer `cliVersion` give the same results.
-- [ ] An unknown language with the same or an older `cliVersion`, or with an invalid `cliVersion`, is still `manifest-invalid` with the recover hint.
-- [ ] A readable manifest with only a newer `cliVersion` behaves as before (the existing tests pass unchanged).
-- [ ] A `patch` changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] `cliVersion: "0.2.0"` with `selections.language: "javascript"`, running 0.1.2: `init --yes` exits `1` with the upgrade message and no "delete it" hint. `init --yes --force` does the same. The manifest is byte-for-byte unchanged.
+- [x] `remove --all --yes` behaves the same way on that manifest.
+- [x] `doctor` on that manifest follows decision 1, in text and in `--json`.
+- [x] An unknown `selections.agents` value and an unknown `mode` from a newer `cliVersion` give the same results.
+- [x] An unknown language with the same or an older `cliVersion`, or with an invalid `cliVersion`, is still `manifest-invalid` with the recover hint.
+- [x] A readable manifest with only a newer `cliVersion` behaves as before (the existing tests pass unchanged).
+- [x] A `patch` changeset exists.
 
 ## Verify
 ```bash
@@ -63,3 +63,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 Owner decisions, 2026-11-12. The PRD is updated when the task is implemented.
 - **Decision 1:** `doctor` reports an unreadable newer manifest as an **error** (exit `2`) under the existing `manifest-invalid` kind, with the "written by a newer agentinit" message and the "run doctor with that version or newer" fix. No new issue kind.
 - **Decision 2:** open language ids are left to backlog J1. T57 keeps the closed `language` set and only changes the message.
+- Implemented 2026-11-13: `readManifest(root, runningVersion)` peeks `cliVersion` after a schema failure; if it is valid semver newer than the running CLI (including patch), throws `NewerUnreadableManifestError` with `olderCliMessage` and no recover hint. `init`/`remove` print the version notice and exit `1` even with `--force`. `doctor` uses decision 1 messages and includes the version notice in `--json`.

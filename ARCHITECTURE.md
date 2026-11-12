@@ -39,7 +39,7 @@ detect ──► resolve ──► plan ──► apply
 - `ui/` → `types`, `errors`, `compare-text`, `registry` types, `detect` result types. `ui/` never touches disk.
 - `plan/` and `targets/` → `types`, `registry` types, `plan/` helpers, `compare-text`, `owned-paths`. **Never** `detect/`, `io/`, `ui/`, `node:fs`, or `process`.
 - `targets/*` adapters are independent of each other; shared helpers go in `plan/`.
-- `io/` → `types`, `errors`, `owned-paths`, `ui/prompter` (interface only, for conflict questions).
+- `io/` → `types`, `errors`, `owned-paths`, `compare-text`, `cli-compat`, `ui/prompter` (interface only, for conflict questions).
 - `detect/` → `types`, `errors`, `registry` (for `detect.files` candidates and `suggestFragments`).
 - Pure modules receive time, randomness, and environment as parameters.
 

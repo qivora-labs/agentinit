@@ -1,8 +1,8 @@
 import type { Writable } from 'node:stream';
-import { assessCliCompat, cliCompatNotice } from '../cli-compat.js';
+import { assessCliCompat, cliCompatNotice, formatCliVersionNotice } from '../cli-compat.js';
 import { requireInteractiveOrYes, type RunContext } from '../context.js';
 import { INIT_FIX } from '../doctor/checks.js';
-import { AgentInitError } from '../errors.js';
+import { AgentInitError, NewerUnreadableManifestError } from '../errors.js';
 import { SUCCESS } from '../exit-codes.js';
 import { applyRemoveAll, type ApplyReportEntry } from '../io/apply.js';
 import { computeRemoveChanges } from '../io/changes.js';
@@ -42,7 +42,15 @@ export async function remove(ctx: RunContext, logger: Logger, options: RemoveOpt
   }
 
   const root = ctx.cwd;
-  const manifest = await readManifest(root);
+  let manifest: Awaited<ReturnType<typeof readManifest>>;
+  try {
+    manifest = await readManifest(root, pkg.version);
+  } catch (error) {
+    if (error instanceof NewerUnreadableManifestError) {
+      logger.warn(formatCliVersionNotice(error.manifestVersion, pkg.version));
+    }
+    throw error;
+  }
   if (manifest === null) {
     throw new AgentInitError('Not initialized.', { hint: INIT_FIX });
   }

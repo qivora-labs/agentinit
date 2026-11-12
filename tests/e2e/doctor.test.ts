@@ -644,6 +644,87 @@ describe('doctor', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it.each([
+    {
+      name: 'unknown language',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.selections.language = 'javascript';
+      },
+    },
+    {
+      name: 'unknown agent',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.selections.agents = ['cursor', 'codex'];
+      },
+    },
+    {
+      name: 'unknown mode',
+      mutate: (saved: {
+        cliVersion: string;
+        mode: string;
+        selections: { language: string; agents: string[] };
+      }): void => {
+        saved.mode = 'workspace';
+      },
+    },
+  ])('exits 2 with upgrade advice when the newer manifest has $name', async ({ mutate }) => {
+    const dir = await initYes('next15-src');
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      cliVersion: string;
+      mode: string;
+      selections: { language: string; agents: string[] };
+    };
+    saved.cliVersion = '0.2.0';
+    mutate(saved);
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+    const digest = await treeDigest(dir);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(false);
+    expect(report.notices).toEqual([`Set up with agentinit 0.2.0 · running ${pkg.version}`]);
+    expect(report.issues).toEqual([
+      {
+        kind: 'manifest-invalid',
+        severity: 'error',
+        message: '`.agentinit/manifest.json` was written by a newer agentinit (0.2.0).',
+        fix: 'Run doctor with `@agentinit/cli@0.2.0` or newer.',
+      },
+    ]);
+    expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('keeps the recover hint when an unknown language has the same cliVersion', async () => {
+    const dir = await initYes('next15-src');
+    const manifestPath = path.join(dir, '.agentinit/manifest.json');
+    const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      selections: { language: string };
+    };
+    saved.selections.language = 'javascript';
+    await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0]).toMatchObject({
+      kind: 'manifest-invalid',
+      severity: 'error',
+      fix: 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.',
+    });
+    expect(report.issues[0]?.message).toMatch(/language/u);
+  });
+
   it('Exits 0 on a freshly initialized project and 2 after adding a supported package to package.json', async () => {
     const dir = await initYes('next15-src');
     const fresh = await runCli(['doctor', '--cwd', dir]);
