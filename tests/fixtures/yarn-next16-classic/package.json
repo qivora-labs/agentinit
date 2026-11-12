@@ -1,0 +1,9 @@
+{
+  "name": "yarn-next16-classic",
+  "dependencies": {
+    "next": "^16.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.0"
+  }
+}

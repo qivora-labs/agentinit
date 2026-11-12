@@ -131,35 +131,13 @@ describe('detection', () => {
   });
 
   it('A Yarn project selects the same Next fragment with and without node_modules; doctor stays clean', async () => {
-    async function yarnNextProject(withNodeModules: boolean): Promise<string> {
-      const dir = await temp.empty();
-      await writeFile(
-        path.join(dir, 'package.json'),
-        JSON.stringify({
-          name: 'yarn-next',
-          dependencies: { next: '^16.0.0' },
-          devDependencies: { typescript: '5.9.0' },
-        }),
-      );
-      await writeFile(
-        path.join(dir, 'yarn.lock'),
-        ['# yarn lockfile v1', '', 'next@^16.0.0:', '  version "16.4.0"', ''].join('\n'),
-      );
-      await writeFile(path.join(dir, 'tsconfig.json'), '{}\n');
-      await mkdir(path.join(dir, 'src', 'app'), { recursive: true });
-      await writeFile(path.join(dir, 'src', 'app', 'page.ts'), 'export default function Page() {}\n');
-      if (withNodeModules) {
-        await mkdir(path.join(dir, 'node_modules', 'next'), { recursive: true });
-        await writeFile(
-          path.join(dir, 'node_modules', 'next', 'package.json'),
-          JSON.stringify({ name: 'next', version: '16.4.0' }),
-        );
-      }
-      return dir;
-    }
-
-    const withModules = await yarnNextProject(true);
-    const withoutModules = await yarnNextProject(false);
+    const withModules = await temp.copyFixture('yarn-next16-classic');
+    await mkdir(path.join(withModules, 'node_modules', 'next'), { recursive: true });
+    await writeFile(
+      path.join(withModules, 'node_modules', 'next', 'package.json'),
+      JSON.stringify({ name: 'next', version: '16.4.0' }),
+    );
+    const withoutModules = await temp.copyFixture('yarn-next16-classic');
 
     const installed = await runCli(['init', '--yes', '--cwd', withModules]);
     expect(installed.code).toBe(0);

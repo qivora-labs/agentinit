@@ -228,12 +228,14 @@ describe('resolveVersions', () => {
     expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '16.1.0' });
   });
 
-  it('falls back to the range when yarn.lock or bun.lock descriptors do not match package.json', async () => {
-    const yarn = await copyFixture('lockfile-yarn');
-    expect(resolveVersions(yarn, loadPackage(yarn))).toEqual({ next: '15.1.0' });
+  it('falls back to the range when yarn.lock has no descriptor matching package.json', async () => {
+    const root = await copyFixture('lockfile-yarn');
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
+  });
 
-    const bun = await copyFixture('lockfile-bun');
-    expect(resolveVersions(bun, loadPackage(bun))).toEqual({ next: '15.1.0' });
+  it('falls back to the range when bun.lock packages entry is not name@version', async () => {
+    const root = await copyFixture('lockfile-bun');
+    expect(resolveVersions(root, loadPackage(root))).toEqual({ next: '15.1.0' });
   });
 
   it('ignores dependency names that resolve outside node_modules', async () => {

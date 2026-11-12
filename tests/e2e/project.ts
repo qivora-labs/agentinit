@@ -9,7 +9,6 @@ const fixtures = fileURLToPath(new URL('../fixtures/', import.meta.url));
 
 export interface TempProject {
   copyFixture: (name: string) => Promise<string>;
-  empty: () => Promise<string>;
   cleanup: () => Promise<void>;
 }
 
@@ -21,11 +20,6 @@ export function createTempProject(prefix: string): TempProject {
       directories.push(parent);
       const dir = path.join(parent, 'project');
       await cp(path.join(fixtures, name), dir, { recursive: true });
-      return dir;
-    },
-    async empty(): Promise<string> {
-      const dir = await mkdtemp(path.join(tmpdir(), prefix));
-      directories.push(dir);
       return dir;
     },
     async cleanup(): Promise<void> {

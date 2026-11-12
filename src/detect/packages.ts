@@ -286,10 +286,13 @@ function parseYarnBerryDescriptors(raw: string): Map<string, string> | null {
 
 /** Line parser: entry keys are non-indented; `version "x.y.z"` is indented. */
 function parseYarnClassicDescriptors(raw: string): Map<string, string> | null {
-  if (!/(?:^|\n)#\s*yarn lockfile v1\b/.test(raw)) {
+  if (
+    !/(?:^|\n)#\s*yarn lockfile v1\b/.test(raw) &&
+    !raw.includes('yarn lockfile') &&
+    !/^[^:\s][^:]*:/.test(raw.trim())
+  ) {
     // Unknown yarn format — refuse rather than guess.
-    if (isYarnBerryLock(raw)) return null;
-    if (!raw.includes('yarn lockfile') && !/^[^:\s][^:]*:/.test(raw.trim())) return null;
+    return null;
   }
 
   const byDescriptor = new Map<string, string>();
