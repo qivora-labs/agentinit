@@ -3,7 +3,7 @@ backups/
 
 ===== .agentinit/manifest.json
 {
-  "cliVersion": "0.1.1",
+  "cliVersion": "0.1.2",
   "mode": "existing",
   "selections": {
     "language": "typescript-strict",
