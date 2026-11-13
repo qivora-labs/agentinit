@@ -1,6 +1,6 @@
 # Post-Launch Backlog
 
-Plans that come after `0.1.1`, grouped by the release they are planned for. They are deliberately **not** task files yet:
+Plans that come after `0.1.2`, grouped by the release they are planned for. They are deliberately **not** task files yet:
 
 - The release order below is approved and matches PRD §7. The details inside each item are proposals until its task file is written, and most need a PRD change that the item names.
 - User issues should set the order inside a release. Task files written now would go stale.
@@ -254,4 +254,4 @@ Repository and account settings an agent can't change. Tick them off here.
 - [x] Branch protection on `main`: require the CI checks and pull requests (no required approvals while solo).
 - [x] After the first OIDC publish of `0.1.1`, delete the leftover `NPM_TOKEN` repository secret (`release.yml` already uses Trusted Publishing).
 - [x] Record whether the rule-effectiveness eval was re-run after T45 for tasks T1, T3, and T4 (`docs/evals/results-v0.1.md`).
-- [ ] Create the `data-loss`, `wrong-rule`, and `coverage` labels (T58 adds the templates).
+- [x] Create the `data-loss`, `wrong-rule`, and `coverage` labels (T58 adds the templates).

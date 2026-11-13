@@ -232,7 +232,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx --yes @agentinit/cli@0.1.1 doctor
+      - run: npx --yes @agentinit/cli@0.1.2 doctor
 ```
 
 **Pin the version in CI** for reproducible checks. From 0.1.1, an unpinned `npx @agentinit/cli doctor` warns (`rules-update`) instead of failing when a newer release generates different rule text than your committed files. Pinning is still recommended so CI and local runs use the same CLI. To upgrade, run `npx @agentinit/cli@<new version> init` locally, commit the result, and bump the pin in the same pull request.
