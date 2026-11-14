@@ -26,7 +26,6 @@ These rules apply to every `.js` and `.jsx` file. The project typechecks JavaScr
 - **ALWAYS** annotate every exported function with `@param` (typed) for each parameter and `@returns` (typed) for the result, using forms TypeScript supports under `checkJs`.
 - **ALWAYS** check a value from outside the program with a runtime test before property access, a call, or treating it as a specific shape. **PREFER** `@type` / `@typedef` on locals that hold that narrowed value when the shape is reused.
 - **NEVER** trust the shape of `JSON.parse` results, request bodies, or message payloads without that check.
-- **NEVER** leave an exported function without `@param` / `@returns` when agents would otherwise invent parameter or return types.
 
 ## Contract
 ```js

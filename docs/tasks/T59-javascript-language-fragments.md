@@ -64,6 +64,6 @@ Owner decisions (confirmed 2026-11-14):
 2. `javascript` covers module system (static sentence until T69), no TypeScript syntax in `.js`/`.jsx`, and runtime checks on external input. `javascript-jsdoc` adds `@param` / `@returns` (and related) directives for `checkJs`, citing the TypeScript JSDoc reference, type-checking handbook, `checkJs` tsconfig page, MDN modules, and Node CommonJS docs.
 3. `LANGUAGE_ORDER` stays `typescript-strict` / `typescript`; `orderedOptions(..., { closed: true })` omits other registry language ids from the picker until T60.
 
-Content Tasks checklist: directives checked against those sources (`verifiedAt: 2026-11-14`); 3-part formula; dual-language N/A for language fragments; no move/network/install/secrets instructions; `pnpm registry:check` 0 errors, 0 warnings. Human review of fragment bodies still required before merge (agent cannot self-certify content quality).
+Content Tasks checklist: directives checked against those sources (`verifiedAt: 2026-11-14`); 3-part formula; dual-language N/A for language fragments; no move/network/install/secrets instructions; `pnpm registry:check` 0 errors, 0 warnings. Human review of fragment bodies completed 2026-11-15 (dropped a redundant NEVER that restated the `@param`/`@returns` ALWAYS in `javascript-jsdoc`).
 
 Avoided `{{ ... }}` inline object types in JSDoc examples — the placeholder scanner treats them as `{{total: number}}`-style tokens; used `@typedef {Object}` + `@property` instead.
