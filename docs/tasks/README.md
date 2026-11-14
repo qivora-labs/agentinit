@@ -1,26 +1,41 @@
-# v0.1 Task Breakdown
+# v0.2 Task Breakdown
 
-The v0.1 scope from [`PRD.md`](../PRD.md) is split into small, self-contained tasks. Each task is sized for **one agent session** and produces **one reviewable PR**.
+The v0.2 scope from [`PRD.md`](../PRD.md) §7 (JavaScript projects and older stacks) is split into small, self-contained tasks. Each task is sized for **one agent session** and produces **one reviewable PR**.
+
+Completed v0.1–0.1.2 tasks (T00–T58) live in [`completed.md`](completed.md). Their task files stay in this folder.
 
 ## How to Run a Task
 
-1. Pick a task whose dependencies are all `done` (see the index below).
-2. Create a branch: `task/<id>-<slug>` (e.g., `task/T05-registry-loader`).
-3. Start a **fresh** agent session and run `/implement-task <id>` (e.g., `/implement-task T05`). Agents without slash commands: *"Follow docs/workflows/implement-task.md for task T05."*
+1. Pick a task whose dependencies are all `done` (see the index below). A dependency that is not listed here is in [`completed.md`](completed.md) and is already `done`.
+2. Create a branch: `task/<id>-<slug>` (e.g., `task/T60-language-detection`), from `release/0.2` once that branch exists (see **Release branch** below). Until then, this planning work may land on `main`.
+3. Start a **fresh** agent session and run `/implement-task <id>` (e.g., `/implement-task T60`). Agents without slash commands: *"Follow docs/workflows/implement-task.md for task T60."*
 4. Optionally, in another fresh session, run `/review-task <id>` for an independent read-only review.
-5. Review the diff yourself, run the Verify commands, then merge.
+5. Review the diff yourself, run the Verify commands, then open a PR into `release/0.2` (or into `main` only for this planning PR).
 
-`/commit-changes` commits the working tree when you need a commit outside `/implement-task`. `/pr-summary` drafts the pull request title and description against `main`. Neither command pushes or opens the pull request.
+`/commit-changes` commits the working tree when you need a commit outside `/implement-task`. `/pr-summary` drafts the pull request title and description against the PR's base branch. Neither command pushes or opens the pull request.
 
-For registry content (T09–T13), `/write-fragment <id>` guides authoring one fragment at a time.
+For registry content, `/write-fragment <id>` guides authoring one fragment at a time. Content tasks in this release (T59, T63–T66, T72–T74) follow the Content Tasks checklist below.
 
 **Why fresh sessions:** a new session starts with a clean context window, so earlier tasks' details don't crowd out the current one. Everything a task needs is in its file, `AGENTS.md`, and the referenced PRD sections.
+
+## Release branch
+
+0.2 implementation work uses a long-lived `release/0.2` branch:
+
+1. Merge this planning change to `main`, then cut `release/0.2` from `main`.
+2. Each task PR targets `release/0.2` (not `main`). CI runs on every pull request; `release.yml` publishes only from `main`.
+3. After any 0.1.x patch lands on `main`, merge `main` into `release/0.2`.
+4. When T59–T76 are done, T76 merges `release/0.2` into `main`; the Version Packages PR proposes `0.2.0`.
+
+Creating and protecting `release/0.2` is an owner operation listed in [`backlog.md`](backlog.md).
 
 ## Rules for Agents
 - Do only what the task's **Scope** lists. Items under **Out of scope** belong to other tasks.
 - Small, necessary edits outside the scope (e.g., exporting a type from an earlier module) are fine; mention them in the PR description.
 - If the task conflicts with the PRD or the code from a previous task, stop and ask.
 - Record decisions or discovered gaps in the task file's **Notes** section.
+- Tasks with a **Decisions (owner, before starting)** section: stop and ask before writing code; record answers under **Notes** and in the PRD when the task says so.
+- **Invariant:** output for existing TypeScript projects without `allowJs` stays byte-identical, apart from intentional new version ranges (T72–T74) and `allowJs` glob widening (T61).
 
 ## Definition of Done (every task)
 - [ ] All acceptance criteria in the task file are checked.
@@ -30,82 +45,64 @@ For registry content (T09–T13), `/write-fragment <id>` guides authoring one fr
 - [ ] Status set to `done` in the index below.
 - [ ] One conventional commit (or a few, all conventional), with no co-author trailers.
 
-## Content Tasks (T09–T13) Checklist
+## Content Tasks Checklist
 Rule and workflow fragments need extra care because agents will follow them literally:
-- [x] Every directive was checked against current official docs for the `appliesTo` version; those URLs are in `sources`.
-- [x] Directives are specific to the library, not generic advice ("write clean code").
-- [x] Each rule fragment has Boundary, Directives (`ALWAYS`/`NEVER`/`PREFER`/`FORBID`/`DEFAULT`), and a Good vs. Anti-Pattern code block.
-- [x] No instructions to move existing files, run network commands, install packages, or read secrets.
-- [x] `pnpm registry:check` passes.
-- [x] A human reviewed the content before merge.
+- [ ] Every directive was checked against current official docs for the `appliesTo` version; those URLs are in `sources`.
+- [ ] Directives are specific to the library, not generic advice ("write clean code").
+- [ ] Each rule fragment has Boundary, Directives (`ALWAYS`/`NEVER`/`PREFER`/`FORBID`/`DEFAULT`), and a Good vs. Anti-Pattern code block.
+- [ ] Dual-language rule fragments (after T62) include TypeScript and JavaScript Contract examples, or an explicit TypeScript-only marker.
+- [ ] No instructions to move existing files, run network commands, install packages, or read secrets.
+- [ ] `pnpm registry:check` passes.
+- [ ] A human reviewed the content before merge.
 
-T09 checked this list for its six fragments. T10 re-checked every item for the five framework fragments on 2026-10-28. T11 re-checked every item for the four library fragments on 2026-10-28. T12 re-checked every item for the three library fragments on 2026-10-28. T13 re-checked every item for the four workflow fragments on 2026-10-28. A human reviewed the content on 2026-10-28. T42 re-checked every item for `nextjs-app-router-15` and `express-4` on 2026-11-05. A human reviewed those two fragments on 2026-11-05. T45 aligned Contract examples with softened `typescript-strict` (decision B) on 2026-11-06. A human reviewed those content edits on 2026-11-06. T47 added `modular` on 2026-11-06 (`pnpm registry:check` clean). A human reviewed that fragment on 2026-11-06.
+v0.1 content reviews are recorded in [`completed.md`](completed.md) and in each content task's **Notes**.
 
 ## Dependency Graph
 
 ```mermaid
 graph LR
-  T01 --> T02
-  T01 --> T03
-  T03 --> T04
-  T04 --> T05 & T06 & T07
-  T05 & T07 --> T08
-  T08 --> T09 & T10 & T11 & T12 & T13
-  T03 --> T14 & T15 & T16 & T17
-  T06 & T14 & T15 & T16 & T17 --> T18
-  T05 & T06 & T18 --> T19
-  T06 & T07 --> T20
-  T20 --> T21 & T22 & T23 & T24
-  T03 --> T25
-  T25 --> T26
-  T19 & T21 & T22 & T23 & T24 & T26 --> T27
-  T18 & T21 & T22 & T23 & T24 & T26 --> T28
-  T27 & T28 & T09 & T10 & T11 & T12 & T13 --> T29
-  T27 --> T30
-  T27 & T28 --> T31
-  T02 & T30 & T31 --> T32
-  T29 --> T33
-  T27 --> T34 & T36
-  T34 --> T35
-  T34 & T36 --> T37
-  T35 --> T38 & T39
-  T34 & T35 & T36 & T37 & T38 & T39 --> T40
-  T41 & T42 --> T43
-  T42 --> T45
-  T41 & T43 --> T46
-  T43 & T44 & T45 --> T47
-  T42 & T43 & T46 & T47 --> T48
-  T49 --> T50 & T52
-  T50 --> T53
-  T55 --> T56
+  T59 --> T60
+  T60 --> T61
+  T60 --> T67
+  T60 --> T68
+  T61 --> T62
+  T62 --> T63
+  T62 --> T64
+  T62 --> T65
+  T62 --> T66
+  T62 --> T69
+  T63 --> T70
+  T64 --> T70
+  T65 --> T70
+  T66 --> T70
+  T67 --> T70
+  T68 --> T70
+  T69 --> T70
+  T71 --> T72
+  T71 --> T73
+  T71 --> T74
+  T64 --> T72
+  T65 --> T73
+  T66 --> T74
+  T70 --> T75
+  T72 --> T76
+  T73 --> T76
+  T74 --> T76
+  T75 --> T76
 ```
 
 **Parallel waves** (tasks in the same wave can run in separate sessions at the same time):
 
 | Wave | Tasks |
 | :--- | :--- |
-| 1 | T01 |
-| 2 | T02, T03 |
-| 3 | T04, T14, T15, T16, T17, T25 |
-| 4 | T05, T06, T07, T26 |
-| 5 | T08, T18, T20 |
-| 6 | T09, T10, T11, T12, T13, T19, T21, T22, T23, T24 |
-| 7 | T27, T28 |
-| 8 | T29, T30, T31 |
-| 9 | T32, T33 |
-| 10 | T34, T36 |
-| 11 | T35, T37 |
-| 12 | T38, T39 |
-| 13 | T40 |
-| 14 | T41, T42, T44 |
-| 15 | T43, T45 |
-| 16 | T46, T47 |
-| 17 | T48 |
-| 18 | T49, T51, T54 |
-| 19 | T50, T52 |
-| 20 | T53 |
-| 21 | T55, T57, T58 |
-| 22 | T56 |
+| 23 | T59, T71 |
+| 24 | T60 |
+| 25 | T61, T67, T68 |
+| 26 | T62 |
+| 27 | T63, T64, T65, T66, T69 |
+| 28 | T70, T72, T73, T74 |
+| 29 | T75 |
+| 30 | T76 |
 
 Running tasks in parallel is optional. When working solo, follow the ID order; it respects every dependency.
 
@@ -115,75 +112,32 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 
 | ID | Task | Milestone | Depends on | Size | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| T00 | Repository agent setup (`AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, scoped rules, workflows) | — | — | S | done |
-| [T01](T01-tooling-setup.md) | Tooling setup | M1 | — | M | done |
-| [T02](T02-ci-and-changesets.md) | CI, changesets, CODEOWNERS | M1 | T01 | S | done |
-| [T03](T03-cli-skeleton.md) | CLI skeleton, types, errors | M1 | T01 | M | done |
-| [T04](T04-fragment-schema-and-parser.md) | Fragment schema & parser | M2 | T03 | M | done |
-| [T05](T05-registry-loader-and-list.md) | Registry loader & `list` | M2 | T04 | M | done |
-| [T06](T06-resolver.md) | Fragment resolver | M2 | T04 | M | done |
-| [T07](T07-placeholders.md) | Placeholder rendering | M2 | T04 | S | done |
-| [T08](T08-check-registry.md) | `check-registry` script | M2 | T05, T07 | M | done |
-| [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | done |
-| [T10](T10-content-frameworks.md) | Content: frameworks | M2 | T08 | L | done |
-| [T11](T11-content-libraries-ui-state.md) | Content: Tailwind, shadcn, TanStack Query, Zustand | M2 | T08 | L | done |
-| [T12](T12-content-libraries-forms-testing.md) | Content: RHF + Zod, Vitest, Playwright | M2 | T08 | M | done |
-| [T13](T13-content-workflows.md) | Content: workflows | M2 | T08 | M | done |
-| [T14](T14-detect-packages.md) | Detect packages & versions | M3 | T03 | M | done |
-| [T15](T15-detect-typescript.md) | TypeScript gate & tsconfig | M3 | T03 | S | done |
-| [T16](T16-detect-layout.md) | Layout & architecture inference | M3 | T03 | M | done |
-| [T17](T17-detect-workspace-and-agents.md) | Monorepo, git root, existing agents | M3 | T03 | S | done |
-| [T18](T18-detect-orchestrator.md) | Detection orchestrator | M3 | T06, T14–T17 | M | done |
-| [T19](T19-interactive-ui.md) | Wizard, summary & `--yes` defaults | M3 | T05, T06, T18 | L | done |
-| [T20](T20-plan-core-and-shared-targets.md) | Plan core, `AGENTS.md`, `ARCHITECTURE.md` | M4 | T06, T07 | L | done |
-| [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | done |
-| [T22](T22-target-claude.md) | Claude Code target | M4 | T20 | M | done |
-| [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | done |
-| [T24](T24-target-copilot.md) | GitHub Copilot target | M4 | T20 | M | done |
-| [T25](T25-manifest-and-managed-blocks.md) | Manifest & managed blocks | M5 | T03 | M | done |
-| [T26](T26-apply-engine.md) | Apply engine | M5 | T25 | L | done |
-| [T27](T27-init-command.md) | `init` command end to end | M5 | T19, T21–T24, T26 | L | done |
-| [T28](T28-doctor-command.md) | `doctor` command | M5 | T18, T21–T24, T26 | M | done |
-| [T29](T29-fixtures-and-acceptance-tests.md) | Fixtures & acceptance tests | M6 | T27, T28, T09–T13 | L | done |
-| [T30](T30-package-smoke-test.md) | Packed-tarball smoke test | M6 | T27 | S | done |
-| [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | done |
-| [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | done |
-| [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | done |
-| [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | done |
-| [T35](T35-review-before-write.md) | Review before write | M7 | T34 | L | done |
-| [T36](T36-detection-card.md) | Detection summary card | M7 | T27 | S | done |
-| [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | done |
-| [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | done |
-| [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
-| [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
-| [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | done |
-| [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | done |
-| [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | done |
-| [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | done |
-| [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | done |
-| [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
-| [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
-| [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
-| [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | done |
-| [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | done |
-| [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | done |
-| [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | done |
-| [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | done |
-| [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | done |
-| [T55](T55-workspace-package-detection.md) | Versions & package manager inside a workspace package | M10 | — | M | done |
-| [T56](T56-yarn-and-bun-lockfiles.md) | Locked versions from `yarn.lock` and `bun.lock` | M10 | T55 | M | done |
-| [T57](T57-newer-manifest-guard.md) | Version guard before manifest value checks | M10 | — | S | done |
-| [T58](T58-issue-templates.md) | Issue templates & a wrong-rule report path | M10 | — | S | done |
+| [T59](T59-javascript-language-fragments.md) | Content: `javascript` and `javascript-jsdoc` language fragments | M11 | — | M | todo |
+| [T60](T60-language-detection.md) | Language detection replaces the TypeScript gate | M11 | T59 | M | todo |
+| [T61](T61-language-aware-globs.md) | Language-aware globs | M11 | T60 | M | todo |
+| [T62](T62-per-language-examples.md) | Per-language examples: mechanism and registry check | M11 | T61 | M | todo |
+| [T63](T63-js-examples-architectures.md) | Content: JavaScript examples for architectures | M11 | T62 | M | todo |
+| [T64](T64-js-examples-frameworks.md) | Content: JavaScript examples for frameworks | M11 | T62 | L | todo |
+| [T65](T65-js-examples-libraries-ui-state.md) | Content: JS examples for Tailwind, shadcn, TanStack Query, Zustand | M11 | T62 | M | todo |
+| [T66](T66-js-examples-libraries-forms-testing.md) | Content: JS examples for RHF + Zod, Vitest, Playwright | M11 | T62 | M | todo |
+| [T67](T67-wizard-summary-js.md) | Wizard, summary, and error text for JavaScript | M11 | T60 | M | todo |
+| [T68](T68-language-change-check.md) | Language change check | M11 | T60 | S–M | todo |
+| [T69](T69-module-system-js-rules.md) | Module system in JavaScript rules | M11 | T62 | S–M | todo |
+| [T70](T70-js-fixtures-docs.md) | JavaScript fixtures, acceptance tests, and docs | M11 | T61–T69 | M | todo |
+| [T71](T71-doctor-version-aware-unselected.md) | Version-aware `unselected` in `doctor` | M12 | — | S | todo |
+| [T72](T72-react18-vite5.md) | Older majors: React 18 / Vite 5 | M12 | T62, T64, T71 | L | todo |
+| [T73](T73-zustand-4.md) | Older majors: Zustand 4 | M12 | T62, T65, T71 | M | todo |
+| [T74](T74-vitest-2.md) | Older majors: Vitest 2 | M12 | T62, T66, T71 | S–M | todo |
+| [T75](T75-js-effectiveness-eval.md) | Effectiveness eval on a JavaScript fixture | M13 | T70 | M | todo |
+| [T76](T76-release-gate-0-2.md) | 0.2 release gate and docs | M13 | T70, T72–T75 | M | todo |
 
-**M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
+**M11 — JavaScript projects** comes from PRD §7 v0.2 and backlog J1–J6, plus the language-change check (T68) and module-system line (T69) approved on 2026-11-13. Removing the TypeScript gate alone would write scoped rules that never load; globs, dual examples, language fragments, wizard copy, and fixtures ship as one milestone. T60 carries the `minor` changeset with a `BREAKING CHANGE` note (JavaScript-only projects exit `0`).
 
-**M8 — Launch readiness** comes from the pre-launch product review on 2026-11-05. These tasks block publishing `0.1.0`. Most have a **Decisions (owner, before starting)** section: an agent running `/implement-task` must stop and ask for those decisions before writing code. Several move behavior into v0.1 or change it, so the PRD is updated in the same PR. Content tasks (T42, T45, T47) follow the Content Tasks checklist above.
+**M12 — Older majors** comes from backlog P1.1, plus version-aware `unselected` in `doctor` (T71) so new coverage does not fail unpinned CI. T71 has no dependency and should merge before T72–T74. Each coverage task adds a `minor` changeset.
 
-**M9 — 0.1.1 patch** comes from the follow-ups in T48's Notes and a post-launch review after `0.1.0` shipped on 2026-11-09. Ship `0.1.1` once T49–T52 are merged; T53 and T54 can follow in `0.1.1` or `0.1.2`. Each task adds a `patch` changeset, so the release PR collects them. T50, T51, T53, and T54 have **Decisions (owner, before starting)** sections.
+**M13 — 0.2 release gate** is the effectiveness eval on a JavaScript fixture (PRD §8.3) and the merge/publish checklist for `0.2.0`.
 
-**M10 — 0.1.2 patch** comes from the backlog review on 2026-11-12, which reproduced two detection defects and one manifest defect in 0.1.1. Ship `0.1.2` once T55–T57 are merged; T58 changes no CLI behavior and can merge at any time. T55–T57 each add a `patch` changeset. T55, T57, and T58 have **Decisions (owner, before starting)** sections; the owner answered them on 2026-11-12, and the answers are in each task's **Notes**.
-
-**After launch:** the plans after `0.1.2` (v0.2 JavaScript, v0.3 lifecycle, v0.4 breadth, v0.5+ frameworks in other languages) are in [`backlog.md`](backlog.md). They are not task files yet; that file explains how to promote an item.
+**Later releases:** lifecycle (v0.3), breadth (v0.4), and frameworks beyond JavaScript and TypeScript (v0.5+) stay in [`backlog.md`](backlog.md).
 
 ## Task File Template
-Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**.
+Every task file uses the same sections: **Goal**, **Context**, **Scope**, **Out of scope**, **Implementation notes**, **Acceptance criteria**, **Verify**, **Commit**, **Notes**. Tasks that need an owner choice before coding also have **Decisions (owner, before starting)**.

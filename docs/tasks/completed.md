@@ -1,0 +1,148 @@
+# Completed Tasks (v0.1 through 0.1.2)
+
+Task files T00–T58 stay in this folder as the decision record. This page holds their index, dependency graph, waves, and milestone notes so the active [`README.md`](README.md) can focus on the current release.
+
+Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈ a long session; split it if it doesn't fit.
+
+## Dependency Graph
+
+```mermaid
+graph LR
+  T01 --> T02
+  T01 --> T03
+  T03 --> T04
+  T04 --> T05 & T06 & T07
+  T05 & T07 --> T08
+  T08 --> T09 & T10 & T11 & T12 & T13
+  T03 --> T14 & T15 & T16 & T17
+  T06 & T14 & T15 & T16 & T17 --> T18
+  T05 & T06 & T18 --> T19
+  T06 & T07 --> T20
+  T20 --> T21 & T22 & T23 & T24
+  T03 --> T25
+  T25 --> T26
+  T19 & T21 & T22 & T23 & T24 & T26 --> T27
+  T18 & T21 & T22 & T23 & T24 & T26 --> T28
+  T27 & T28 & T09 & T10 & T11 & T12 & T13 --> T29
+  T27 --> T30
+  T27 & T28 --> T31
+  T02 & T30 & T31 --> T32
+  T29 --> T33
+  T27 --> T34 & T36
+  T34 --> T35
+  T34 & T36 --> T37
+  T35 --> T38 & T39
+  T34 & T35 & T36 & T37 & T38 & T39 --> T40
+  T41 & T42 --> T43
+  T42 --> T45
+  T41 & T43 --> T46
+  T43 & T44 & T45 --> T47
+  T42 & T43 & T46 & T47 --> T48
+  T49 --> T50 & T52
+  T50 --> T53
+  T55 --> T56
+```
+
+**Parallel waves** (tasks in the same wave can run in separate sessions at the same time):
+
+| Wave | Tasks |
+| :--- | :--- |
+| 1 | T01 |
+| 2 | T02, T03 |
+| 3 | T04, T14, T15, T16, T17, T25 |
+| 4 | T05, T06, T07, T26 |
+| 5 | T08, T18, T20 |
+| 6 | T09, T10, T11, T12, T13, T19, T21, T22, T23, T24 |
+| 7 | T27, T28 |
+| 8 | T29, T30, T31 |
+| 9 | T32, T33 |
+| 10 | T34, T36 |
+| 11 | T35, T37 |
+| 12 | T38, T39 |
+| 13 | T40 |
+| 14 | T41, T42, T44 |
+| 15 | T43, T45 |
+| 16 | T46, T47 |
+| 17 | T48 |
+| 18 | T49, T51, T54 |
+| 19 | T50, T52 |
+| 20 | T53 |
+| 21 | T55, T57, T58 |
+| 22 | T56 |
+
+Running tasks in parallel is optional. When working solo, follow the ID order; it respects every dependency.
+
+## Task Index
+
+Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈ a long session; split it if it doesn't fit.
+
+| ID | Task | Milestone | Depends on | Size | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| T00 | Repository agent setup (`AGENTS.md`, `ARCHITECTURE.md`, `CLAUDE.md`, scoped rules, workflows) | — | — | S | done |
+| [T01](T01-tooling-setup.md) | Tooling setup | M1 | — | M | done |
+| [T02](T02-ci-and-changesets.md) | CI, changesets, CODEOWNERS | M1 | T01 | S | done |
+| [T03](T03-cli-skeleton.md) | CLI skeleton, types, errors | M1 | T01 | M | done |
+| [T04](T04-fragment-schema-and-parser.md) | Fragment schema & parser | M2 | T03 | M | done |
+| [T05](T05-registry-loader-and-list.md) | Registry loader & `list` | M2 | T04 | M | done |
+| [T06](T06-resolver.md) | Fragment resolver | M2 | T04 | M | done |
+| [T07](T07-placeholders.md) | Placeholder rendering | M2 | T04 | S | done |
+| [T08](T08-check-registry.md) | `check-registry` script | M2 | T05, T07 | M | done |
+| [T09](T09-content-architectures-languages.md) | Content: architectures & languages | M2 | T08 | L | done |
+| [T10](T10-content-frameworks.md) | Content: frameworks | M2 | T08 | L | done |
+| [T11](T11-content-libraries-ui-state.md) | Content: Tailwind, shadcn, TanStack Query, Zustand | M2 | T08 | L | done |
+| [T12](T12-content-libraries-forms-testing.md) | Content: RHF + Zod, Vitest, Playwright | M2 | T08 | M | done |
+| [T13](T13-content-workflows.md) | Content: workflows | M2 | T08 | M | done |
+| [T14](T14-detect-packages.md) | Detect packages & versions | M3 | T03 | M | done |
+| [T15](T15-detect-typescript.md) | TypeScript gate & tsconfig | M3 | T03 | S | done |
+| [T16](T16-detect-layout.md) | Layout & architecture inference | M3 | T03 | M | done |
+| [T17](T17-detect-workspace-and-agents.md) | Monorepo, git root, existing agents | M3 | T03 | S | done |
+| [T18](T18-detect-orchestrator.md) | Detection orchestrator | M3 | T06, T14–T17 | M | done |
+| [T19](T19-interactive-ui.md) | Wizard, summary & `--yes` defaults | M3 | T05, T06, T18 | L | done |
+| [T20](T20-plan-core-and-shared-targets.md) | Plan core, `AGENTS.md`, `ARCHITECTURE.md` | M4 | T06, T07 | L | done |
+| [T21](T21-target-cursor.md) | Cursor target | M4 | T20 | S | done |
+| [T22](T22-target-claude.md) | Claude Code target | M4 | T20 | M | done |
+| [T23](T23-target-windsurf.md) | Windsurf target | M4 | T20 | S | done |
+| [T24](T24-target-copilot.md) | GitHub Copilot target | M4 | T20 | M | done |
+| [T25](T25-manifest-and-managed-blocks.md) | Manifest & managed blocks | M5 | T03 | M | done |
+| [T26](T26-apply-engine.md) | Apply engine | M5 | T25 | L | done |
+| [T27](T27-init-command.md) | `init` command end to end | M5 | T19, T21–T24, T26 | L | done |
+| [T28](T28-doctor-command.md) | `doctor` command | M5 | T18, T21–T24, T26 | M | done |
+| [T29](T29-fixtures-and-acceptance-tests.md) | Fixtures & acceptance tests | M6 | T27, T28, T09–T13 | L | done |
+| [T30](T30-package-smoke-test.md) | Packed-tarball smoke test | M6 | T27 | S | done |
+| [T31](T31-docs-readme-contributing.md) | README & CONTRIBUTING | M6 | T27, T28 | M | done |
+| [T32](T32-release-workflow.md) | Release workflow, dogfooding & launch checklist | M6 | T02, T30, T31 | M | done |
+| [T33](T33-rule-effectiveness-eval.md) | Rule-effectiveness eval (human-led) | M6 | T29 | M | done |
+| [T34](T34-init-report-and-next-steps.md) | Grouped `init` report & next steps | M7 | T27 | M | done |
+| [T35](T35-review-before-write.md) | Review before write | M7 | T34 | L | done |
+| [T36](T36-detection-card.md) | Detection summary card | M7 | T27 | S | done |
+| [T37](T37-rerun-doctor-and-errors.md) | Re-run, `doctor`, `list` & flag errors | M7 | T34, T36 | M | done |
+| [T38](T38-prompt-polish.md) | Prompt polish | M7 | T35 | M | done |
+| [T39](T39-conflict-and-dry-run-display.md) | Conflict prompt & dry-run display | M7 | T35 | M | done |
+| [T40](T40-terminal-output-guardrails.md) | Terminal output guardrails | M7 | T34–T39 | M | done |
+| [T41](T41-manifest-owned-paths.md) | Restrict manifest paths to owned files | M8 | — | M | done |
+| [T42](T42-version-coverage.md) | Version coverage & resolve consistency | M8 | — | L | done |
+| [T43](T43-opt-out-and-doctor-severity.md) | Fragment opt-out & `doctor` severity | M8 | T41, T42 | M | done |
+| [T44](T44-output-correctness.md) | Generated output & prompt correctness | M8 | — | L | done |
+| [T45](T45-fragment-strict-consistency.md) | Fragment examples follow `typescript-strict` | M8 | T42 | M | done |
+| [T46](T46-remove-all-and-no-workflows.md) | `remove --all` & `--no-workflows` | M8 | T41, T43 | L | done |
+| [T47](T47-dogfood-consistency.md) | Dogfood output matches this repository | M8 | T43, T44, T45 | M | done |
+| [T48](T48-release-gate-and-docs.md) | Release gate, docs accuracy & launch hygiene | M8 | T42, T43, T46, T47 | M | done |
+| [T49](T49-doctor-version-aware.md) | Version-aware `doctor`: rule updates don't fail CI | M9 | — | M | done |
+| [T50](T50-manifest-forward-compat.md) | Manifest forward compatibility & public API rules | M9 | T49 | M | done |
+| [T51](T51-cursor-claude-workflow-duplicates.md) | No duplicate workflows with Cursor + Claude Code | M9 | — | M | done |
+| [T52](T52-small-fixes-0-1-1.md) | Small fixes: help text, `doctor` fix text, package files | M9 | T49 | S | done |
+| [T53](T53-safety-hardening.md) | Low-severity safety hardening | M9 | T50 | M | done |
+| [T54](T54-adopt-duplicate-h1.md) | No duplicate H1 when adopting an existing file | M9 | — | M | done |
+| [T55](T55-workspace-package-detection.md) | Versions & package manager inside a workspace package | M10 | — | M | done |
+| [T56](T56-yarn-and-bun-lockfiles.md) | Locked versions from `yarn.lock` and `bun.lock` | M10 | T55 | M | done |
+| [T57](T57-newer-manifest-guard.md) | Version guard before manifest value checks | M10 | — | S | done |
+| [T58](T58-issue-templates.md) | Issue templates & a wrong-rule report path | M10 | — | S | done |
+
+**M7 — UX polish** comes from a hands-on review of `init` on 2026-11-04. Decisions: on a TTY, the report is grouped by agent and the full tree is kept for `--dry-run`, "Preview changes", and pipes; `init` always shows the full wordmark; `--yes` skips the review card.
+
+**M8 — Launch readiness** comes from the pre-launch product review on 2026-11-05. These tasks block publishing `0.1.0`. Most have a **Decisions (owner, before starting)** section: an agent running `/implement-task` must stop and ask for those decisions before writing code. Several move behavior into v0.1 or change it, so the PRD is updated in the same PR. Content tasks (T42, T45, T47) follow the Content Tasks checklist above.
+
+**M9 — 0.1.1 patch** comes from the follow-ups in T48's Notes and a post-launch review after `0.1.0` shipped on 2026-11-09. Ship `0.1.1` once T49–T52 are merged; T53 and T54 can follow in `0.1.1` or `0.1.2`. Each task adds a `patch` changeset, so the release PR collects them. T50, T51, T53, and T54 have **Decisions (owner, before starting)** sections.
+
+**M10 — 0.1.2 patch** comes from the backlog review on 2026-11-12, which reproduced two detection defects and one manifest defect in 0.1.1. Ship `0.1.2` once T55–T57 are merged; T58 changes no CLI behavior and can merge at any time. T55–T57 each add a `patch` changeset. T55, T57, and T58 have **Decisions (owner, before starting)** sections; the owner answered them on 2026-11-12, and the answers are in each task's **Notes**.
+

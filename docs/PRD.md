@@ -666,8 +666,14 @@ Each issue includes the command that fixes it (usually re-running `init`). `--js
 The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript support moved from v0.4+ to v0.2, and lifecycle, breadth, and frameworks in other languages each moved one release later. Item-level plans are in [`docs/tasks/backlog.md`](tasks/backlog.md).
 
 ### v0.2 — JavaScript and older stacks
-- JavaScript projects: language detection replaces the TypeScript gate, scoped globs follow the project's language, and each rule fragment carries a JavaScript example beside the TypeScript one. JSDoc rules belong to the `javascript` language fragment; when they apply is decided in its task.
+Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Owner decisions on 2026-11-13:
+- **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and a second id with JSDoc type rules (proposed `javascript-jsdoc`), suggested when `checkJs` is on. Confirm the second id's name in T59 before publish; published ids are never renamed.
+- Language detection replaces the TypeScript gate; scoped globs follow the project's language; each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
+- **Language family drift:** `init` and `doctor` report when the project moves between JavaScript and TypeScript (strictness / JSDoc stay preferences).
+- **Module system** (slice of later project-conventions work): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
+- **Version-aware `unselected` in `doctor`:** a matching fragment that isn't selected is a warning when the manifest was written by a different CLI version, so new coverage does not fail unpinned CI.
 - Older majors: React 18 / Vite 5, Zustand 4, Vitest 2.
+- Work lands on a `release/0.2` branch that merges to `main` once for `0.2.0`.
 
 ### v0.3 — Lifecycle
 - `add`, `remove <id...>`, `update`.
