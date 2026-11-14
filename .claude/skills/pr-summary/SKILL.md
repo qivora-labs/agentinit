@@ -1,6 +1,6 @@
 ---
 name: pr-summary
-description: Draft a pull request title and description for the current branch against main. Use when the user runs /pr-summary. Does not open or push the pull request.
+description: Draft a pull request title and description for the current branch against its base branch (open PR base, else release/0.2 for 0.2 tasks, else main). Use when the user runs /pr-summary. Does not open or push the pull request.
 disable-model-invocation: true
 ---
 

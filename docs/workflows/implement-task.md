@@ -7,9 +7,9 @@ Implement exactly one task from `docs/tasks/` so it can be reviewed and merged a
 A task id (e.g., `T05`), given by the user.
 
 ## Steps
-1. Open `docs/tasks/README.md`. Find the task's row; if any dependency is not `done`, **stop** and tell the user which ones are missing.
-2. Read, in this order: the task file, `AGENTS.md`, `ARCHITECTURE.md`, and every PRD section the task lists.
-3. Check the branch: if not on `task/<id>-<slug>`, propose creating it and wait for the user.
+1. Open `docs/tasks/README.md`. Find the task's row. If a dependency is missing from that index, look it up in `docs/tasks/completed.md` (those are already `done`). If any dependency is not `done`, **stop** and tell the user which ones are missing.
+2. Read, in this order: the task file, `AGENTS.md`, `ARCHITECTURE.md`, and every PRD section the task lists. If the task has **Decisions (owner, before starting)**, stop and ask for those answers before writing code.
+3. Check the branch: if not on `task/<id>-<slug>`, propose creating it (from `release/0.2` for 0.2 tasks once that branch exists; otherwise from `main`) and wait for the user.
 4. Restate the goal in two or three sentences and list the files you plan to create or change. If anything in the task is ambiguous or conflicts with the PRD or existing code, **stop and ask** before writing code.
 5. Implement only what **Scope** lists. Before editing an area, read its rule file (see "Area-Specific Rules" in `AGENTS.md`).
 6. Write or update tests for every behavior in **Acceptance criteria**.

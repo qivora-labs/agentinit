@@ -1,20 +1,22 @@
 # Post-Launch Backlog
 
-Plans that come after `0.1.2`, grouped by the release they are planned for. They are deliberately **not** task files yet:
+Plans after the current active task set, grouped by the release they are planned for. Items that are not yet task files stay here:
 
 - The release order below is approved and matches PRD §7. The details inside each item are proposals until its task file is written, and most need a PRD change that the item names.
-- User issues should set the order inside a release. Task files written now would go stale.
+- User issues should set the order inside a release. Task files written too early go stale.
 
 Item ids (`P1.4a`, `P2.5`, `J1`) are stable, because task files refer to them. They do not encode the release: the `P2` items ship in v0.3 and the `P3` items in v0.4 and later.
 
+Active 0.2 tasks are in [`README.md`](README.md). Completed 0.1.x tasks are in [`completed.md`](completed.md).
+
 ## Release order
 
-Decided by the owner on 2026-11-12. It replaces the earlier order (v0.2 lifecycle, v0.3 breadth, v0.4+ JavaScript and other ecosystems).
+Decided by the owner on 2026-11-12. It replaces the earlier order (v0.2 lifecycle, v0.3 breadth, v0.4+ JavaScript and other ecosystems). Additions to 0.2 were approved on 2026-11-13.
 
 | Release | Theme | Items |
 | :--- | :--- | :--- |
 | 0.1.2 | Fixes for projects that are already supported | T55–T58 (were P1.4a, P1.4b, P1.8, P1.6) |
-| 0.2 | JavaScript projects and older stacks | J1–J6, P1.1 |
+| 0.2 | JavaScript projects and older stacks | T59–T76 (were J1–J6, P1.1, plus language-change, module-system, and version-aware `unselected`) |
 | 0.3 | Lifecycle and customization | P2.1–P2.6 |
 | 0.4 | Breadth and proof | P3.1–P3.4 |
 | 0.5+ | Frameworks beyond JavaScript and TypeScript | P3.5 |
@@ -42,7 +44,7 @@ Each item lists: **Problem**, **Proposal**, **Open decisions**, **Depends on**, 
 
 Patch release. These fix wrong or unhelpful behavior for TypeScript projects that v0.1 already accepts.
 
-All four items are task files now (milestone M10 in [`README.md`](README.md#task-index)):
+All four items are task files now (milestone M10 in [`completed.md`](completed.md)):
 
 - ~~P1.4a Wrong package versions inside a workspace package~~ — [T55](T55-workspace-package-detection.md). The task also covers the wrong package manager in generated commands, found while writing it.
 - ~~P1.4b `yarn.lock` and `bun.lock` versions~~ — [T56](T56-yarn-and-bun-lockfiles.md).
@@ -53,75 +55,22 @@ All four items are task files now (milestone M10 in [`README.md`](README.md#task
 
 ## v0.2 — JavaScript projects and older stacks
 
-Minor release. Removing the TypeScript gate alone would generate files that look right and do nothing, so JavaScript support is six items:
+Minor release. Task files are milestones M11–M13 in [`README.md`](README.md). Work lands on `release/0.2` (see Owner operations).
 
-| Area | In 0.1.1 | In a JavaScript project |
-| :--- | :--- | :--- |
-| Scoped globs | All 14 framework and library fragments match only `.ts` and `.tsx` (Tailwind adds `.css`) | No scoped rule ever loads |
-| Examples | All 21 rule fragments show typed TypeScript | An agent can copy type syntax into `.js` files |
-| `src/` detection | `src` counts only when it holds a `.ts` or `.tsx` file | Every `{{src}}` glob loses its prefix |
-| Language | A closed union of two TypeScript ids in the types, the manifest, the wizard, and the summary | No language fragment to select |
+Owner decisions on 2026-11-13: two JavaScript language ids (`javascript` and a JSDoc sibling, proposed `javascript-jsdoc`); plus three additions beyond J1–J6 / P1.1 (language-change check, module-system line, version-aware `unselected`).
 
-The same glob gap already affects TypeScript projects that still contain `.js` or `.jsx` files: those files get no scoped rules today.
+- ~~J1 Language detection replaces the TypeScript gate~~ — [T60](T60-language-detection.md).
+- ~~J2 Language-aware globs~~ — [T61](T61-language-aware-globs.md).
+- ~~J3 JavaScript examples in every rule fragment~~ — [T62](T62-per-language-examples.md) (mechanism), [T63](T63-js-examples-architectures.md)–[T66](T66-js-examples-libraries-forms-testing.md) (content).
+- ~~J4 `javascript` language fragment~~ — [T59](T59-javascript-language-fragments.md) (two ids, including JSDoc).
+- ~~J5 Wizard, summary, docs, and fixtures~~ — [T67](T67-wizard-summary-js.md), [T70](T70-js-fixtures-docs.md).
+- ~~J6 Effectiveness eval on a JavaScript fixture~~ — [T75](T75-js-effectiveness-eval.md).
+- ~~P1.1 Older majors for libraries and React + Vite~~ — [T72](T72-react18-vite5.md), [T73](T73-zustand-4.md), [T74](T74-vitest-2.md); [T71](T71-doctor-version-aware-unselected.md) first so new coverage does not fail unpinned CI.
+- Language change check (new, 2026-11-13) — [T68](T68-language-change-check.md).
+- Module system in JavaScript rules (new, 2026-11-13; slice of P2.4) — [T69](T69-module-system-js-rules.md).
+- 0.2 release gate — [T76](T76-release-gate-0-2.md).
 
-A JavaScript-only project changes from exit `1` to exit `0`. That is an exit-code change, so it needs this minor release and a changeset note (`CONTRIBUTING.md`, Compatibility).
-
-### J1 Language detection replaces the TypeScript gate
-- **Problem:** `assertTypeScriptProject` exits `1` for a project with no `tsconfig.json` and no `typescript` dependency. `Language` is a closed union in `src/types.ts`, the manifest schema, `asLanguage`, and the UI. `detectSrcDir` counts only `.ts` and `.tsx`, so a JavaScript project with `src/` is read as a root layout.
-- **Proposal:**
-  - Language is TypeScript when `tsconfig.json` or a `typescript` dependency exists (as today), otherwise `javascript`.
-  - `detectSrcDir` also counts `.js`, `.jsx`, `.mjs`, and `.cjs`.
-  - Read `jsconfig.json` (`paths`, `checkJs`), tsconfig `allowJs`, and the module system from `package.json` `type`. The profile carries these facts for J2–J4.
-  - The manifest accepts `javascript` in `selections.language`. Older CLIs answer with the upgrade message from 0.1.2 on (T57).
-- **Open decisions:** how the profile names the new facts; whether they are saved in the manifest; whether a project with `checkJs` gets its own language id (see J4); whether `selections.language` accepts any language id in the registry, so the next language needs no schema change (deferred here from T57 by the owner on 2026-11-12).
-- **Depends on:** T57. **Size:** M. **PRD:** §1.6, §3.3 step 1, §3.5, §4.3, §6.2, §8.1.
-
-### J2 Language-aware globs
-- **Problem:** fragment globs list only TypeScript extensions. A JavaScript project gets no scoped rules, and a TypeScript project with `allowJs` gets none on its JavaScript files.
-- **Proposal:** fragments keep declaring each glob once. The plan expands the extension for the profile: a JavaScript project gets the JavaScript extensions, and a TypeScript project with `allowJs` gets both. The expansion is pure, because the profile carries the facts.
-- **Open decisions:**
-  - An implicit mapping from `.ts` and `.tsx`, or an explicit placeholder in the glob. Implicit leaves published fragments and community contributions unchanged; explicit is easier to read in the fragment.
-  - The mapping itself: whether `.tsx` also maps to `.js` (older React projects keep JSX in `.js` files), and whether `.mjs`, `.cjs`, `.mts`, and `.cts` are included.
-  - What widens a TypeScript project's globs. Recommended: `allowJs`, not the files on disk, so adding a file never makes `doctor` report `outdated`.
-  - Glob count. `vitest` lists 23 globs today and expansion multiplies them, so check each target's limits.
-- **Depends on:** J1. **Size:** M. **PRD:** §4.4, §5.4, §8.1.
-
-### J3 JavaScript examples in every rule fragment
-- **Problem:** every Contract example is TypeScript (`err: unknown`, `create<CartState>()`, `satisfies`). A few directives are TypeScript-only too, such as `z.infer` in `react-hook-form-zod`. Architecture fragments are always-on, so their examples would be copied into a JavaScript project's `AGENTS.md`.
-- **Proposal:** each rule fragment carries a JavaScript example beside the TypeScript one, and the plan renders the one that matches the profile. `check-registry` requires both, or an explicit TypeScript-only marker. Directive lines that only make sense in TypeScript are marked and dropped from JavaScript output. JavaScript examples are written and reviewed by hand, not produced by stripping types.
-- **Open decisions:**
-  - The syntax for the two variants (two fences told apart by their info string, or separate sections).
-  - Whether the 120-line budget counts the source file or each rendered variant.
-  - What a JavaScript project gets from a TypeScript-only fragment.
-  - Version policy. Recommended: output for TypeScript projects stays byte-identical, so existing users see no `rules-update` warnings.
-- **Depends on:** J1. **Size:** L (split: the mechanism and its check, then content per category as in T09–T12). **PRD:** §4.4, §10.
-- The Content Tasks checklist in `docs/tasks/README.md` applies to the content tasks.
-
-### J4 `javascript` language fragment
-- **Problem:** a language fragment is required for every selection, and none exists for JavaScript.
-- **Proposal:** `registry/languages/javascript.md`, always-on. It covers following the project's module system (ES modules or CommonJS), keeping TypeScript syntax out of `.js` files, and checking external input at runtime.
-- **Open decisions:** JSDoc. PRD §7 planned "JavaScript projects (JSDoc rules)". Recommended: JSDoc type directives apply only when `checkJs` is on, because requiring JSDoc in a codebase that has none makes new code inconsistent with the old. The owner hasn't decided this yet.
-- **Depends on:** J1, J3. **Size:** M. **PRD:** §4.2, §7.
-
-### J5 Wizard, summary, docs, and fixtures
-- **Problem:** the UI and docs assume TypeScript: the greenfield step "TypeScript Strictness", the option "Other TypeScript project", the summary's Language row, the "Run inside a TypeScript project" error, the README pitch and FAQ, and PRD §1–§3.
-- **Proposal:**
-  - The greenfield step becomes a language choice (TypeScript strict, TypeScript, JavaScript).
-  - Update the summary card, error text, README, PRD, and `CONTRIBUTING.md`.
-  - The `js-only` fixture changes from rejected to accepted. Add JavaScript fixtures for Next.js, React + Vite, and Express (CommonJS), plus one mixed TypeScript and JavaScript project. Snapshot one full JavaScript tree.
-- **Depends on:** J1–J4. **Size:** M. **PRD:** §1.2–§1.6, §3.2, §3.3, §3.5, §8.1, §8.2.
-
-### J6 Effectiveness eval on a JavaScript fixture
-- **Problem:** PRD §8.3 gates each minor release on the eval. The v0.1 eval ran only on the TypeScript fixture `next15-src`, and several checklist items are about return types.
-- **Proposal:** add a JavaScript fixture and checklist items that can occur in JavaScript (module system, no type syntax, the library patterns). Run those cells before 0.2 ships.
-- **Open decisions:** whether all five tasks run on the JavaScript fixture or a subset.
-- **Depends on:** J2–J4. **Size:** M. **PRD:** §8.3.
-
-### P1.1 Older majors for libraries and React + Vite
-- **Problem:** `react-vite` requires `react >=19` and `vite >=6`, `zustand >=5`, `vitest >=3`. Common React 18 / Vite 5, Zustand 4, and Vitest 2 projects get no rules.
-- **Proposal:** apply the T42 version policy: add range-specific fragments, or widen ranges where the guidance holds. Add one fixture per range. New fragments are written with both examples (J3).
-- **Open decisions:** none beyond the T42 policy.
-- **Depends on:** T42, J3. **Size:** L (content-heavy; split per fragment). **PRD:** §4.2, §8.2.
+Zod 3, Jest, and Tailwind v3 stay out of 0.2.0 (Jest and Tailwind v3 remain in P3.2). New fragments are additive, so they can ship in a 0.2.x release.
 
 ---
 
@@ -152,10 +101,10 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
   - path aliases from tsconfig or jsconfig `paths` (already parsed for tsconfig),
   - where tests live (colocated vs. `tests/`),
   - lint and format tools (ESLint, Biome, Prettier configs),
-  - module system (detected by J1),
+  - module system (detection started in T60; **stating it in JavaScript language rules shipped as [T69](T69-module-system-js-rules.md)** — remove that bullet from the remaining work),
   - import style (relative vs. alias, sampled from a bounded number of files).
 - **Open decisions:** sampling limits (time budget under 60 s, PRD §8.1); how facts appear in `ProjectProfile`; whether facts are frozen in the manifest so `doctor` can report convention drift.
-- **Depends on:** J1. **Size:** L. **PRD:** new section under §3.3 and §5.1.
+- **Depends on:** T60 (was J1). **Size:** L. **PRD:** new section under §3.3 and §5.1.
 
 ### P2.5 `doctor` for CI
 - **Problem:** `doctor` output is human text or JSON only, and it can't tell that fragment updates are available.
@@ -246,6 +195,7 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
 
 - ~~P1.2 Low-severity safety hardening~~ — [T53](T53-safety-hardening.md).
 - ~~P1.3 Duplicate H1 when adopting an existing file~~ — [T54](T54-adopt-duplicate-h1.md).
+- ~~J1–J6, P1.1, and 2026-11-13 0.2 additions~~ — [T59](T59-javascript-language-fragments.md)–[T76](T76-release-gate-0-2.md) (see the v0.2 section above).
 
 ## Owner operations (not tasks)
 
@@ -255,3 +205,4 @@ Repository and account settings an agent can't change. Tick them off here.
 - [x] After the first OIDC publish of `0.1.1`, delete the leftover `NPM_TOKEN` repository secret (`release.yml` already uses Trusted Publishing).
 - [x] Record whether the rule-effectiveness eval was re-run after T45 for tasks T1, T3, and T4 (`docs/evals/results-v0.1.md`).
 - [x] Create the `data-loss`, `wrong-rule`, and `coverage` labels (T58 adds the templates).
+- [ ] After the 0.2 planning PR merges to `main`, create `release/0.2` from `main` and protect it the same way as `main` (required CI checks; PRs required). 0.2 task PRs target that branch.
