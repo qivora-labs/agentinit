@@ -25,6 +25,11 @@ const LIBRARY_GROUPS: readonly { readonly label: string; readonly ids: readonly 
   { label: 'Testing', ids: ['vitest', 'playwright'] },
 ];
 
+/**
+ * Closed set of language ids the CLI may offer in Customize. Registry language
+ * fragments whose id is not listed here are loaded but not selectable until a
+ * later task opens the Language type and manifest for them (T60 for JavaScript).
+ */
 const LANGUAGE_ORDER = ['typescript-strict', 'typescript'] as const;
 const ARCHITECTURE_ORDER = ['feature-based', 'layered', 'atomic-design', 'flat', 'modular'] as const;
 
@@ -77,11 +82,17 @@ export function mayOfferLibraries(
 }
 
 export function languageOptions(registry: Registry): PromptOption<string>[] {
-  return orderedOptions(registry, 'language', LANGUAGE_ORDER, (id, fragment) => {
-    const base = fragmentHint(fragment);
-    if (id !== RECOMMENDED_LANGUAGE) return base;
-    return truncateHint(`recommended · ${base}`);
-  });
+  return orderedOptions(
+    registry,
+    'language',
+    LANGUAGE_ORDER,
+    (id, fragment) => {
+      const base = fragmentHint(fragment);
+      if (id !== RECOMMENDED_LANGUAGE) return base;
+      return truncateHint(`recommended · ${base}`);
+    },
+    { closed: true },
+  );
 }
 
 export function architectureOptions(registry: Registry): PromptOption<string>[] {
@@ -163,25 +174,28 @@ function orderedOptions(
   category: 'language' | 'architecture',
   order: readonly string[],
   hintFor: (id: string, fragment: Fragment) => string,
+  options?: { readonly closed?: boolean },
 ): PromptOption<string>[] {
   const fragments = registry.byCategory(category);
   const byId = new Map(fragments.map((fragment) => [fragment.meta.id, fragment]));
   const used = new Set<string>();
-  const options: PromptOption<string>[] = [];
+  const result: PromptOption<string>[] = [];
 
   for (const id of order) {
     const fragment = byId.get(id);
     if (fragment === undefined) continue;
     used.add(id);
-    options.push(promptOption(id, fragment.meta.name, hintFor(id, fragment)));
+    result.push(promptOption(id, fragment.meta.name, hintFor(id, fragment)));
   }
 
-  for (const fragment of fragments) {
-    if (used.has(fragment.meta.id)) continue;
-    options.push(promptOption(fragment.meta.id, fragment.meta.name, hintFor(fragment.meta.id, fragment)));
+  if (options?.closed !== true) {
+    for (const fragment of fragments) {
+      if (used.has(fragment.meta.id)) continue;
+      result.push(promptOption(fragment.meta.id, fragment.meta.name, hintFor(fragment.meta.id, fragment)));
+    }
   }
 
-  return options;
+  return result;
 }
 
 function optionFor(fragment: Fragment, group: string): PromptOption<string> {
