@@ -44,10 +44,10 @@ Record the answers under **Notes** and in the PRD.
 - Run `pnpm registry:check`. A human reviews the content before merge.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] Both fragments pass `pnpm registry:check` and follow the 3-part formula.
-- [ ] The language picker still offers only `typescript-strict` and `typescript` until T60 (or, if both land together, both new ids appear and resolve).
-- [ ] Content Tasks checklist completed; human review noted under **Notes**.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] Both fragments pass `pnpm registry:check` and follow the 3-part formula.
+- [x] The language picker still offers only `typescript-strict` and `typescript` until T60 (or, if both land together, both new ids appear and resolve).
+- [x] Content Tasks checklist completed; human review noted under **Notes**.
 
 ## Verify
 ```bash
@@ -59,4 +59,11 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript and javascript-jsdoc language fragments`
 
 ## Notes
-Owner decisions, 2026-11-13 (planning session): two language ids for JavaScript. Confirm the second id's exact name before merging.
+Owner decisions (confirmed 2026-11-14):
+1. Second id is `javascript-jsdoc` (permanent once published).
+2. `javascript` covers module system (static sentence until T69), no TypeScript syntax in `.js`/`.jsx`, and runtime checks on external input. `javascript-jsdoc` adds `@param` / `@returns` (and related) directives for `checkJs`, citing the TypeScript JSDoc reference, type-checking handbook, `checkJs` tsconfig page, MDN modules, and Node CommonJS docs.
+3. `LANGUAGE_ORDER` stays `typescript-strict` / `typescript`; `orderedOptions(..., { closed: true })` omits other registry language ids from the picker until T60.
+
+Content Tasks checklist: directives checked against those sources (`verifiedAt: 2026-11-14`); 3-part formula; dual-language N/A for language fragments; no move/network/install/secrets instructions; `pnpm registry:check` 0 errors, 0 warnings. Human review of fragment bodies completed 2026-11-15 (dropped a redundant NEVER that restated the `@param`/`@returns` ALWAYS in `javascript-jsdoc`).
+
+Avoided `{{ ... }}` inline object types in JSDoc examples — the placeholder scanner treats them as `{{total: number}}`-style tokens; used `@typedef {Object}` + `@property` instead.
