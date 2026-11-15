@@ -149,16 +149,4 @@ describe('language and architecture options', () => {
     expect(architectures[0]?.label).toBe('Feature-Based');
     expect(architectures.every((option) => (option.hint?.length ?? 0) <= 48)).toBe(true);
   });
-
-  it('loads JavaScript language fragments but does not offer them until T60', async () => {
-    const bundled = await bundledRegistry();
-    const languageIds = bundled.byCategory('language').map((fragment) => fragment.meta.id);
-    expect(languageIds).toEqual(
-      expect.arrayContaining(['javascript', 'javascript-jsdoc', 'typescript', 'typescript-strict']),
-    );
-    expect(languageOptions(bundled).map((option) => option.value)).toEqual([
-      'typescript-strict',
-      'typescript',
-    ]);
-  });
 });

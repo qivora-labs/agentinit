@@ -112,7 +112,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 
 | ID | Task | Milestone | Depends on | Size | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| [T59](T59-javascript-language-fragments.md) | Content: `javascript` and `javascript-jsdoc` language fragments | M11 | — | M | done |
+| [T59](T59-javascript-language-fragments.md) | Content: `javascript` and `javascript-jsdoc` language fragments | M11 | — | M | todo |
 | [T60](T60-language-detection.md) | Language detection replaces the TypeScript gate | M11 | T59 | M | todo |
 | [T61](T61-language-aware-globs.md) | Language-aware globs | M11 | T60 | M | todo |
 | [T62](T62-per-language-examples.md) | Per-language examples: mechanism and registry check | M11 | T61 | M | todo |

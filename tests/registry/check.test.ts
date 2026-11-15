@@ -438,8 +438,6 @@ describe('runRegistryCheck', () => {
       'flat',
       'layered',
       'modular',
-      'javascript',
-      'javascript-jsdoc',
       'typescript',
       'typescript-strict',
       'express',

@@ -275,7 +275,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   └── types.ts
 ├── registry/                        # COMMUNITY CONTRIBUTION ZONE
 │   ├── architectures/   feature-based.md · layered.md · atomic-design.md · flat.md · modular.md
-│   ├── languages/       typescript-strict.md · typescript.md · javascript.md · javascript-jsdoc.md
+│   ├── languages/       typescript-strict.md · typescript.md
 │   ├── frameworks/      nextjs-app-router.md · nextjs-app-router-15.md · nextjs-pages-router.md · react-vite.md · express.md · express-4.md · fastify.md
 │   ├── libraries/       tailwind.md · shadcn.md · tanstack-query.md · zustand.md · react-hook-form-zod.md · vitest.md · playwright.md
 │   ├── workflows/       new-feature.md · review-arch.md · refactor.md · write-tests.md
@@ -667,7 +667,7 @@ The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript s
 
 ### v0.2 — JavaScript and older stacks
 Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Owner decisions on 2026-11-13:
-- **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and `javascript-jsdoc` (JSDoc type rules for `checkJs`), suggested when `checkJs` is on. Published ids are never renamed.
+- **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and a second id with JSDoc type rules (proposed `javascript-jsdoc`), suggested when `checkJs` is on. Confirm the second id's name in T59 before publish; published ids are never renamed.
 - Language detection replaces the TypeScript gate; scoped globs follow the project's language; each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
 - **Language family drift:** `init` and `doctor` report when the project moves between JavaScript and TypeScript (strictness / JSDoc stay preferences).
 - **Module system** (slice of later project-conventions work): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
