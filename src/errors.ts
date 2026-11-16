@@ -33,13 +33,6 @@ export class NewerUnreadableManifestError extends AgentInitError {
   }
 }
 
-export class UnsupportedProjectError extends AgentInitError {
-  constructor(message: string, hint?: string) {
-    super(message, hint === undefined ? { exitCode: ERROR } : { exitCode: ERROR, hint });
-    this.name = 'UnsupportedProjectError';
-  }
-}
-
 export class NotInteractiveError extends AgentInitError {
   constructor(message = 'Interactive input is required.') {
     super(message, {
