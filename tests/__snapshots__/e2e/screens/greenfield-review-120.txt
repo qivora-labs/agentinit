@@ -16,7 +16,7 @@
 ◇  1/5 Which framework are you using?
 │  Web frontend · React + Vite
 │
-◇  2/5 How strict should TypeScript be?
+◇  2/5 Which language should we use?
 │  TypeScript Strict
 │
 ◇  3/5 Which libraries should we include?

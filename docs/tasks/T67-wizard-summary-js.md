@@ -8,9 +8,9 @@
 Interactive copy, the summary card, and error strings treat JavaScript as a first-class language, including greenfield language choice and generator hints.
 
 ## Context
-Promoted from `backlog.md` J5 (UI half). Today the greenfield step asks "How strict should TypeScript be?", the framework sentinel is `OTHER_TYPESCRIPT_PROJECT` / "Other TypeScript project…", the summary Language row only formats TypeScript variants, and several errors say "Run inside a TypeScript project".
+Promoted from `backlog.md` J5 (UI half). T60 already offers all four language ids and rewords the step to "Which language should we use?" (PRD §3.2 step 2). Remaining: the framework sentinel is still `OTHER_TYPESCRIPT_PROJECT` / "Other TypeScript project…", and several errors still say "Run inside a TypeScript project".
 
-T60 opens detection and types; this task owns user-visible strings and the greenfield language step. README / PRD prose polish for the release belongs with T70 where noted.
+This task owns the rest of the user-visible strings. README / PRD prose polish for the release belongs with T70 where noted.
 
 ## Scope
 1. **Greenfield wizard** (`src/ui/wizard.ts`, `src/ui/summary.ts`, `src/ui/catalog.ts`):

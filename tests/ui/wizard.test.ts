@@ -73,7 +73,7 @@ describe('runGreenfieldWizard', () => {
     const groups = calls.filter((call) => call.method === 'groupMultiselect');
     const multis = calls.filter((call) => call.method === 'multiselect');
     expect(choicePrompt(selects[0]).message).toBe('1/5 Which framework are you using?');
-    expect(choicePrompt(selects[1]).message).toBe('2/5 How strict should TypeScript be?');
+    expect(choicePrompt(selects[1]).message).toBe('2/5 Which language should we use?');
     expect(choicePrompt(selects[1]).initialValue).toBe('typescript-strict');
     expect(choicePrompt(groups[0]).message).toBe('3/5 Which libraries should we include?');
     expect(choicePrompt(selects[2]).message).toBe('4/5 Which architecture should we follow?');

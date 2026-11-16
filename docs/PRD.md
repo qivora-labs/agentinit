@@ -134,7 +134,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Full-stack web:* Next.js (App Router), Next.js (Pages Router)
    - *Backend / API:* Node.js + Express, Node.js + Fastify
    - *Other:* Other TypeScript project (library, CLI, scripts) — no framework rules; base rules only (§3.6)
-2. **TypeScript Strictness:** `Strict (strict compiler options, no any)` — *recommended* · `Standard`
+2. **Language:** TypeScript Strict — *recommended* · TypeScript · JavaScript · JavaScript with JSDoc
 3. **Libraries** (multi-select, filtered by framework compatibility):
    - *State & Data:* Zustand, TanStack Query
    - *Styling & UI:* Tailwind CSS v4, shadcn/ui
