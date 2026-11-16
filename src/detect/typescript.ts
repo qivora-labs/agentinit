@@ -31,7 +31,6 @@ export interface LanguageDetection {
   readonly allowJs: boolean;
   readonly checkJs: boolean;
   readonly moduleSystem: ModuleSystem | null;
-  readonly paths: Record<string, string[]>;
   readonly warnings: readonly string[];
 }
 
@@ -57,7 +56,6 @@ export function detectLanguage(root: string, pkgJson: PackageJson): LanguageDete
     allowJs,
     checkJs,
     moduleSystem: moduleSystemFrom(pkgJson),
-    paths: config?.paths ?? {},
     warnings: config?.warnings ?? [],
   };
 }

@@ -50,7 +50,6 @@ describe('detectLanguage', () => {
       allowJs: false,
       checkJs: false,
       moduleSystem: null,
-      paths: {},
       warnings: [],
     });
   });
@@ -69,9 +68,9 @@ describe('detectLanguage', () => {
       allowJs: true,
       checkJs: true,
       moduleSystem: null,
-      paths: { '@app/*': ['./src/*'] },
       warnings: [],
     });
+    expect(readJsConfig(root)?.paths).toEqual({ '@app/*': ['./src/*'] });
   });
 
   it('reads module system from package.json type', async () => {
@@ -97,7 +96,6 @@ describe('detectLanguage', () => {
       allowJs: true,
       checkJs: true,
       moduleSystem: null,
-      paths: {},
       warnings: [],
     });
   });
@@ -140,7 +138,6 @@ describe('detectLanguage', () => {
       allowJs: true,
       checkJs: false,
       moduleSystem: null,
-      paths: {},
       warnings: [],
     });
   });
