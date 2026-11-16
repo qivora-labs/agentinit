@@ -20,5 +20,7 @@
 │  ● TypeScript Strict (recommended · No any; explicit 
 │  exports;…)
 │  ○ TypeScript
+│  ○ JavaScript
+│  ○ JavaScript with JSDoc
 │  ↑/↓ to navigate • Enter: confirm
 └

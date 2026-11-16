@@ -58,7 +58,7 @@ describe('detectSrcDir', () => {
   it.each([
     { fixture: 'src-with-ts', srcDir: 'src', behavior: 'returns src when a nested .ts file exists' },
     { fixture: 'src-with-tsx', srcDir: 'src', behavior: 'returns src when a nested .tsx file exists' },
-    { fixture: 'src-empty', srcDir: '', behavior: 'returns empty when src has no TypeScript files' },
+    { fixture: 'src-empty', srcDir: '', behavior: 'returns empty when src has no source files' },
     { fixture: 'src-missing', srcDir: '', behavior: 'returns empty when src does not exist' },
   ] as const)('$behavior', async ({ fixture, srcDir }) => {
     const root = await copyFixture(fixture);
@@ -78,6 +78,19 @@ describe('detectSrcDir', () => {
     await writeFile(path.join(root, 'src', 'types', 'index.d.ts'), 'export {};\n');
 
     expect(detectSrcDir(root)).toBe('');
+  });
+
+  it.each([
+    { file: 'index.js', behavior: 'returns src when a nested .js file exists' },
+    { file: 'ui/button.jsx', behavior: 'returns src when a nested .jsx file exists' },
+    { file: 'lib/util.mjs', behavior: 'returns src when a nested .mjs file exists' },
+    { file: 'lib/util.cjs', behavior: 'returns src when a nested .cjs file exists' },
+  ] as const)('$behavior', async ({ file }) => {
+    const root = await tempDir();
+    const absolute = path.join(root, 'src', file);
+    await mkdir(path.dirname(absolute), { recursive: true });
+    await writeFile(absolute, 'export {};\n');
+    expect(detectSrcDir(root)).toBe('src');
   });
 
   it('returns src when a source file sits beside declaration files', async () => {

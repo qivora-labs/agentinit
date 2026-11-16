@@ -762,7 +762,7 @@ describe('init', () => {
         mode: string;
         selections: { language: string; agents: string[] };
       }): void => {
-        saved.selections.language = 'javascript';
+        saved.selections.language = 'python';
       },
     },
     {

@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { detectProject, type DetectionResult } from '../../src/detect/index.js';
-import { AgentInitError, UnsupportedProjectError } from '../../src/errors.js';
+import { AgentInitError } from '../../src/errors.js';
 import { ERROR } from '../../src/exit-codes.js';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
 
@@ -119,7 +119,6 @@ describe('detectProject', () => {
     });
 
     expect(error).toBeInstanceOf(AgentInitError);
-    expect(error).not.toBeInstanceOf(UnsupportedProjectError);
     if (!(error instanceof AgentInitError)) return;
     expect(error.message).toBe(
       'No package.json found. Run inside a TypeScript project or an empty folder.',
@@ -145,7 +144,6 @@ describe('detectProject', () => {
     });
 
     expect(error).toBeInstanceOf(AgentInitError);
-    expect(error).not.toBeInstanceOf(UnsupportedProjectError);
     if (!(error instanceof AgentInitError)) return;
     expect(error.message).toBe(
       'This directory is a monorepo root (pnpm). Run inside a single package.',
@@ -161,17 +159,39 @@ describe('detectProject', () => {
     expect(result.gitRoot).toBe(root);
   });
 
-  it('rejects a JavaScript-only project', async () => {
+  it('accepts a JavaScript-only project as javascript', async () => {
     const root = await copyFixture('js-only');
-    const loaded = await detectionRegistry();
-    const error = thrown(() => {
-      detectProject(root, loaded);
-    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
 
-    expect(error).toBeInstanceOf(UnsupportedProjectError);
-    if (!(error instanceof UnsupportedProjectError)) return;
-    expect(error.message).toBe("JavaScript projects aren't supported yet");
-    expect(error.exitCode).toBe(ERROR);
+    expect(result.draft.language).toBe('javascript');
+    expect(result.draft.allowJs).toBe(false);
+    expect(result.draft.checkJs).toBe(false);
+    expect(result.draft.moduleSystem).toBeNull();
+    expect(result.draft.srcDir).toBe('');
+  });
+
+  it('detects srcDir for a JavaScript project with src/index.js', async () => {
+    const root = await writeProject({
+      'package.json': packageJson({ name: 'js-src' }),
+      'src/index.js': 'export const ok = true;\n',
+    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.language).toBe('javascript');
+    expect(result.draft.srcDir).toBe('src');
+  });
+
+  it('suggests javascript-jsdoc when checkJs is on without TypeScript', async () => {
+    const root = await writeProject({
+      'package.json': packageJson({ name: 'jsdoc-app', type: 'commonjs' }),
+      'jsconfig.json': JSON.stringify({ compilerOptions: { checkJs: true } }),
+      'index.js': 'module.exports = {};\n',
+    });
+    const result = asExisting(detectProject(root, await detectionRegistry()));
+
+    expect(result.draft.language).toBe('javascript-jsdoc');
+    expect(result.draft.checkJs).toBe(true);
+    expect(result.draft.moduleSystem).toBe('cjs');
   });
 
   it('detects a Next.js App Router project under src/', async () => {
@@ -184,6 +204,9 @@ describe('detectProject', () => {
     expect(result.draft.srcDir).toBe('src');
     expect(result.draft.folders).toEqual(['app']);
     expect(result.draft.language).toBe('typescript-strict');
+    expect(result.draft.allowJs).toBe(false);
+    expect(result.draft.checkJs).toBe(false);
+    expect(result.draft.moduleSystem).toBeNull();
     expect(result.draft.packageManager).toBe('pnpm');
     expect(result.draft.scripts).toEqual({
       build: 'next build',

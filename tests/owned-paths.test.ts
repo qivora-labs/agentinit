@@ -12,8 +12,8 @@ import { profile, resolved } from './plan/helpers.js';
 
 const fixturesDir = fileURLToPath(new URL('./fixtures', import.meta.url));
 const AGENTS = ['cursor', 'claude', 'windsurf', 'copilot'] as const satisfies readonly AgentTarget[];
-/** Fixtures that cannot produce a plan (JS-only projects, monorepo roots). */
-const SKIP_DETECT_FIXTURES = new Set(['js-only', 'pnpm-monorepo']);
+/** Fixtures that cannot produce a plan (monorepo roots). */
+const SKIP_DETECT_FIXTURES = new Set(['pnpm-monorepo']);
 
 const temp = createTempProject('agentinit-owned-');
 
@@ -146,6 +146,9 @@ describe('every plan path is owned', () => {
         packageManager: draft.packageManager,
         srcDir: draft.srcDir,
         language: draft.language,
+        allowJs: draft.allowJs,
+        checkJs: draft.checkJs,
+        moduleSystem: draft.moduleSystem,
         packages: draft.packages,
         scripts: draft.scripts,
         frameworks: draft.frameworks,

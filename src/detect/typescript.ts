@@ -1,15 +1,18 @@
 import { readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 import { parseTsconfig } from 'get-tsconfig';
-import { AgentInitError, UnsupportedProjectError } from '../errors.js';
-import type { Language } from '../types.js';
+import { AgentInitError } from '../errors.js';
+import type { Language, ModuleSystem } from '../types.js';
 import { jsoncToJson } from './jsonc.js';
 import type { PackageJson } from './packages.js';
 
 const TSCONFIG_FILE = 'tsconfig.json';
+const JSCONFIG_FILE = 'jsconfig.json';
 
-export interface TsConfigSettings {
+export interface CompilerConfigSettings {
   readonly strict: boolean;
+  readonly allowJs: boolean;
+  readonly checkJs: boolean;
   /** Path aliases from `compilerOptions.paths`, after `extends` is merged. */
   readonly paths: Record<string, string[]>;
   /**
@@ -18,15 +21,45 @@ export interface TsConfigSettings {
    * find, so later entries in an `extends` array are not reported separately.
    */
   readonly warnings: readonly string[];
+  /** Which config file supplied these options. */
+  readonly source: 'tsconfig' | 'jsconfig';
+}
+
+/** Facts later tasks use for globs, examples, and the module-system line. */
+export interface LanguageDetection {
+  readonly language: Language;
+  readonly allowJs: boolean;
+  readonly checkJs: boolean;
+  readonly moduleSystem: ModuleSystem | null;
+  readonly paths: Record<string, string[]>;
+  readonly warnings: readonly string[];
 }
 
 /**
- * `tsconfig.json` or a `typescript` dependency is required.
- * JavaScript-only projects stop here, before anything is written.
+ * TypeScript when `tsconfig.json` or a `typescript` dependency exists.
+ * Otherwise JavaScript. Prefers `tsconfig.json` over `jsconfig.json` when both
+ * exist; reads `jsconfig.json` only when there is no `tsconfig.json`.
  */
-export function assertTypeScriptProject(root: string, pkgJson: PackageJson): void {
-  if (hasTypeScriptDependency(pkgJson) || isFile(tsconfigPath(root))) return;
-  throw new UnsupportedProjectError("JavaScript projects aren't supported yet");
+export function detectLanguage(root: string, pkgJson: PackageJson): LanguageDetection {
+  const hasTsconfig = isFile(configPath(root, TSCONFIG_FILE));
+  const isTypeScript = hasTypeScriptDependency(pkgJson) || hasTsconfig;
+  // Prefer tsconfig when present; otherwise read jsconfig for paths / checkJs.
+  const config = hasTsconfig
+    ? readCompilerConfig(root, TSCONFIG_FILE)
+    : readCompilerConfig(root, JSCONFIG_FILE);
+
+  const allowJs = config?.allowJs === true;
+  const checkJs = config?.checkJs === true;
+  const strict = config?.strict === true;
+
+  return {
+    language: suggestLanguage({ isTypeScript, strict, checkJs }),
+    allowJs,
+    checkJs,
+    moduleSystem: moduleSystemFrom(pkgJson),
+    paths: config?.paths ?? {},
+    warnings: config?.warnings ?? [],
+  };
 }
 
 /**
@@ -37,22 +70,48 @@ export function assertTypeScriptProject(root: string, pkgJson: PackageJson): voi
  * `get-tsconfig` throws when an `extends` target is missing. That is a warning:
  * local `strict` and `paths` are still returned so detection can continue.
  */
-export function readTsConfig(root: string): TsConfigSettings | null {
-  const filePath = tsconfigPath(root);
-  if (!isFile(filePath)) return null;
-
-  try {
-    return settingsFrom(parseTsconfig(filePath).compilerOptions, []);
-  } catch (error) {
-    const target = unresolvedExtendsTarget(error);
-    if (target === null) throw invalidTsconfig(filePath, error);
-    return settingsFrom(localCompilerOptions(filePath), [unresolvedExtendsWarning(target)]);
-  }
+export function readTsConfig(root: string): CompilerConfigSettings | null {
+  return readCompilerConfig(root, TSCONFIG_FILE);
 }
 
-/** `typescript-strict` only when `strict` is true. A missing tsconfig stays `typescript`. */
-export function suggestLanguage(tsconfig: { readonly strict: boolean } | null): Language {
-  return tsconfig?.strict === true ? 'typescript-strict' : 'typescript';
+/** Same rules as `readTsConfig`, for `<root>/jsconfig.json`. */
+export function readJsConfig(root: string): CompilerConfigSettings | null {
+  return readCompilerConfig(root, JSCONFIG_FILE);
+}
+
+export function suggestLanguage(input: {
+  readonly isTypeScript: boolean;
+  readonly strict: boolean;
+  readonly checkJs: boolean;
+}): Language {
+  if (input.isTypeScript) {
+    return input.strict ? 'typescript-strict' : 'typescript';
+  }
+  return input.checkJs ? 'javascript-jsdoc' : 'javascript';
+}
+
+export function moduleSystemFrom(pkgJson: PackageJson): ModuleSystem | null {
+  const type = pkgJson.type;
+  if (type === 'module') return 'esm';
+  if (type === 'commonjs') return 'cjs';
+  return null;
+}
+
+function readCompilerConfig(
+  root: string,
+  fileName: typeof TSCONFIG_FILE | typeof JSCONFIG_FILE,
+): CompilerConfigSettings | null {
+  const filePath = configPath(root, fileName);
+  if (!isFile(filePath)) return null;
+  const source = fileName === TSCONFIG_FILE ? 'tsconfig' : 'jsconfig';
+
+  try {
+    return settingsFrom(parseTsconfig(filePath).compilerOptions, [], source);
+  } catch (error) {
+    const target = unresolvedExtendsTarget(error);
+    if (target === null) throw invalidConfig(filePath, fileName, error);
+    return settingsFrom(localCompilerOptions(filePath, fileName), [unresolvedExtendsWarning(target, fileName)], source);
+  }
 }
 
 function hasTypeScriptDependency(pkgJson: PackageJson): boolean {
@@ -62,16 +121,23 @@ function hasTypeScriptDependency(pkgJson: PackageJson): boolean {
   );
 }
 
-function tsconfigPath(root: string): string {
-  return path.join(root, TSCONFIG_FILE);
+function configPath(root: string, fileName: string): string {
+  return path.join(root, fileName);
 }
 
-function settingsFrom(compilerOptions: unknown, warnings: readonly string[]): TsConfigSettings {
+function settingsFrom(
+  compilerOptions: unknown,
+  warnings: readonly string[],
+  source: CompilerConfigSettings['source'],
+): CompilerConfigSettings {
   const options = asRecord(compilerOptions);
   return {
     strict: options?.strict === true,
+    allowJs: options?.allowJs === true,
+    checkJs: options?.checkJs === true,
     paths: readPaths(options?.paths),
     warnings,
+    source,
   };
 }
 
@@ -89,21 +155,22 @@ function unresolvedExtendsTarget(error: unknown): string | null {
   return target === '' ? null : target;
 }
 
-function unresolvedExtendsWarning(target: string): string {
-  return `Could not resolve tsconfig extends "${target}". Using options from ${TSCONFIG_FILE}.`;
+function unresolvedExtendsWarning(target: string, fileName: string): string {
+  const label = fileName === TSCONFIG_FILE ? 'tsconfig' : 'jsconfig';
+  return `Could not resolve ${label} extends "${target}". Using options from ${fileName}.`;
 }
 
-function invalidTsconfig(filePath: string, error: unknown): AgentInitError {
+function invalidConfig(filePath: string, fileName: string, error: unknown): AgentInitError {
   if (error instanceof AgentInitError) return error;
-  const detail = error instanceof Error ? error.message : 'Unreadable tsconfig.json';
-  return new AgentInitError(`Invalid tsconfig.json: ${filePath}. ${detail}`);
+  const detail = error instanceof Error ? error.message : `Unreadable ${fileName}`;
+  return new AgentInitError(`Invalid ${fileName}: ${filePath}. ${detail}`);
 }
 
 /** Compiler options written in this file, without resolving `extends`. */
-function localCompilerOptions(filePath: string): unknown {
-  const data = parseJsonc(readText(filePath), filePath);
+function localCompilerOptions(filePath: string, fileName: string): unknown {
+  const data = parseJsonc(readText(filePath), filePath, fileName);
   const record = asRecord(data);
-  if (record === null) throw new AgentInitError(`Invalid tsconfig.json: ${filePath}`);
+  if (record === null) throw new AgentInitError(`Invalid ${fileName}: ${filePath}`);
   return record.compilerOptions;
 }
 
@@ -136,13 +203,13 @@ function readText(filePath: string): string {
 
 /**
  * Fallback parser for the unresolved-`extends` path. `get-tsconfig` does not
- * return the local file when resolution throws, and tsconfig files are JSONC.
+ * return the local file when resolution throws, and tsconfig/jsconfig are JSONC.
  */
-function parseJsonc(text: string, filePath: string): unknown {
+function parseJsonc(text: string, filePath: string, fileName: string): unknown {
   try {
     return JSON.parse(jsoncToJson(text)) as unknown;
   } catch {
-    throw new AgentInitError(`Invalid tsconfig.json: ${filePath}`);
+    throw new AgentInitError(`Invalid ${fileName}: ${filePath}`);
   }
 }
 

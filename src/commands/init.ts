@@ -845,6 +845,9 @@ function profileFor(root: string, detection: DetectionResult, setup: Setup): Pro
       // and the `{{src}}` prefix in architecture maps.
       srcDir: 'src',
       language,
+      allowJs: false,
+      checkJs: false,
+      moduleSystem: null,
       packages: {},
       scripts: {},
       frameworks: [...setup.selection.frameworks],
@@ -865,6 +868,9 @@ function profileFor(root: string, detection: DetectionResult, setup: Setup): Pro
     packageManager: draft.packageManager,
     srcDir: draft.srcDir,
     language,
+    allowJs: draft.allowJs,
+    checkJs: draft.checkJs,
+    moduleSystem: draft.moduleSystem,
     packages: draft.packages,
     scripts: draft.scripts,
     frameworks: [...setup.selection.frameworks],
@@ -1145,6 +1151,13 @@ function writeStdout(options: InitOptions, text: string): void {
 }
 
 function asLanguage(value: string): Language {
-  if (value === 'typescript-strict' || value === 'typescript') return value;
+  if (
+    value === 'typescript-strict' ||
+    value === 'typescript' ||
+    value === 'javascript' ||
+    value === 'javascript-jsdoc'
+  ) {
+    return value;
+  }
   throw new AgentInitError(`Unknown language "${value}".`);
 }

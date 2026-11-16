@@ -88,9 +88,9 @@ interface Signal {
 }
 
 /**
- * `src` when `<root>/src` is a directory that contains a `.ts` or `.tsx` file.
- * Declaration files (`.d.ts`) do not count. The walk skips the same directories
- * as `listFolders`.
+ * `src` when `<root>/src` is a directory that contains a source file
+ * (`.ts` / `.tsx` / `.js` / `.jsx` / `.mjs` / `.cjs`). Declaration files
+ * (`.d.ts`) do not count. The walk skips the same directories as `listFolders`.
  */
 export function detectSrcDir(root: string): '' | 'src' {
   const src = path.join(root, 'src');
@@ -285,14 +285,17 @@ function containsSourceFile(directory: string): boolean {
       if (containsSourceFile(path.join(directory, entry.name))) return true;
       continue;
     }
-    if (entry.isFile() && isTypeScriptFile(entry.name)) return true;
+    if (entry.isFile() && isSourceFile(entry.name)) return true;
   }
   return false;
 }
 
-function isTypeScriptFile(name: string): boolean {
+function isSourceFile(name: string): boolean {
+  if (name.endsWith('.tsx') || name.endsWith('.jsx')) return true;
+  if (name.endsWith('.mjs') || name.endsWith('.cjs')) return true;
   // `.d.ts` ends with `.ts` but is not application source.
-  return name.endsWith('.tsx') || (name.endsWith('.ts') && !name.endsWith('.d.ts'));
+  if (name.endsWith('.ts') && !name.endsWith('.d.ts')) return true;
+  return name.endsWith('.js');
 }
 
 function isSkippedDirectory(name: string): boolean {

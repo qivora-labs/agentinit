@@ -15,7 +15,12 @@ export const MANIFEST_PATH = '.agentinit/manifest.json';
 export const MANIFEST_RECOVER_HINT =
   'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.';
 
-const LANGUAGES = ['typescript-strict', 'typescript'] as const satisfies readonly Language[];
+const LANGUAGES = [
+  'typescript-strict',
+  'typescript',
+  'javascript',
+  'javascript-jsdoc',
+] as const satisfies readonly Language[];
 const AGENT_TARGETS = ['cursor', 'claude', 'windsurf', 'copilot'] as const satisfies readonly AgentTarget[];
 const MODES = ['existing', 'greenfield'] as const;
 

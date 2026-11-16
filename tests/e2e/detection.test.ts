@@ -10,23 +10,16 @@ const temp = createTempProject('agentinit-detect-');
 afterEach(() => temp.cleanup());
 
 describe('detection', () => {
-  it('A JavaScript-only project exits 1 and writes nothing, with or without --yes', async () => {
+  it('A JavaScript-only project exits 0 with --yes, selects javascript, and writes files', async () => {
     const yesDir = await temp.copyFixture('js-only');
-    const beforeYes = await listFiles(yesDir);
     const yes = await runCli(['init', '--yes', '--cwd', yesDir]);
-    expect(yes.code).toBe(1);
-    expect(yes.stderr).toContain("JavaScript projects aren't supported yet");
-    expect(await listFiles(yesDir)).toEqual(beforeYes);
-
-    const dir = await temp.copyFixture('js-only');
-    const before = await listFiles(dir);
-    const result = await runCli(['init', '--cwd', dir], { stdinTTY: true, stdoutTTY: true });
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain("JavaScript projects aren't supported yet");
-    expect(result.stderr.split("JavaScript projects aren't supported yet")).toHaveLength(2);
-    expect(result.stdout).toContain('rules for the agents in this repo');
-    expect(result.stdout).not.toContain("JavaScript projects aren't supported yet");
-    expect(await listFiles(dir)).toEqual(before);
+    expect(yes.code).toBe(0);
+    expect(yes.stderr).not.toContain("JavaScript projects aren't supported yet");
+    expect(await listFiles(yesDir)).toContain('AGENTS.md');
+    const manifest = JSON.parse(await readFile(path.join(yesDir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { language: string };
+    };
+    expect(manifest.selections.language).toBe('javascript');
   });
 
   it('A monorepo root exits 1 with instructions; running inside a workspace package works', async () => {

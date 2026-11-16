@@ -145,7 +145,7 @@ describe('remove --all', () => {
       selections: { language: string };
     };
     saved.cliVersion = '0.2.0';
-    saved.selections.language = 'javascript';
+    saved.selections.language = 'python';
     await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
     const afterWrite = await readFile(manifestPath);
 

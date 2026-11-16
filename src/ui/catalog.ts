@@ -27,10 +27,14 @@ const LIBRARY_GROUPS: readonly { readonly label: string; readonly ids: readonly 
 
 /**
  * Closed set of language ids the CLI may offer in Customize. Registry language
- * fragments whose id is not listed here are loaded but not selectable until a
- * later task opens the Language type and manifest for them (T60 for JavaScript).
+ * fragments whose id is not listed here are loaded but not selectable.
  */
-const LANGUAGE_ORDER = ['typescript-strict', 'typescript'] as const;
+const LANGUAGE_ORDER = [
+  'typescript-strict',
+  'typescript',
+  'javascript',
+  'javascript-jsdoc',
+] as const;
 const ARCHITECTURE_ORDER = ['feature-based', 'layered', 'atomic-design', 'flat', 'modular'] as const;
 
 /** Sentinel select value. It is not a fragment id; the wizard maps it to `frameworks: []`. */
