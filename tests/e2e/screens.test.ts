@@ -30,7 +30,7 @@ const existingKeys: readonly PtyKey[] = [
 
 const greenfieldKeys: readonly PtyKey[] = [
   enterWhen(/Which framework/),
-  enterWhen(/How strict/),
+  enterWhen(/Which language/),
   enterWhen(/Which libraries/),
   enterWhen(/Which architecture/),
   enterWhen(/Which agents/),
@@ -134,7 +134,7 @@ describe.skipIf(skipWindows)('terminal screens', () => {
     ] as const;
     const markers = [
       /Which framework/,
-      /How strict/,
+      /Which language/,
       /Which libraries/,
       /Which architecture/,
       /Which agents/,

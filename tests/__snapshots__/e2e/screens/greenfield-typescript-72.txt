@@ -16,9 +16,11 @@
 ◇  1/5 Which framework are you using?
 │  Web frontend · React + Vite
 │
-◆  2/5 How strict should TypeScript be?
+◆  2/5 Which language should we use?
 │  ● TypeScript Strict (recommended · No any; explicit 
 │  exports;…)
 │  ○ TypeScript
+│  ○ JavaScript
+│  ○ JavaScript with JSDoc
 │  ↑/↓ to navigate • Enter: confirm
 └

@@ -118,8 +118,8 @@ function finishDoctor(
 }
 
 /**
- * Validate the directory before reporting "Not initialized", so an unsupported
- * project still exits `1`. Other checks need a saved selection.
+ * Validate the directory before reporting "Not initialized", so a monorepo
+ * root still exits `1`. Other checks need a saved selection.
  */
 function uninitializedInput(root: string, registry: Registry) {
   detectProject(root, registry);
@@ -198,6 +198,9 @@ function profileFor(root: string, detection: DetectionResult, manifest: Manifest
       packageManager: null,
       srcDir: 'src',
       language: selections.language,
+      allowJs: false,
+      checkJs: false,
+      moduleSystem: null,
       packages: {},
       scripts: {},
       frameworks,
@@ -218,6 +221,9 @@ function profileFor(root: string, detection: DetectionResult, manifest: Manifest
     packageManager: draft.packageManager,
     srcDir: draft.srcDir,
     language: selections.language,
+    allowJs: draft.allowJs,
+    checkJs: draft.checkJs,
+    moduleSystem: draft.moduleSystem,
     packages: draft.packages,
     scripts: draft.scripts,
     frameworks,

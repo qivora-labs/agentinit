@@ -46,7 +46,7 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 - Generating application code or installing project dependencies.
 - Creating folders, moving files, or running framework generators (`create-next-app`, `create vite`).
 - Calling any LLM or remote API at runtime.
-- Supporting JavaScript-only, Python, Go, or mobile projects in v0.1 (see roadmap).
+- Supporting Python, Go, or mobile projects in v0.1 (see roadmap). JavaScript is supported from v0.2.
 
 ### 1.7 Terminology
 - **Fragment:** one Markdown rule or workflow file in `registry/`, with YAML frontmatter.
@@ -134,7 +134,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Full-stack web:* Next.js (App Router), Next.js (Pages Router)
    - *Backend / API:* Node.js + Express, Node.js + Fastify
    - *Other:* Other TypeScript project (library, CLI, scripts) — no framework rules; base rules only (§3.6)
-2. **TypeScript Strictness:** `Strict (strict compiler options, no any)` — *recommended* · `Standard`
+2. **Language:** TypeScript Strict — *recommended* · TypeScript · JavaScript · JavaScript with JSDoc
 3. **Libraries** (multi-select, filtered by framework compatibility):
    - *State & Data:* Zustand, TanStack Query
    - *Styling & UI:* Tailwind CSS v4, shadcn/ui
@@ -154,17 +154,17 @@ Greenfield mode requires interactive input: with `--yes` it exits with code `1` 
 ### 3.3 Flow B: Existing Project (Auto-Detection)
 Triggered when `package.json` exists in the target directory.
 
-**Monorepo root (checked first):** a root is `pnpm-workspace.yaml` (pnpm), a non-empty `package.json` `workspaces` field (npm; Yarn uses the same field and has no separate id), `turbo.json` (Turborepo), `nx.json` (Nx), or `lerna.json` (Lerna). v0.1 prints *"This directory is a monorepo root (pnpm). Run inside a single package."* (the parentheses hold `pnpm`, `npm`, `turbo`, `nx`, or `lerna`) and exits with code `1`, before the TypeScript gate. A JavaScript monorepo root gets this message.
+**Monorepo root (checked first):** a root is `pnpm-workspace.yaml` (pnpm), a non-empty `package.json` `workspaces` field (npm; Yarn uses the same field and has no separate id), `turbo.json` (Turborepo), `nx.json` (Nx), or `lerna.json` (Lerna). The CLI prints *"This directory is a monorepo root (pnpm). Run inside a single package."* (the parentheses hold `pnpm`, `npm`, `turbo`, `nx`, or `lerna`) and exits with code `1`, before language detection. A JavaScript monorepo root gets this message.
 
-1. **TypeScript Gate:** the project must have `tsconfig.json` or a `typescript` dependency. Otherwise the CLI prints *"JavaScript projects aren't supported yet"* and exits with code `1`, writing nothing.
+1. **Language detection:** TypeScript when `tsconfig.json` or a `typescript` dependency exists (a tsconfig that only enables `checkJs` stays TypeScript). Otherwise JavaScript: suggest `javascript-jsdoc` when `checkJs` is on (from `jsconfig.json`), else `javascript`. Strictness / JSDoc remain customizable in *Customize*.
 2. **Repository Scan:**
    - **Lookup root:** the nearest directory that has a recognised lockfile (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`, `package-lock.json`), starting at the project directory and never above the git root. With no git repository, only the project directory is used. A workspace marker alone does not extend the search. When the project has its own lockfile, or none is found, the lookup root is the project.
    - **Packages:** resolves real versions from `node_modules/<pkg>/package.json` (project directory, then each parent up to the lookup root), then the lockfile at the lookup root, then the semver range in `package.json` (handles `^`, `~`, `workspace:*`, `catalog:`, `npm:` aliases). A `node_modules` symlink is read only when its canonical target stays inside the lookup root; otherwise the lockfile is used. The lockfile read for versions is the first that exists among `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, and `package-lock.json`; `bun.lockb` is not read. For pnpm, the importer is the POSIX path from the lookup root to the project (`.` when they are the same). For Yarn, the package.json specifier picks the matching lockfile descriptor (classic `name@<range>` or berry `name@npm:<range>`). For Bun, `packages["<name>"][0]` supplies the version, and a workspace-scoped `packages["<pkgName>/<name>"]` entry wins when present. For npm, a nested `packages["<path>/node_modules/<pkg>"]` entry wins over a hoisted `packages["node_modules/<pkg>"]` entry.
-   - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`). Marker files, `tsconfig.json`, and layout stay in the project directory.
+   - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`). Marker files, `tsconfig.json` / `jsconfig.json`, and layout stay in the project directory.
    - **Package manager:** the project's `packageManager` field, then the `packageManager` field of the `package.json` at the lookup root, then the lockfile at the lookup root (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`).
    - **Scripts:** only scripts that actually exist (`build`, `dev`, `lint`, `test`, `typecheck`) are documented, using the detected package manager.
-   - **TypeScript:** parses `tsconfig.json` as JSONC, resolves `extends`, reads `strict` (suggests `typescript-strict` when `true`) and `paths` aliases.
-   - **Layout:** `src/` vs. root; Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.
+   - **Compiler config:** prefers `tsconfig.json` when present (JSONC, `extends`, `strict`, `allowJs`, `checkJs`, `paths`); otherwise reads `jsconfig.json` for `paths` and `checkJs`. Records `allowJs`, `checkJs`, and module system from `package.json` `"type"` (`"module"` → esm, `"commonjs"` → cjs, otherwise unset) on the profile every run; these facts are not stored in the manifest.
+   - **Layout:** `src/` vs. root (`.ts` / `.tsx` / `.js` / `.jsx` / `.mjs` / `.cjs`; declaration files do not count); Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.
    - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.cursorrules`, `.claude/`, `.windsurfrules`, `.windsurf/`, `.devin/`, `.github/copilot-instructions.md`, `.github/instructions/`. `.devin/` is Windsurf's directory in Devin Desktop and preselects `windsurf`, the same as `.windsurf/` and `.windsurfrules`. v0.1 still writes `.windsurf/` (§5.2).
    - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
 3. **Version Check:** a detected package whose version is outside every fragment's `appliesTo` range (e.g., Tailwind v3 when only a v4 fragment exists) is skipped with a notice: *"tailwindcss@3 detected — no matching rules yet."*
@@ -194,7 +194,7 @@ Every prompt has a defined non-interactive answer:
 | Prompt | Default with `--yes` |
 | :--- | :--- |
 | Greenfield wizard | Exit `1`: interactive input required |
-| JavaScript-only project | Exit `1` |
+| Existing JavaScript project | Detected language defaults (`javascript` or `javascript-jsdoc` when `checkJs` is on) |
 | Monorepo root | Exit `1` with instructions to run inside a package |
 | Below the git root | Stay in the current directory |
 | Use detected configuration | Yes |
@@ -275,7 +275,7 @@ TypeScript libraries, CLIs, scripts, and projects using a framework the registry
 │   └── types.ts
 ├── registry/                        # COMMUNITY CONTRIBUTION ZONE
 │   ├── architectures/   feature-based.md · layered.md · atomic-design.md · flat.md · modular.md
-│   ├── languages/       typescript-strict.md · typescript.md
+│   ├── languages/       typescript-strict.md · typescript.md · javascript.md · javascript-jsdoc.md
 │   ├── frameworks/      nextjs-app-router.md · nextjs-app-router-15.md · nextjs-pages-router.md · react-vite.md · express.md · express-4.md · fastify.md
 │   ├── libraries/       tailwind.md · shadcn.md · tanstack-query.md · zustand.md · react-hook-form-zod.md · vitest.md · playwright.md
 │   ├── workflows/       new-feature.md · review-arch.md · refactor.md · write-tests.md
@@ -311,7 +311,10 @@ The bundled registry is resolved at runtime by locating the package root (the ne
 ```typescript
 export type AgentTarget = 'cursor' | 'claude' | 'windsurf' | 'copilot';
 
-export type Language = 'typescript-strict' | 'typescript';
+export type Language = 'typescript-strict' | 'typescript' | 'javascript' | 'javascript-jsdoc';
+
+/** From package.json `"type"`. null when absent or unrecognized. */
+export type ModuleSystem = 'esm' | 'cjs';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -328,6 +331,10 @@ export interface ProjectProfile {
   packageManager: PackageManager | null;   // null in greenfield mode
   srcDir: '' | 'src';
   language: Language;
+  /** From compilerOptions; re-detected every run, not stored in the manifest */
+  allowJs: boolean;
+  checkJs: boolean;
+  moduleSystem: ModuleSystem | null;
   /** Package name → resolved version (e.g. { next: '15.3.1' }) */
   packages: Record<string, string>;
   scripts: Record<string, string>;
@@ -574,7 +581,7 @@ Adopting or updating a block leaves every byte outside the markers unchanged. Ba
 - Hashes are computed on content with line endings normalized to LF, so Git's `autocrlf` doesn't make files look edited.
 - Manifest `files` keys are limited to agentinit-owned paths (the outputs in §5.2); a key for any other path is rejected.
 - **Forward compatibility (from 0.1.1):** unknown keys at the top level, in `selections`, and in each file entry are ignored for validation and preserved on rewrite (appended after known keys, values kept). Manifest changes in 0.x are additive and optional only. 0.1.0 readers remain strict and reject unknown keys; keep the strict window short by shipping tolerant readers promptly.
-- **Closed-field values (from 0.1.2):** a new value in a closed manifest field (`language`, `agents`, `mode`) needs a minor release. Older readers that fail the schema but see a newer valid `cliVersion` answer with the upgrade message (§3.4), not a corrupt-file recover hint.
+- **Closed-field values (from 0.1.2):** a new value in a closed manifest field (`language`, `agents`, `mode`) needs a minor release. Older readers that fail the schema but see a newer valid `cliVersion` answer with the upgrade message (§3.4), not a corrupt-file recover hint. From 0.2.0, `selections.language` may also be `javascript` or `javascript-jsdoc` (closed set; not arbitrary registry ids).
 - Hash matches → safe to regenerate silently.
 - Hash differs (user edited) → show the diff and ask; with `--yes`, skip and report. Exception: a stale hand-edited `.cursor/commands/*.md` leftover from 0.1.0 is backed up and removed even with `--yes` (see §6.3), so Cursor does not list the old command alongside the new skill.
 
@@ -667,7 +674,7 @@ The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript s
 
 ### v0.2 — JavaScript and older stacks
 Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Owner decisions on 2026-11-13:
-- **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and a second id with JSDoc type rules (proposed `javascript-jsdoc`), suggested when `checkJs` is on. Confirm the second id's name in T59 before publish; published ids are never renamed.
+- **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and `javascript-jsdoc` (JSDoc type rules for `checkJs`), suggested when `checkJs` is on. Published ids are never renamed.
 - Language detection replaces the TypeScript gate; scoped globs follow the project's language; each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
 - **Language family drift:** `init` and `doctor` report when the project moves between JavaScript and TypeScript (strictness / JSDoc stay preferences).
 - **Module system** (slice of later project-conventions work): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
@@ -700,7 +707,7 @@ Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Own
 Each criterion is covered by an automated test unless marked *(manual)*.
 
 **Detection & gating**
-- A JavaScript-only project exits `1` and writes nothing, with or without `--yes`.
+- A JavaScript-only project exits `0` with `--yes`, selects `javascript` (or `javascript-jsdoc` when `checkJs` is on), and writes files.
 - A monorepo root exits `1` with instructions; running inside a workspace package works.
 - Versions are resolved from `node_modules` first; a `workspace:*` or `catalog:` specifier never crashes detection.
 - A `tsconfig.json` with comments, trailing commas, and `extends` is parsed correctly.

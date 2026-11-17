@@ -1,6 +1,9 @@
 export type AgentTarget = 'cursor' | 'claude' | 'windsurf' | 'copilot';
 
-export type Language = 'typescript-strict' | 'typescript';
+export type Language = 'typescript-strict' | 'typescript' | 'javascript' | 'javascript-jsdoc';
+
+/** From `package.json` `"type"`. `null` when absent or unrecognized (T69 may refine). */
+export type ModuleSystem = 'esm' | 'cjs';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -18,6 +21,21 @@ export interface ProjectProfile {
   packageManager: PackageManager | null;
   srcDir: '' | 'src';
   language: Language;
+  /**
+   * From `compilerOptions.allowJs` when a tsconfig/jsconfig is present.
+   * Re-detected every run; not stored in the manifest.
+   */
+  allowJs: boolean;
+  /**
+   * From `compilerOptions.checkJs` when a tsconfig/jsconfig is present.
+   * Re-detected every run; not stored in the manifest.
+   */
+  checkJs: boolean;
+  /**
+   * From `package.json` `"type"` (`"module"` → esm, `"commonjs"` → cjs).
+   * Re-detected every run; not stored in the manifest.
+   */
+  moduleSystem: ModuleSystem | null;
   /** Package name → resolved version (for example `{ next: '15.3.1' }`). */
   packages: Record<string, string>;
   scripts: Record<string, string>;

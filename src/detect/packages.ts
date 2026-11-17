@@ -19,6 +19,8 @@ const LOCKFILES = [
 
 export interface PackageJson {
   readonly name?: string;
+  /** `"module"` or `"commonjs"` when set; used for the module-system fact. */
+  readonly type?: string;
   readonly dependencies?: Readonly<Record<string, string>>;
   readonly devDependencies?: Readonly<Record<string, string>>;
   readonly packageManager?: string;
@@ -43,6 +45,7 @@ export function readPackageJson(root: string): PackageJson | null {
   if (record === null) throw new AgentInitError(`Invalid package.json: ${manifestPath}`);
 
   const name = readOptionalString(record.name, manifestPath);
+  const type = readOptionalString(record.type, manifestPath);
   const dependencies = readStringRecord(record.dependencies, manifestPath);
   const devDependencies = readStringRecord(record.devDependencies, manifestPath);
   const packageManager = readOptionalString(record.packageManager, manifestPath);
@@ -51,6 +54,7 @@ export function readPackageJson(root: string): PackageJson | null {
 
   return {
     ...(name !== undefined ? { name } : {}),
+    ...(type !== undefined ? { type } : {}),
     ...(dependencies !== undefined ? { dependencies } : {}),
     ...(devDependencies !== undefined ? { devDependencies } : {}),
     ...(packageManager !== undefined ? { packageManager } : {}),

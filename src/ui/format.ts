@@ -173,12 +173,29 @@ export function formatFragmentValue(
 }
 
 function formatLanguage(draft: ProjectDraft, theme: Theme): string {
-  const label = draft.language === 'typescript-strict' ? 'TypeScript · strict' : 'TypeScript';
+  const label = languageLabel(draft.language);
   const version = draft.packages.typescript;
   if (version === undefined) return label;
   const short = majorMinor(version);
   if (short === undefined) return label;
   return `${label}  ${theme.muted(`typescript ${short}`)}`;
+}
+
+function languageLabel(language: ProjectDraft['language']): string {
+  switch (language) {
+    case 'typescript-strict':
+      return 'TypeScript · strict';
+    case 'typescript':
+      return 'TypeScript';
+    case 'javascript-jsdoc':
+      return 'JavaScript · JSDoc';
+    case 'javascript':
+      return 'JavaScript';
+    default: {
+      const unexpected: never = language;
+      throw new Error(`Unhandled language: ${String(unexpected)}`);
+    }
+  }
 }
 
 function formatArchitecture(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AgentInitError, NotInteractiveError, UnsupportedProjectError } from '../src/errors.js';
+import { AgentInitError, NotInteractiveError } from '../src/errors.js';
 import { CANCELLED, DOCTOR_ISSUES, ERROR, SUCCESS } from '../src/exit-codes.js';
 
 describe('exit codes', () => {
@@ -22,13 +22,6 @@ describe('errors', () => {
 
   it('uses the given exit code', () => {
     expect(new AgentInitError('stop', { exitCode: CANCELLED }).exitCode).toBe(CANCELLED);
-  });
-
-  it('marks unsupported projects as user errors', () => {
-    const error = new UnsupportedProjectError('JavaScript projects are not supported yet');
-    expect(error).toBeInstanceOf(AgentInitError);
-    expect(error.exitCode).toBe(ERROR);
-    expect(error.hint).toBeUndefined();
   });
 
   it('tells non-interactive runs to pass --yes', () => {

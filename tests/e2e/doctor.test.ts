@@ -652,7 +652,7 @@ describe('doctor', () => {
         mode: string;
         selections: { language: string; agents: string[] };
       }): void => {
-        saved.selections.language = 'javascript';
+        saved.selections.language = 'python';
       },
     },
     {
@@ -710,7 +710,7 @@ describe('doctor', () => {
     const saved = JSON.parse(await readFile(manifestPath, 'utf8')) as {
       selections: { language: string };
     };
-    saved.selections.language = 'javascript';
+    saved.selections.language = 'python';
     await writeFile(manifestPath, `${JSON.stringify(saved, null, 2)}\n`);
 
     const result = await runCli(['doctor', '--json', '--cwd', dir]);
@@ -723,6 +723,15 @@ describe('doctor', () => {
       fix: 'Fix .agentinit/manifest.json, or delete it and run `agentinit init` again.',
     });
     expect(report.issues[0]?.message).toMatch(/language/u);
+  });
+
+  it('accepts a JavaScript language value written by init --yes', async () => {
+    const dir = await initYes('js-only');
+    const digest = await treeDigest(dir);
+    const result = await runCli(['doctor', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBe('No issues found.\n');
+    expect(await treeDigest(dir)).toBe(digest);
   });
 
   it('Exits 0 on a freshly initialized project and 2 after adding a supported package to package.json', async () => {
@@ -759,13 +768,13 @@ describe('doctor', () => {
     expect(await treeDigest(plain)).toBe(plainDigest);
   });
 
-  it('exits 1 for an unsupported project and writes nothing', async () => {
+  it('reports Not initialized for a JavaScript project without a manifest', async () => {
     const dir = await copyFixture('js-only');
     const digest = await treeDigest(dir);
     const result = await runCli(['doctor', '--cwd', dir]);
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain("JavaScript projects aren't supported yet");
-    expect(result.stdout).toBe('');
+    expect(result.code).toBe(2);
+    expect(result.stdout).toContain('Not initialized');
+    expect(result.stderr).not.toContain("JavaScript projects aren't supported yet");
     expect(await treeDigest(dir)).toBe(digest);
   });
 });

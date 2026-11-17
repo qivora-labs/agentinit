@@ -4,14 +4,13 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  assertTypeScriptProject,
+  detectLanguage,
+  readJsConfig,
   readTsConfig,
   suggestLanguage,
-  type TsConfigSettings,
 } from '../../src/detect/typescript.js';
 import { readPackageJson, type PackageJson } from '../../src/detect/packages.js';
-import { AgentInitError, UnsupportedProjectError } from '../../src/errors.js';
-import { ERROR } from '../../src/exit-codes.js';
+import { AgentInitError } from '../../src/errors.js';
 
 const fixturesRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -42,41 +41,105 @@ function loadPackage(root: string): PackageJson {
   return pkg;
 }
 
-describe('assertTypeScriptProject', () => {
-  it('throws UnsupportedProjectError for a JavaScript-only project', async () => {
+describe('detectLanguage', () => {
+  it('selects javascript for a project with only package.json and no TypeScript', async () => {
     const root = await copyFixture('js-only');
 
-    expect(() => {
-      assertTypeScriptProject(root, loadPackage(root));
-    }).toThrow(UnsupportedProjectError);
-    expect(() => {
-      assertTypeScriptProject(root, loadPackage(root));
-    }).toThrow(
-      expect.objectContaining({
-        message: "JavaScript projects aren't supported yet",
-        exitCode: ERROR,
-      }),
+    expect(detectLanguage(root, loadPackage(root))).toEqual({
+      language: 'javascript',
+      allowJs: false,
+      checkJs: false,
+      moduleSystem: null,
+      warnings: [],
+    });
+  });
+
+  it('selects javascript-jsdoc when jsconfig enables checkJs', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'app' }));
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      JSON.stringify({ compilerOptions: { checkJs: true, paths: { '@app/*': ['./src/*'] } } }),
     );
+
+    expect(detectLanguage(root, loadPackage(root))).toEqual({
+      language: 'javascript-jsdoc',
+      // jsconfig implies allowJs under TypeScript's defaults (get-tsconfig).
+      allowJs: true,
+      checkJs: true,
+      moduleSystem: null,
+      warnings: [],
+    });
+    expect(readJsConfig(root)?.paths).toEqual({ '@app/*': ['./src/*'] });
+  });
+
+  it('reads module system from package.json type', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'app', type: 'module' }),
+    );
+
+    expect(detectLanguage(root, loadPackage(root)).moduleSystem).toBe('esm');
+  });
+
+  it('keeps TypeScript when tsconfig only enables checkJs', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'app' }));
+    await writeFile(
+      path.join(root, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { checkJs: true, allowJs: true } }),
+    );
+
+    expect(detectLanguage(root, loadPackage(root))).toEqual({
+      language: 'typescript',
+      allowJs: true,
+      checkJs: true,
+      moduleSystem: null,
+      warnings: [],
+    });
   });
 
   it.each([
     {
       fixture: 'typescript-dev',
-      behavior: 'passes when typescript is a devDependency and tsconfig.json is missing',
+      language: 'typescript',
+      behavior: 'treats a typescript devDependency as TypeScript without tsconfig',
     },
     {
       fixture: 'typescript-dep',
-      behavior: 'passes when typescript is a dependency and tsconfig.json is missing',
+      language: 'typescript',
+      behavior: 'treats a typescript dependency as TypeScript without tsconfig',
     },
     {
       fixture: 'jsonc',
-      behavior: 'passes when tsconfig.json exists without a typescript dependency',
+      language: 'typescript',
+      behavior: 'treats tsconfig.json alone as TypeScript',
     },
-  ] as const)('$behavior', async ({ fixture }) => {
+  ] as const)('$behavior', async ({ fixture, language }) => {
     const root = await copyFixture(fixture);
-    expect(() => {
-      assertTypeScriptProject(root, loadPackage(root));
-    }).not.toThrow();
+    expect(detectLanguage(root, loadPackage(root)).language).toBe(language);
+  });
+
+  it('prefers tsconfig over jsconfig when both exist', async () => {
+    const root = await tempDir();
+    await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'app' }));
+    await writeFile(
+      path.join(root, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { strict: true, allowJs: true } }),
+    );
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      JSON.stringify({ compilerOptions: { checkJs: true } }),
+    );
+
+    expect(detectLanguage(root, loadPackage(root))).toEqual({
+      language: 'typescript-strict',
+      allowJs: true,
+      checkJs: false,
+      moduleSystem: null,
+      warnings: [],
+    });
   });
 });
 
@@ -85,7 +148,7 @@ describe('readTsConfig', () => {
     const root = await copyFixture('typescript-dev');
 
     expect(readTsConfig(root)).toBeNull();
-    expect(suggestLanguage(null)).toBe('typescript');
+    expect(suggestLanguage({ isTypeScript: true, strict: false, checkJs: false })).toBe('typescript');
   });
 
   it('ignores a tsconfig.json above the project root', async () => {
@@ -105,13 +168,15 @@ describe('readTsConfig', () => {
 
     expect(readTsConfig(root)).toEqual({
       strict: false,
+      allowJs: false,
+      checkJs: false,
       paths: {
         '@app/*': ['./src/*'],
         '@lib': ['./lib/index.ts'],
       },
       warnings: [],
+      source: 'tsconfig',
     });
-    expect(suggestLanguage(readTsConfig(root))).toBe('typescript');
   });
 
   it('detects strict inherited through a relative extends', async () => {
@@ -120,12 +185,21 @@ describe('readTsConfig', () => {
 
     expect(tsconfig).toEqual({
       strict: true,
+      allowJs: false,
+      checkJs: false,
       paths: {
         '@base/*': ['packages/*'],
       },
       warnings: [],
+      source: 'tsconfig',
     });
-    expect(suggestLanguage(tsconfig)).toBe('typescript-strict');
+    expect(
+      suggestLanguage({
+        isTypeScript: true,
+        strict: tsconfig?.strict === true,
+        checkJs: false,
+      }),
+    ).toBe('typescript-strict');
   });
 
   it('returns local options and a warning when extends names a missing package', async () => {
@@ -133,12 +207,15 @@ describe('readTsConfig', () => {
 
     expect(readTsConfig(root)).toEqual({
       strict: false,
+      allowJs: false,
+      checkJs: false,
       paths: {
         '@app/*': ['./src/*'],
       },
       warnings: [
         'Could not resolve tsconfig extends "@tsconfig/strictest". Using options from tsconfig.json.',
       ],
+      source: 'tsconfig',
     });
   });
 
@@ -157,10 +234,13 @@ describe('readTsConfig', () => {
 
     expect(readTsConfig(root)).toEqual({
       strict: true,
+      allowJs: false,
+      checkJs: false,
       paths: { '@app/*': ['./src/*'] },
       warnings: [
         'Could not resolve tsconfig extends "./tsconfig.missing.json". Using options from tsconfig.json.',
       ],
+      source: 'tsconfig',
     });
   });
 
@@ -178,13 +258,101 @@ describe('readTsConfig', () => {
 
     expect(() => readTsConfig(root)).toThrow(AgentInitError);
     expect(() => readTsConfig(root)).toThrow(filePath);
-    expect(() => readTsConfig(root)).not.toThrow(UnsupportedProjectError);
+  });
+});
+
+describe('readJsConfig', () => {
+  it('reads checkJs and paths from jsconfig.json', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      JSON.stringify({ compilerOptions: { checkJs: true, paths: { '@lib/*': ['./lib/*'] } } }),
+    );
+
+    expect(readJsConfig(root)).toEqual({
+      strict: false,
+      allowJs: true,
+      checkJs: true,
+      paths: { '@lib/*': ['./lib/*'] },
+      warnings: [],
+      source: 'jsconfig',
+    });
+  });
+
+  it('defaults allowJs on the unresolved-extends fallback path', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      `{
+        "extends": "./jsconfig.missing.json",
+        "compilerOptions": {
+          "checkJs": true,
+          "paths": { "@app/*": ["./src/*"] }
+        }
+      }`,
+    );
+
+    expect(readJsConfig(root)).toEqual({
+      strict: false,
+      allowJs: true,
+      checkJs: true,
+      paths: { '@app/*': ['./src/*'] },
+      warnings: [
+        'Could not resolve jsconfig extends "./jsconfig.missing.json". Using options from jsconfig.json.',
+      ],
+      source: 'jsconfig',
+    });
+    expect(detectLanguage(root, { name: 'app' })).toMatchObject({
+      language: 'javascript-jsdoc',
+      allowJs: true,
+      checkJs: true,
+    });
+  });
+
+  it('honors explicit allowJs false on the unresolved-extends fallback path', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      `{
+        "extends": "./jsconfig.missing.json",
+        "compilerOptions": {
+          "allowJs": false,
+          "checkJs": true
+        }
+      }`,
+    );
+
+    expect(readJsConfig(root)).toMatchObject({
+      allowJs: false,
+      checkJs: true,
+      source: 'jsconfig',
+    });
   });
 });
 
 describe('suggestLanguage', () => {
-  it('suggests typescript when strict is not enabled', () => {
-    const tsconfig: TsConfigSettings = { strict: false, paths: {}, warnings: [] };
-    expect(suggestLanguage(tsconfig)).toBe('typescript');
+  it.each([
+    {
+      input: { isTypeScript: true, strict: false, checkJs: false },
+      language: 'typescript',
+      behavior: 'suggests typescript when strict is not enabled',
+    },
+    {
+      input: { isTypeScript: true, strict: true, checkJs: true },
+      language: 'typescript-strict',
+      behavior: 'keeps TypeScript when checkJs is on with a TypeScript project',
+    },
+    {
+      input: { isTypeScript: false, strict: false, checkJs: false },
+      language: 'javascript',
+      behavior: 'suggests javascript without checkJs',
+    },
+    {
+      input: { isTypeScript: false, strict: false, checkJs: true },
+      language: 'javascript-jsdoc',
+      behavior: 'suggests javascript-jsdoc when checkJs is on',
+    },
+  ] as const)('$behavior', ({ input, language }) => {
+    expect(suggestLanguage(input)).toBe(language);
   });
 });

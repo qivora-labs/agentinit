@@ -135,7 +135,12 @@ describe('language and architecture options', () => {
     const bundled = await bundledRegistry();
     const languages = languageOptions(bundled);
     const architectures = architectureOptions(bundled);
-    expect(languages.map((option) => option.value)).toEqual(['typescript-strict', 'typescript']);
+    expect(languages.map((option) => option.value)).toEqual([
+      'typescript-strict',
+      'typescript',
+      'javascript',
+      'javascript-jsdoc',
+    ]);
     expect(languages[0]?.hint).toMatch(/^recommended · /);
     expect(languages.every((option) => (option.hint?.length ?? 0) <= 48)).toBe(true);
     expect(architectures.map((option) => option.value)).toEqual([
@@ -148,5 +153,19 @@ describe('language and architecture options', () => {
     expect(architectures[0]?.hint).toBe('recommended · src/features/<domain>');
     expect(architectures[0]?.label).toBe('Feature-Based');
     expect(architectures.every((option) => (option.hint?.length ?? 0) <= 48)).toBe(true);
+  });
+
+  it('offers JavaScript language fragments from the closed allowlist', async () => {
+    const bundled = await bundledRegistry();
+    const languageIds = bundled.byCategory('language').map((fragment) => fragment.meta.id);
+    expect(languageIds).toEqual(
+      expect.arrayContaining(['javascript', 'javascript-jsdoc', 'typescript', 'typescript-strict']),
+    );
+    expect(languageOptions(bundled).map((option) => option.value)).toEqual([
+      'typescript-strict',
+      'typescript',
+      'javascript',
+      'javascript-jsdoc',
+    ]);
   });
 });

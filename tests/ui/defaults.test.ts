@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AGENT_TARGETS } from '../../src/context.js';
 import { ERROR } from '../../src/exit-codes.js';
-import { AgentInitError, UnsupportedProjectError } from '../../src/errors.js';
+import { AgentInitError } from '../../src/errors.js';
 import {
   FILE_DEFAULTS,
   isNonInteractiveSetup,
@@ -33,13 +33,9 @@ describe('nonInteractiveSelection', () => {
     });
   });
 
-  it('rejects a JavaScript project with exit code 1', () => {
-    const result = nonInteractiveSelection({ kind: 'javascript' });
-    expect(result).toBeInstanceOf(UnsupportedProjectError);
-    expect(result).toMatchObject({
-      exitCode: ERROR,
-      message: "JavaScript projects aren't supported yet",
-    });
+  it('uses the detected javascript language for an existing JavaScript project', () => {
+    const draft = sampleDraft({ language: 'javascript', frameworks: [], libraries: [] });
+    expect(existing(draft).selection.language).toBe('javascript');
   });
 
   it('rejects a monorepo root with exit code 1', () => {

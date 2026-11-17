@@ -83,7 +83,7 @@ export async function runGreenfieldWizard(
   const language = await prompter.select(
     withInitial(
       {
-        message: withStep(step, total, 'How strict should TypeScript be?'),
+        message: withStep(step, total, 'Which language should we use?'),
         options: languages,
       },
       preferredOption(languages, languagePreferred),

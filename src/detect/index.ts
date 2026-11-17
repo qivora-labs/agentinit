@@ -25,12 +25,7 @@ import {
   resolveVersions,
   type PackageJson,
 } from './packages.js';
-import {
-  assertTypeScriptProject,
-  readTsConfig,
-  suggestLanguage,
-  type TsConfigSettings,
-} from './typescript.js';
+import { detectLanguage } from './typescript.js';
 import { findGitRoot, isMonorepoRoot, type MonorepoTool } from './workspace.js';
 
 /**
@@ -81,8 +76,8 @@ export type DetectionResult =
     };
 
 /**
- * Monorepo check runs before the TypeScript gate. A JavaScript monorepo root
- * gets these instructions instead of the JavaScript-project error.
+ * Monorepo check runs before language detection. A JavaScript monorepo root
+ * still exits with these instructions.
  */
 export function detectProject(root: string, registry: Registry): DetectionResult {
   const projectRoot = path.resolve(root);
@@ -92,11 +87,9 @@ export function detectProject(root: string, registry: Registry): DetectionResult
   const monorepo = isMonorepoRoot(projectRoot, pkgJson);
   if (monorepo.isRoot) throw monorepoRootError(monorepo.tool);
 
-  assertTypeScriptProject(projectRoot, pkgJson);
-
   const versions = resolveVersions(projectRoot, pkgJson);
   const files = existingFiles(projectRoot, markerFiles(registry));
-  const tsconfig = readTsConfig(projectRoot);
+  const language = detectLanguage(projectRoot, pkgJson);
   const srcDir = detectSrcDir(projectRoot);
   const folders = listFolders(projectRoot, srcDir);
   const routers = detectNextRouters(projectRoot, srcDir);
@@ -114,7 +107,10 @@ export function detectProject(root: string, registry: Registry): DetectionResult
       name: packageName(pkgJson),
       packageManager: detectPackageManager(projectRoot, pkgJson),
       srcDir,
-      language: suggestLanguage(tsconfig),
+      language: language.language,
+      allowJs: language.allowJs,
+      checkJs: language.checkJs,
+      moduleSystem: language.moduleSystem,
       packages: knownVersions(versions),
       scripts: detectScripts(pkgJson),
       frameworks,
@@ -126,7 +122,7 @@ export function detectProject(root: string, registry: Registry): DetectionResult
       isMonorepo: monorepo.isRoot,
     },
     notices: [...suggestion.notices, ...compatible.notices],
-    warnings: [...tsconfigWarnings(tsconfig), ...legacyWarnings(projectRoot)],
+    warnings: [...languageWarnings(language.warnings), ...legacyWarnings(projectRoot)],
     gitRoot: git.gitRoot,
     belowGitRoot: git.belowGitRoot,
   };
@@ -212,9 +208,8 @@ function frameworksForRouters(frameworks: readonly string[], routers: NextRouter
   });
 }
 
-function tsconfigWarnings(tsconfig: TsConfigSettings | null): DetectionWarning[] {
-  if (tsconfig === null) return [];
-  return tsconfig.warnings.map((message) => ({
+function languageWarnings(warnings: readonly string[]): DetectionWarning[] {
+  return warnings.map((message) => ({
     kind: 'unresolved-tsconfig-extends',
     message,
   }));

@@ -1,5 +1,5 @@
 import type { ProjectDraft } from '../detect/index.js';
-import { AgentInitError, UnsupportedProjectError } from '../errors.js';
+import { AgentInitError } from '../errors.js';
 import { ERROR } from '../exit-codes.js';
 import type { SelectionOrigin } from '../registry/resolve.js';
 import type { AgentTarget } from '../types.js';
@@ -24,7 +24,6 @@ export type FileDefaults = typeof FILE_DEFAULTS;
 
 export type NonInteractiveInput =
   | { readonly kind: 'greenfield' }
-  | { readonly kind: 'javascript' }
   | { readonly kind: 'monorepo'; readonly tool: string }
   | {
       readonly kind: 'existing';
@@ -47,7 +46,8 @@ export interface NonInteractiveSetup extends PromptedSetup {
 /**
  * Every `--yes` row in PRD §3.5. Error rows are returned, not thrown, so the
  * caller can map them to an exit code without a second channel.
- * JavaScript and monorepo wording matches `detectProject`.
+ * Monorepo wording matches `detectProject`. Existing JavaScript uses the
+ * detected language defaults (no separate rejection path).
  */
 export function nonInteractiveSelection(
   input: NonInteractiveInput,
@@ -59,8 +59,6 @@ export function nonInteractiveSelection(
         exitCode: ERROR,
         hint: 'Run again without --yes.',
       });
-    case 'javascript':
-      return new UnsupportedProjectError("JavaScript projects aren't supported yet");
     case 'monorepo':
       return new AgentInitError(
         `This directory is a monorepo root (${input.tool}). Run inside a single package.`,
@@ -70,6 +68,10 @@ export function nonInteractiveSelection(
       // belowGitRoot is part of the input so the caller can record it.
       // --yes always stays in the current directory.
       return existingSelection(input.draft, options);
+    default: {
+      const unexpected: never = input;
+      throw new Error(`Unhandled non-interactive input: ${String(unexpected)}`);
+    }
   }
 }
 

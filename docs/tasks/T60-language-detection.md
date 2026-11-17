@@ -47,12 +47,12 @@ Record the answers under **Notes** and in the PRD.
 - Output for TypeScript projects without `allowJs` must stay byte-identical until T61/T62 change rendering.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] A project with only `package.json` and `.js` files: `init --yes` exits `0`, selects `javascript`, and writes files. Suggested language is `javascript-jsdoc` when `checkJs` is on.
-- [ ] A TypeScript project behaves as before (same language id, same `srcDir` when only `.ts` / `.tsx` exist).
-- [ ] A JavaScript project with `src/index.js` gets `srcDir: 'src'`.
-- [ ] Manifest round-trips the new language values; a 0.1.2 CLI against that manifest still shows the upgrade message (covered by T57; spot-check).
-- [ ] A `minor` changeset with a `BREAKING CHANGE` note exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] A project with only `package.json` and `.js` files: `init --yes` exits `0`, selects `javascript`, and writes files. Suggested language is `javascript-jsdoc` when `checkJs` is on.
+- [x] A TypeScript project behaves as before (same language id, same `srcDir` when only `.ts` / `.tsx` exist).
+- [x] A JavaScript project with `src/index.js` gets `srcDir: 'src'`.
+- [x] Manifest round-trips the new language values; a 0.1.2 CLI against that manifest still shows the upgrade message (covered by T57; spot-check).
+- [x] A `minor` changeset with a `BREAKING CHANGE` note exists.
 
 ## Verify
 ```bash
@@ -63,4 +63,11 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(detect): accept javascript projects and record language facts`
 
 ## Notes
-Owner decisions from planning (2026-11-13): closed language set; facts re-detected; confirm before coding.
+Owner decisions (confirmed 2026-11-16):
+1. Profile facts `allowJs`, `checkJs`, `moduleSystem` (`'esm' | 'cjs' | null`) on `ProjectProfile`; re-detected every run; not stored in the manifest.
+2. Closed `selections.language` set including `javascript` and `javascript-jsdoc` only (no arbitrary registry ids).
+3. TypeScript when `tsconfig.json` or a `typescript` dependency exists (checkJs-only tsconfig stays TypeScript); otherwise JavaScript with `javascript-jsdoc` when `checkJs` is on.
+
+Merge rule: prefer `tsconfig.json` when present; otherwise read `jsconfig.json` for paths / checkJs. `get-tsconfig` defaults `allowJs: true` for jsconfig.
+
+E2e tree snapshots for `js-only` stay with T70; unit and `--yes` acceptance coverage land here. Unknown closed-language upgrade tests use `python` now that `javascript` is a valid value.

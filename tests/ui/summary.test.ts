@@ -84,7 +84,7 @@ describe('confirmDetected', () => {
         call.method === 'groupMultiselect' && choicePrompt(call).message.includes('libraries'),
     );
     const language = choiceCalls(calls, 'select').find((call) =>
-      choicePrompt(call).message.includes('TypeScript'),
+      choicePrompt(call).message.includes('language'),
     );
     const agents = choiceCalls(calls, 'multiselect')[0];
 
@@ -103,7 +103,7 @@ describe('confirmDetected', () => {
     expect(result.agents).toEqual(['claude']);
     expect(result.workflows).toBe(true);
     expect(result.excluded).toEqual(['nextjs-app-router', 'vitest']);
-    expect(choicePrompt(language).message).toBe('1/6 How strict should TypeScript be?');
+    expect(choicePrompt(language).message).toBe('1/6 Which language should we use?');
     expect(choicePrompt(frameworks).required).toBe(false);
     expect(choicePrompt(libraries).required).toBe(false);
     expect(choicePrompt(libraries).options.map((option) => option.value)).toEqual([

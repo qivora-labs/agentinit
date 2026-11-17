@@ -180,7 +180,7 @@ describe('readManifest', () => {
     {
       name: 'unknown language',
       mutate: (body: ManifestBody): void => {
-        body.selections.language = 'javascript';
+        body.selections.language = 'python';
       },
     },
     {
@@ -219,7 +219,7 @@ describe('readManifest', () => {
     const root = await tempDir();
     const body = JSON.parse(serializeManifest(sampleManifest())) as ManifestBody;
     body.cliVersion = cliVersion;
-    body.selections.language = 'javascript';
+    body.selections.language = 'python';
     await writeManifest(root, `${JSON.stringify(body)}\n`);
     await expect(readManifest(root, RUNNING)).rejects.toSatisfy((error: unknown) => {
       expect(error).toBeInstanceOf(AgentInitError);
@@ -230,6 +230,20 @@ describe('readManifest', () => {
       return true;
     });
   });
+
+  it.each(['javascript', 'javascript-jsdoc'] as const)(
+    'round-trips language %s',
+    async (language) => {
+      const root = await tempDir();
+      const manifest = sampleManifest();
+      const withLanguage: Manifest = {
+        ...manifest,
+        selections: { ...manifest.selections, language },
+      };
+      await writeManifest(root, serializeManifest(withLanguage));
+      expect(await readManifest(root, RUNNING)).toEqual(withLanguage);
+    },
+  );
 
   it('parses unknown top-level, selections, and file-entry keys', async () => {
     const root = await tempDir();
