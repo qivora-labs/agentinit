@@ -9,11 +9,14 @@ export interface LanguageGlobFacts {
 /**
  * Map a TypeScript extension at the end of a rendered glob to its JavaScript
  * sibling. `.tsx` is checked before `.ts` so `.tsx` does not become `.jsx` via
- * a bare `.ts` suffix match. No `.mjs` / `.cjs` / `.mts` / `.cts` mapping.
+ * a bare `.ts` suffix match. `.d.ts` is left alone (it also ends with `.ts`).
+ * No `.mjs` / `.cjs` / `.mts` / `.cts` mapping.
  */
 function javascriptSibling(glob: string): string | null {
   if (glob.endsWith('.tsx')) return `${glob.slice(0, -'.tsx'.length)}.jsx`;
-  if (glob.endsWith('.ts')) return `${glob.slice(0, -'.ts'.length)}.js`;
+  if (glob.endsWith('.ts') && !glob.endsWith('.d.ts')) {
+    return `${glob.slice(0, -'.ts'.length)}.js`;
+  }
   return null;
 }
 

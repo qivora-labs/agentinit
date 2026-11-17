@@ -74,6 +74,19 @@ describe('expandLanguageGlobs', () => {
     expect(expandLanguageGlobs(input, facts({ allowJs: true }))).toEqual(input);
   });
 
+  it('leaves .d.ts globs unchanged', () => {
+    const input = ['types/**/*.d.ts', 'src/app/**/*.ts'];
+    expect(expandLanguageGlobs(input, facts({ language: 'javascript' }))).toEqual([
+      'types/**/*.d.ts',
+      'src/app/**/*.js',
+    ]);
+    expect(expandLanguageGlobs(input, facts({ allowJs: true }))).toEqual([
+      'types/**/*.d.ts',
+      'src/app/**/*.ts',
+      'src/app/**/*.js',
+    ]);
+  });
+
   it('deduplicates after JavaScript rewrite and after allowJs widening', () => {
     expect(expandLanguageGlobs(['a.ts', 'a.js', 'a.ts'], facts({ language: 'javascript' }))).toEqual([
       'a.js',
