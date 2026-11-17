@@ -4,6 +4,7 @@ import type { ResolvedSelection } from '../registry/resolve.js';
 import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../registry/schema.js';
 import type { FragmentScope, ProjectProfile } from '../types.js';
 import { omitSection } from '../registry/parse.js';
+import { expandLanguageGlobs, type LanguageGlobFacts } from './language-globs.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
 import { NO_OMIT_H1, type RenderedFragment, type RenderedWorkflow, type ScopedFragments, type TargetContext } from './types.js';
 
@@ -16,9 +17,18 @@ export function placeholderContextFor(profile: ProjectProfile): PlaceholderConte
   };
 }
 
+/** Language facts that drive glob extension expansion after placeholders. */
+export function languageGlobFactsFor(profile: ProjectProfile): LanguageGlobFacts {
+  return {
+    language: profile.language,
+    allowJs: profile.allowJs,
+  };
+}
+
 /** Render every resolved fragment body and glob for one profile. */
 export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedSelection): TargetContext {
   const placeholders = placeholderContextFor(profile);
+  const languageGlobs = languageGlobFactsFor(profile);
   const grouped: Record<FragmentScope, RenderedFragment[]> = {
     always: [],
     glob: [],
@@ -28,7 +38,7 @@ export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedS
 
   for (const fragment of resolved.fragments) {
     if (!isRule(fragment)) continue;
-    const rendered = renderRule(fragment, placeholders);
+    const rendered = renderRule(fragment, placeholders, languageGlobs);
     grouped[rendered.scope].push(rendered);
   }
 
@@ -39,7 +49,9 @@ export function renderTargetContext(profile: ProjectProfile, resolved: ResolvedS
     manual: sortFragments(grouped.manual),
   };
 
-  const workflows = resolved.workflows.filter(isWorkflow).map((fragment) => renderWorkflow(fragment, placeholders));
+  const workflows = resolved.workflows
+    .filter(isWorkflow)
+    .map((fragment) => renderWorkflow(fragment, placeholders));
   workflows.sort(compareRendered);
 
   return { profile, fragments, workflows, placeholders, omitBlockH1: NO_OMIT_H1 };
@@ -76,8 +88,14 @@ export function agentRuleBody(fragment: RenderedFragment): string {
   return omitSection(fragment.body, 'Map');
 }
 
-function renderRule(fragment: Fragment & { meta: RuleFragmentMeta }, placeholders: PlaceholderContext): RenderedFragment {
+function renderRule(
+  fragment: Fragment & { meta: RuleFragmentMeta },
+  placeholders: PlaceholderContext,
+  languageGlobs: LanguageGlobFacts,
+): RenderedFragment {
   const meta = fragment.meta;
+  const renderedGlobs =
+    meta.globs === undefined ? [] : renderGlobs(meta.globs, placeholders);
   return {
     id: meta.id,
     name: meta.name,
@@ -86,7 +104,7 @@ function renderRule(fragment: Fragment & { meta: RuleFragmentMeta }, placeholder
     scope: meta.scope,
     order: meta.order,
     body: renderBody(fragment.body, placeholders),
-    globs: meta.globs === undefined ? [] : renderGlobs(meta.globs, placeholders),
+    globs: expandLanguageGlobs(renderedGlobs, languageGlobs),
   };
 }
 

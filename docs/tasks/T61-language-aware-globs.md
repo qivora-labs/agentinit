@@ -37,12 +37,12 @@ Record the answers under **Notes** and in the PRD.
 - Preserve order: original glob, then the mapped sibling, unless tests show a better deterministic order.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] JavaScript profile: a fragment declaring `{{src}}**/*.ts` yields a `.js` glob (and `.tsx` → `.jsx`); no `.ts` / `.tsx` remain unless decision 4 says otherwise.
-- [ ] TypeScript without `allowJs`: rendered globs match pre-T61 output for the same profile.
-- [ ] TypeScript with `allowJs`: both extensions present; `doctor` does not flip when a `.js` file is added without `allowJs` changing.
-- [ ] Expanded `vitest` globs on a Windsurf target stay under 12,000 characters.
-- [ ] A changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] JavaScript profile: a fragment declaring `{{src}}**/*.ts` yields a `.js` glob (and `.tsx` → `.jsx`); no `.ts` / `.tsx` remain unless decision 4 says otherwise.
+- [x] TypeScript without `allowJs`: rendered globs match pre-T61 output for the same profile.
+- [x] TypeScript with `allowJs`: both extensions present; `doctor` does not flip when a `.js` file is added without `allowJs` changing.
+- [x] Expanded `vitest` globs on a Windsurf target stay under 12,000 characters.
+- [x] A changeset exists.
 
 ## Verify
 ```bash
@@ -53,4 +53,10 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(plan): expand rule globs for javascript and allowJs`
 
 ## Notes
-Recommendations above match the 2026-11-13 planning session. Confirm before coding.
+Owner confirmed 2026-11-17: all four recommendations.
+1. Implicit plan-layer mapping (fragments unchanged).
+2. Only `.ts` ↔ `.js` and `.tsx` ↔ `.jsx`.
+3. Widen TypeScript globs only when profile `allowJs` is true.
+4. No `.tsx` → `.js`.
+
+Implemented in `src/plan/language-globs.ts`, wired from `renderRule` after placeholder rendering. PRD §4.4 / §5.4 / §8.1 updated. Minor changeset: `.changeset/language-aware-globs.md`.

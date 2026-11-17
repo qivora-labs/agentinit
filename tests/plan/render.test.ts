@@ -50,6 +50,39 @@ describe('renderTargetContext', () => {
     expect(ctx.placeholders.pm).toBeNull();
   });
 
+  it('rewrites scoped globs for a JavaScript profile', () => {
+    const ctx = renderTargetContext(profile({ language: 'javascript', srcDir: 'src' }), sample);
+    expect(ctx.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      'src/app/**/*.js',
+      'src/app/**/*.jsx',
+    ]);
+  });
+
+  it('keeps TypeScript globs byte-identical when allowJs is false', () => {
+    const without = renderTargetContext(profile({ language: 'typescript-strict', allowJs: false }), sample);
+    const withFlagOff = renderTargetContext(profile({ language: 'typescript', allowJs: false }), sample);
+    expect(without.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      'src/app/**/*.ts',
+      'src/app/**/*.tsx',
+    ]);
+    expect(withFlagOff.fragments.glob.find((fragment) => fragment.id === 'vitest')?.globs).toEqual(
+      without.fragments.glob.find((fragment) => fragment.id === 'vitest')?.globs,
+    );
+  });
+
+  it('widens scoped globs when TypeScript allowJs is true', () => {
+    const ctx = renderTargetContext(
+      profile({ language: 'typescript-strict', allowJs: true, srcDir: 'src' }),
+      sample,
+    );
+    expect(ctx.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      'src/app/**/*.ts',
+      'src/app/**/*.js',
+      'src/app/**/*.tsx',
+      'src/app/**/*.jsx',
+    ]);
+  });
+
   it('sorts each scope by order then id, including workflows', () => {
     const ctx = renderTargetContext(
       profile(),
