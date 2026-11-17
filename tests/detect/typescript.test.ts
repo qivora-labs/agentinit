@@ -278,6 +278,56 @@ describe('readJsConfig', () => {
       source: 'jsconfig',
     });
   });
+
+  it('defaults allowJs on the unresolved-extends fallback path', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      `{
+        "extends": "./jsconfig.missing.json",
+        "compilerOptions": {
+          "checkJs": true,
+          "paths": { "@app/*": ["./src/*"] }
+        }
+      }`,
+    );
+
+    expect(readJsConfig(root)).toEqual({
+      strict: false,
+      allowJs: true,
+      checkJs: true,
+      paths: { '@app/*': ['./src/*'] },
+      warnings: [
+        'Could not resolve jsconfig extends "./jsconfig.missing.json". Using options from jsconfig.json.',
+      ],
+      source: 'jsconfig',
+    });
+    expect(detectLanguage(root, { name: 'app' })).toMatchObject({
+      language: 'javascript-jsdoc',
+      allowJs: true,
+      checkJs: true,
+    });
+  });
+
+  it('honors explicit allowJs false on the unresolved-extends fallback path', async () => {
+    const root = await tempDir();
+    await writeFile(
+      path.join(root, 'jsconfig.json'),
+      `{
+        "extends": "./jsconfig.missing.json",
+        "compilerOptions": {
+          "allowJs": false,
+          "checkJs": true
+        }
+      }`,
+    );
+
+    expect(readJsConfig(root)).toMatchObject({
+      allowJs: false,
+      checkJs: true,
+      source: 'jsconfig',
+    });
+  });
 });
 
 describe('suggestLanguage', () => {

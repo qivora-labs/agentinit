@@ -131,7 +131,9 @@ function settingsFrom(
   const options = asRecord(compilerOptions);
   return {
     strict: options?.strict === true,
-    allowJs: options?.allowJs === true,
+    // jsconfig defaults allowJs to true (TypeScript); mirror that when the
+    // unresolved-extends fallback skips get-tsconfig's merged defaults.
+    allowJs: source === 'jsconfig' ? options?.allowJs !== false : options?.allowJs === true,
     checkJs: options?.checkJs === true,
     paths: readPaths(options?.paths),
     warnings,
