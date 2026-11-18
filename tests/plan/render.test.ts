@@ -3,6 +3,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
 import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
 import { agentRuleBody, renderTargetContext } from '../../src/plan/render.js';
+import { copilotAdapter } from '../../src/targets/copilot.js';
+import { cursorAdapter } from '../../src/targets/cursor.js';
+import { windsurfAdapter } from '../../src/targets/windsurf.js';
 import { layeredFragment, profile, resolved, ruleFragment, workflowFragment } from './helpers.js';
 
 const sampleDir = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
@@ -48,6 +51,66 @@ describe('renderTargetContext', () => {
     expect(ctx.fragments.always[0]?.body).not.toContain('src/domain/');
     expect(ctx.placeholders.src).toBe('');
     expect(ctx.placeholders.pm).toBeNull();
+  });
+
+  it('rewrites scoped globs for a JavaScript profile', () => {
+    const ctx = renderTargetContext(profile({ language: 'javascript', srcDir: 'src' }), sample);
+    expect(ctx.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      'src/app/**/*.js',
+      'src/app/**/*.jsx',
+    ]);
+  });
+
+  it('keeps TypeScript target globs byte-identical when allowJs is false', () => {
+    const agents = ['cursor', 'windsurf', 'copilot'] as const;
+    const without = renderTargetContext(
+      profile({ language: 'typescript-strict', allowJs: false, agents: [...agents] }),
+      sample,
+    );
+    const withFlagOff = renderTargetContext(
+      profile({ language: 'typescript', allowJs: false, agents: [...agents] }),
+      sample,
+    );
+    const nextGlobs = ['src/app/**/*.ts', 'src/app/**/*.tsx'] as const;
+    expect(without.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      ...nextGlobs,
+    ]);
+    expect(withFlagOff.fragments.glob.find((fragment) => fragment.id === 'vitest')?.globs).toEqual(
+      without.fragments.glob.find((fragment) => fragment.id === 'vitest')?.globs,
+    );
+
+    // Pre-T61 joined-string form for Cursor, Windsurf, and Copilot (PRD §5.4).
+    const joined = nextGlobs.join(',');
+    const cursor = cursorAdapter(without).find(
+      (op) => op.path === '.cursor/rules/agentinit-nextjs-app-router.mdc',
+    );
+    const windsurf = windsurfAdapter(without).find(
+      (op) => op.path === '.windsurf/rules/agentinit-nextjs-app-router.md',
+    );
+    const copilot = copilotAdapter(without).find(
+      (op) => op.path === '.github/instructions/agentinit-nextjs-app-router.instructions.md',
+    );
+    expect(cursor?.content).toContain(`globs: ${joined}\n`);
+    expect(windsurf?.content).toContain(`globs: ${joined}\n`);
+    expect(copilot?.content).toContain(`applyTo: "${joined}"\n`);
+
+    const scopedPath = '.cursor/rules/agentinit-nextjs-app-router.mdc';
+    expect(cursorAdapter(withFlagOff).find((op) => op.path === scopedPath)?.content).toBe(
+      cursor?.content,
+    );
+  });
+
+  it('widens scoped globs when TypeScript allowJs is true', () => {
+    const ctx = renderTargetContext(
+      profile({ language: 'typescript-strict', allowJs: true, srcDir: 'src' }),
+      sample,
+    );
+    expect(ctx.fragments.glob.find((fragment) => fragment.id === 'nextjs-app-router')?.globs).toEqual([
+      'src/app/**/*.ts',
+      'src/app/**/*.js',
+      'src/app/**/*.tsx',
+      'src/app/**/*.jsx',
+    ]);
   });
 
   it('sorts each scope by order then id, including workflows', () => {

@@ -394,6 +394,12 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 
 **Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner). A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
 
+**Language-aware globs (plan layer):** fragments keep declaring each TypeScript extension once (`.ts` / `.tsx`). After placeholders render, the plan expands extensions from profile language facts—never from whether `.js` files exist on disk (so `doctor` does not flip when someone adds a `.js` file without `allowJs` changing):
+- **JavaScript** (`javascript` / `javascript-jsdoc`): rewrite `.ts` → `.js` and `.tsx` → `.jsx` (replacement; no `.ts` / `.tsx` remain).
+- **TypeScript with `allowJs`:** keep each original glob and insert its JavaScript sibling immediately after (deduplicated).
+- **TypeScript without `allowJs`:** leave globs unchanged (byte-identical to pre-expansion output).
+- Mapping is only `.ts` ↔ `.js` and `.tsx` ↔ `.jsx` (no `.mjs` / `.cjs` / `.mts` / `.cts`; `.tsx` does not also map to `.js`). Targets receive the expanded list and stay unaware of the mapping. Expansion never introduces braces or commas inside a single pattern.
+
 **Workflows** are always included; there is no per-workflow selection in v0.1.
 
 Example (`registry/frameworks/nextjs-app-router.md`):
@@ -488,6 +494,8 @@ Most agents read `AGENTS.md` **and** their own files. To avoid loading the same 
 `auto` exists because glob-scoped rules load only when the agent reads a matching file, so they can miss the moment a new file of that kind is created. Description-based activation covers that case where an agent supports it.
 
 ### 5.4 Per-Target Formats
+
+Examples below show TypeScript without `allowJs`. A JavaScript profile rewrites those extensions to `.js` / `.jsx`; TypeScript with `allowJs` inserts the JavaScript siblings after each TypeScript pattern (§4.4). Cursor, Windsurf, and Copilot join patterns with commas, so expansion must not introduce braces or commas inside one pattern. Windsurf rule files must stay below 12,000 characters after expansion.
 
 **Cursor** — `globs` is serialized as a comma-separated string:
 ```markdown
@@ -675,7 +683,7 @@ The order of v0.2 and later was changed by the owner on 2026-11-12: JavaScript s
 ### v0.2 — JavaScript and older stacks
 Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Owner decisions on 2026-11-13:
 - **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and `javascript-jsdoc` (JSDoc type rules for `checkJs`), suggested when `checkJs` is on. Published ids are never renamed.
-- Language detection replaces the TypeScript gate; scoped globs follow the project's language; each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
+- Language detection replaces the TypeScript gate; scoped globs follow the project's language via plan-layer extension mapping (§4.4); each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
 - **Language family drift:** `init` and `doctor` report when the project moves between JavaScript and TypeScript (strictness / JSDoc stay preferences).
 - **Module system** (slice of later project-conventions work): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
 - **Version-aware `unselected` in `doctor`:** a matching fragment that isn't selected is a warning when the manifest was written by a different CLI version, so new coverage does not fail unpinned CI.
@@ -719,6 +727,8 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 - No rule text appears in more than one generated file (excluding pointers and imports).
 - Every generated Cursor, Claude, Windsurf, and Copilot file matches its format in §5.4 and the scope mapping in §5.3.
 - Globs resolve correctly for `src/` and root layouts and always use forward slashes.
+- A JavaScript profile rewrites scoped `.ts` / `.tsx` globs to `.js` / `.jsx`; TypeScript without `allowJs` keeps TypeScript-only globs; TypeScript with `allowJs` includes both. Expansion keys off profile `allowJs`, not `.js` file presence.
+- Expanded library globs (widest case: `vitest` + `allowJs`) keep Cursor, Windsurf, and Copilot joined-string rule files under Windsurf's 12,000-character limit.
 - `AGENTS.md` lists only scripts that exist, using the detected package manager.
 
 **Safety**

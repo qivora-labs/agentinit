@@ -22,7 +22,7 @@
   },
   "files": {
     ".claude/rules/agentinit-vitest.md": {
-      "sha256": "6b8aad89d34b45adcebf34c25c01372cfaa582c3d7dd71f6315a24c60a0953a6"
+      "sha256": "8bad7434f32fdefac6235e5ecf740d6d423de0da3ab0421e2a10e03a5177acde"
     },
     ".claude/skills/new-feature/SKILL.md": {
       "sha256": "1187149547d0c342426b3be61e5bc6f6777bc894ed00c2c937c6065b21f6fc7d"
@@ -37,7 +37,7 @@
       "sha256": "c7f11876b98df17bbc04965ec69613989f940608b651fdd6b1e36dc6de3cd2a7"
     },
     ".cursor/rules/agentinit-vitest.mdc": {
-      "sha256": "ac7d68143636c6bedb2fd146b8593983b9d23a59b4aa2aec56107570a1ac8e6c"
+      "sha256": "3b1de7ab0cc531fc4d193a9306db84dc4f5d35bb6f349ebf6fb2753731ef6fd9"
     },
     "AGENTS.md#core": {
       "sha256": "406403affe81a5844efe528bc40f58d5c6340ab5d6359bd3c60150beade67e95"
