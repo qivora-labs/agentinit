@@ -11,7 +11,7 @@ sources:
   - https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 - Put business rules in `{{src}}domain/` and use cases in `{{src}}application/`.
 - Put database, HTTP, and filesystem adapters in `{{src}}infrastructure/`.

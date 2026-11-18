@@ -27,7 +27,7 @@ sources:
   - https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run, and in v5 that can update forever. `useShallow` from `zustand/react/shallow` keeps the previous result when a shallow compare matches.
 

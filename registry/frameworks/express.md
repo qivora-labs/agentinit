@@ -25,7 +25,7 @@ sources:
   - https://expressjs.com/en/5x/guide/routing.html
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

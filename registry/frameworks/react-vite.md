@@ -23,7 +23,7 @@ sources:
   - https://vite.dev/config/shared-options
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

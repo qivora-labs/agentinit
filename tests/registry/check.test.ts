@@ -23,7 +23,13 @@ const SAMPLE = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.
 const INVALID = fileURLToPath(new URL('../fixtures/registry-invalid', import.meta.url));
 
 const FENCE = ['```ts', 'const ok = true;', '```'].join('\n');
-const VALID_RULE = ['ALWAYS keep the boundary.', '', FENCE].join('\n');
+const TS_ONLY = '<!-- agentinit:typescript-only -->';
+const VALID_RULE = [TS_ONLY, 'ALWAYS keep the boundary.', '', FENCE].join('\n');
+
+/** Prepend the TypeScript-only marker so dual-example checks do not fire. */
+function marked(body: string): string {
+  return `${TS_ONLY}\n${body}`;
+}
 
 const WORKFLOW_SECTIONS = ['Purpose', 'Input', 'Steps', 'Output', 'Guardrails'] as const;
 
@@ -46,25 +52,112 @@ describe('checkFragments', () => {
     expect(checkFragments([ruleFragment({ body: paddedRule(120) })], TODAY)).toEqual([]);
   });
 
-  it('rejects a fragment body over 120 lines', () => {
-    expect(checkFragments([ruleFragment({ body: paddedRule(121) })], TODAY)).toEqual([
-      error('body is 121 lines; the limit is 120'),
+  it('rejects a rendered language variant over 120 lines', () => {
+    // Marker + fence are stripped for the TypeScript / JavaScript variants, so
+    // raw 122 lines becomes 121 for TypeScript (over) and under for JavaScript.
+    expect(checkFragments([ruleFragment({ body: paddedRule(122) })], TODAY)).toEqual([
+      error('typescript variant is 121 lines; the limit is 120'),
     ]);
   });
 
+  it('counts each rendered Contract variant against the line budget, not the raw dual-fence source', () => {
+    const shared = Array.from({ length: 90 }, (_, index) => `note ${String(index + 1)}`);
+    const body = [
+      '## Directives',
+      '- **ALWAYS** keep the boundary.',
+      '',
+      '## Contract',
+      '```ts',
+      ...Array.from({ length: 12 }, (_, index) => `const ts${String(index)} = 1;`),
+      '```',
+      '',
+      '```js',
+      ...Array.from({ length: 12 }, (_, index) => `const js${String(index)} = 1;`),
+      '```',
+      '',
+      ...shared,
+    ].join('\n');
+    // Raw source is well over 120; each rendered variant stays under.
+    expect(body.split('\n').length).toBeGreaterThan(120);
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('rejects a non-language rule fragment with neither a JS Contract fence nor a TypeScript-only marker', () => {
+    const body = ['ALWAYS keep the boundary.', '', FENCE].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      error(
+        'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
+      ),
+    ]);
+  });
+
+  it('rejects a directive-line TypeScript-only marker without a JS Contract fence', () => {
+    const body = [
+      `- **ALWAYS** use \`z.infer\`. ${TS_ONLY}`,
+      '- **ALWAYS** set defaultValues.',
+      '',
+      '## Contract',
+      FENCE,
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      error(
+        'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
+      ),
+    ]);
+  });
+
+  it('accepts a JavaScript Contract fence without a TypeScript-only marker', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '## Contract',
+      '```ts',
+      'const ok: boolean = true;',
+      '```',
+      '',
+      '```js',
+      'const ok = true;',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
+  });
+
+  it('rejects a JavaScript-only Contract fence without a TypeScript sibling', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '## Contract',
+      '```js',
+      'const ok = true;',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      error(
+        'JavaScript Contract fence without a TypeScript sibling (```ts / ```tsx); TypeScript rendering would drop the only example',
+      ),
+    ]);
+  });
+
+  it('does not require a JavaScript Contract fence on language fragments', () => {
+    const body = ['ALWAYS keep the boundary.', '', FENCE].join('\n');
+    expect(checkFragments([ruleFragment({ body, category: 'language', id: 'typescript' })], TODAY)).toEqual(
+      [],
+    );
+  });
+
   it.each(['ALWAYS', 'NEVER', 'PREFER', 'FORBID', 'DEFAULT'])('accepts a rule that uses %s', (keyword) => {
-    const body = [`${keyword} keep the boundary.`, '', FENCE].join('\n');
+    const body = marked([`${keyword} keep the boundary.`, '', FENCE].join('\n'));
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
   it('rejects a rule with no directive keyword', () => {
-    expect(checkFragments([ruleFragment({ body: `Keep the boundary.\n\n${FENCE}` })], TODAY)).toEqual([
+    expect(checkFragments([ruleFragment({ body: marked(`Keep the boundary.\n\n${FENCE}`) })], TODAY)).toEqual([
       error('missing a directive keyword (ALWAYS, NEVER, PREFER, FORBID, DEFAULT)'),
     ]);
   });
 
   it('rejects a rule with no fenced code block', () => {
-    expect(checkFragments([ruleFragment({ body: 'ALWAYS keep the boundary.' })], TODAY)).toEqual([
+    expect(checkFragments([ruleFragment({ body: marked('ALWAYS keep the boundary.') })], TODAY)).toEqual([
       error('missing a fenced code block'),
     ]);
   });
@@ -98,15 +191,19 @@ describe('checkFragments', () => {
   });
 
   it('accepts a tilde fence and a fence indented by three spaces', () => {
-    const tilde = ['ALWAYS keep the boundary.', '', '~~~ts', 'const ok = true;', '~~~'].join('\n');
-    const indented = ['ALWAYS keep the boundary.', '', '   ```ts', 'const ok = true;', '   ```'].join('\n');
+    const tilde = marked(['ALWAYS keep the boundary.', '', '~~~ts', 'const ok = true;', '~~~'].join('\n'));
+    const indented = marked(
+      ['ALWAYS keep the boundary.', '', '   ```ts', 'const ok = true;', '   ```'].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body: tilde }), ruleFragment({ body: indented, id: 'other' })], TODAY)).toEqual(
       [],
     );
   });
 
   it('does not count an indented code block as a fence', () => {
-    const body = ['ALWAYS keep the boundary.', '', '    ```', '    const ok = true;', '    ```'].join('\n');
+    const body = marked(
+      ['ALWAYS keep the boundary.', '', '    ```', '    const ok = true;', '    ```'].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([error('missing a fenced code block')]);
   });
 
@@ -283,81 +380,91 @@ describe('checkFragments', () => {
   });
 
   it('warns when a single-line export function in a ts fence lacks a return type', () => {
-    const body = [
-      'ALWAYS keep the boundary.',
-      '',
-      '```ts',
-      'export function helper(input: string) {',
-      '  return input;',
-      '}',
-      '```',
-    ].join('\n');
+    const body = marked(
+      [
+        'ALWAYS keep the boundary.',
+        '',
+        '```ts',
+        'export function helper(input: string) {',
+        '  return input;',
+        '}',
+        '```',
+      ].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
       warning('missing return type on export function helper (heuristic; single-line signatures only)'),
     ]);
   });
 
   it('accepts a single-line export function with a return type', () => {
-    const body = [
-      'ALWAYS keep the boundary.',
-      '',
-      '```ts',
-      'export function helper(input: string): string {',
-      '  return input;',
-      '}',
-      '```',
-    ].join('\n');
+    const body = marked(
+      [
+        'ALWAYS keep the boundary.',
+        '',
+        '```ts',
+        'export function helper(input: string): string {',
+        '  return input;',
+        '}',
+        '```',
+      ].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
   it('skips React components and framework entry exports without return types', () => {
-    const body = [
-      'ALWAYS keep the boundary.',
-      '',
-      '```tsx',
-      'export function Title({ show }: { show: boolean }) {',
-      '  return show ? <h1>Hi</h1> : null;',
-      '}',
-      'export default async function Page() {',
-      '  return null;',
-      '}',
-      'export async function GET() {',
-      '  return new Response();',
-      '}',
-      '```',
-    ].join('\n');
+    const body = marked(
+      [
+        'ALWAYS keep the boundary.',
+        '',
+        '```tsx',
+        'export function Title({ show }: { show: boolean }) {',
+        '  return show ? <h1>Hi</h1> : null;',
+        '}',
+        'export default async function Page() {',
+        '  return null;',
+        '}',
+        'export async function GET() {',
+        '  return new Response();',
+        '}',
+        '```',
+      ].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
   it('skips missing return types after an anti-pattern marker in a mixed fence', () => {
-    const body = [
-      'ALWAYS keep the boundary.',
-      '',
-      '```ts',
-      'export function good(input: string): string {',
-      '  return input;',
-      '}',
-      '// ❌ Anti-pattern: missing return type',
-      'export function bad(input: string) {',
-      '  return input;',
-      '}',
-      '```',
-    ].join('\n');
+    const body = marked(
+      [
+        'ALWAYS keep the boundary.',
+        '',
+        '```ts',
+        'export function good(input: string): string {',
+        '  return input;',
+        '}',
+        '// ❌ Anti-pattern: missing return type',
+        'export function bad(input: string) {',
+        '  return input;',
+        '}',
+        '```',
+      ].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
   it('does not flag a multi-line export function signature', () => {
-    const body = [
-      'ALWAYS keep the boundary.',
-      '',
-      '```ts',
-      'export function helper(',
-      '  input: string,',
-      ') {',
-      '  return input;',
-      '}',
-      '```',
-    ].join('\n');
+    const body = marked(
+      [
+        'ALWAYS keep the boundary.',
+        '',
+        '```ts',
+        'export function helper(',
+        '  input: string,',
+        ') {',
+        '  return input;',
+        '}',
+        '```',
+      ].join('\n'),
+    );
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
@@ -916,6 +1023,7 @@ sources:
   - https://example.com/docs
 verifiedAt: 2020-01-01
 ---
+<!-- agentinit:typescript-only -->
 Use {{nope}} in the client.
 
 ALWAYS keep the boundary.
@@ -981,6 +1089,7 @@ sources:
   - https://example.com/docs
 verifiedAt: 2020-01-01
 ---
+<!-- agentinit:typescript-only -->
 ALWAYS keep the boundary.
 
 \`\`\`ts

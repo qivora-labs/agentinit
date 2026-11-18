@@ -26,7 +26,7 @@ sources:
   - https://ui.shadcn.com/docs/changelog/2023-06-new-cli
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 shadcn/ui copies component source into this project. `components.json` field `aliases.ui` is the import alias for that folder. The usual value is `@/components/ui`. Import a primitive from that alias. A missing primitive is added by a person.
 

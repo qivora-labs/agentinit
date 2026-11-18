@@ -27,7 +27,7 @@ sources:
   - https://github.com/shadcn-ui/cn
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 These rules apply to Tailwind classes in components and to the CSS file that loads Tailwind. v4 reads configuration from that CSS. The scanner treats source as plain text and emits a utility only when the full class name appears. When the project already has `cn`, that helper joins conditional classes and lets a later utility replace an earlier one in the same group.
 

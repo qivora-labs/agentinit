@@ -18,7 +18,7 @@ sources:
   - https://nextjs.org/docs/app
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 Server Components by default, with client leaves for interaction.
 

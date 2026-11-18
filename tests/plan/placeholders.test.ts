@@ -15,6 +15,8 @@ function context(overrides: Partial<PlaceholderContext> = {}): PlaceholderContex
     src: 'src/',
     pm: 'pnpm',
     scripts: { test: 'vitest' },
+    ext: 'ts',
+    jsxExt: 'tsx',
     ...overrides,
   };
 }
@@ -233,11 +235,28 @@ describe('findPlaceholders', () => {
 });
 
 describe('isKnownPlaceholder', () => {
-  it.each(['src', 'pm', 'scripts.test', ' scripts.test '])('accepts %j', (name) => {
+  it.each(['src', 'pm', 'ext', 'jsxExt', 'scripts.test', ' scripts.test '])('accepts %j', (name) => {
     expect(isKnownPlaceholder(name)).toBe(true);
   });
 
   it.each(['foo', 'scripts.', 'scripts.my test', 'Scripts.test'])('rejects %j', (name) => {
     expect(isKnownPlaceholder(name)).toBe(false);
+  });
+});
+
+describe('ext / jsxExt placeholders', () => {
+  it('renders TypeScript prose extensions', () => {
+    expect(renderBody('Use `index.{{ext}}` and `page.{{jsxExt}}`.', context())).toBe(
+      'Use `index.ts` and `page.tsx`.',
+    );
+  });
+
+  it('renders JavaScript prose extensions', () => {
+    expect(
+      renderBody(
+        'Use `index.{{ext}}` and `page.{{jsxExt}}`.',
+        context({ ext: 'js', jsxExt: 'jsx' }),
+      ),
+    ).toBe('Use `index.js` and `page.jsx`.');
   });
 });

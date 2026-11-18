@@ -22,7 +22,7 @@ sources:
   - https://zustand.docs.pm/learn/getting-started/introduction
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 Client stores stay out of Server Components.
 

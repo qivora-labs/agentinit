@@ -30,7 +30,7 @@ sources:
   - https://tkdodo.eu/blog/effective-react-query-keys
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 TanStack Query caches server data. A query key is an array and must be serializable with `JSON.stringify`. The hash is deterministic: key order inside an object does not matter, and array order does. `queryOptions` returns the object you pass it, so the key and `queryFn` stay together. `useSuspenseQuery` `data` is defined. Loading suspends. An error is thrown only when that query has no data. A refetch error with cached data stays on the result. Do not pass `enabled`, `placeholderData`, or `throwOnError`.
 

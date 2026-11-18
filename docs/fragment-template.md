@@ -29,14 +29,24 @@ Say where this guidance applies and how modules that use the library interact. B
 - **NEVER** do the failure mode agents commonly invent.
 - **PREFER** the recommended alternative when both options are valid.
 - **DEFAULT** to the usual choice when the agent would otherwise guess.
+- **ALWAYS** export the public API from `index.{{ext}}`.
+- **ALWAYS** use a TypeScript-only API such as `z.infer`. <!-- agentinit:typescript-only -->
 
 ## Contract
 ```ts
-// ✅ Good: short, verifiable example
+// ✅ Good: short, verifiable TypeScript example
 export function ok(): void {}
 
 // ❌ Anti-pattern: the mistake this fragment exists to prevent
 export function bad(): any {}
+```
+
+```js
+// ✅ Good: short, verifiable JavaScript example
+export function ok() {}
+
+// ❌ Anti-pattern: the mistake this fragment exists to prevent
+export function bad() {}
 ```
 
 <!--
@@ -46,7 +56,12 @@ Categories: architectures | languages | frameworks | libraries | workflows
 Default scope: architecture/language → always; framework/library → glob or auto.
 Workflows: omit scope/globs; use ## Purpose, ## Input, ## Steps, ## Output, ## Guardrails.
 Architecture: also add ## Summary (≤ 10 lines) and ## Map.
-Rules: keep the body ≤ 120 lines; workflows ≤ 60.
+Rules: each rendered language variant ≤ 120 lines; workflows ≤ 60.
 Globs: one pattern per extension; no braces; no commas; use {{src}}.
+Dual examples: put ```ts / ```tsx and ```js / ```jsx fences in the same ## Contract.
+  Until a JS example exists, put <!-- agentinit:typescript-only --> on its own line
+  (usually first body line). TypeScript-only directives end with the same marker.
+Prose file names: {{ext}} → ts|js, {{jsxExt}} → tsx|jsx.
+Bump fragment version (minor) when adding a JavaScript example.
 Then run: pnpm registry:check
 -->

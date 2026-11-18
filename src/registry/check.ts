@@ -1,6 +1,12 @@
 import { intersects } from 'semver';
 import { compareText } from '../compare-text.js';
 import { AgentInitError } from '../errors.js';
+import {
+  applyLanguageExamples,
+  hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
+  hasTypescriptOnlyMarker,
+} from '../plan/language-examples.js';
 import { findPlaceholders, isKnownPlaceholder } from '../plan/placeholders.js';
 import { getSections, type Fragment, type RuleFragmentMeta } from './parse.js';
 import { PICKER_HINT_LIMIT } from './hint.js';
@@ -208,15 +214,13 @@ export function reportStatus(problems: readonly RegistryProblem[]): 0 | 1 {
 
 function checkFragment(fragment: Fragment, today: string): RegistryProblem[] {
   const problems: RegistryProblem[] = [];
-  const lineCount = countLines(fragment.body);
-  if (lineCount > LINE_LIMIT) {
-    problems.push(problem(fragment, 'error', `body is ${String(lineCount)} lines; the limit is ${String(LINE_LIMIT)}`));
-  }
+  problems.push(...lineBudgetProblems(fragment));
 
   if (fragment.meta.category === 'workflow') {
     problems.push(...workflowSectionProblems(fragment));
   } else {
     problems.push(...ruleProblems(fragment));
+    problems.push(...dualExampleProblems(fragment));
     if (fragment.meta.category === 'architecture') {
       problems.push(...architectureProblems(fragment));
     }
@@ -232,6 +236,66 @@ function checkFragment(fragment: Fragment, today: string): RegistryProblem[] {
   problems.push(...forbiddenPhraseProblems(fragment));
   problems.push(...missingReturnTypeProblems(fragment));
   return problems;
+}
+
+/**
+ * Count each rendered language variant (shared prose once per variant), not the
+ * raw dual-fence source. Workflows have no language variants.
+ */
+function lineBudgetProblems(fragment: Fragment): RegistryProblem[] {
+  if (fragment.meta.category === 'workflow') {
+    const lineCount = countLines(fragment.body);
+    if (lineCount <= LINE_LIMIT) return [];
+    return [
+      problem(fragment, 'error', `body is ${String(lineCount)} lines; the limit is ${String(LINE_LIMIT)}`),
+    ];
+  }
+
+  const problems: RegistryProblem[] = [];
+  for (const family of ['typescript', 'javascript'] as const) {
+    const rendered = applyLanguageExamples(fragment.body, family);
+    const lineCount = countLines(rendered);
+    if (lineCount <= LINE_LIMIT) continue;
+    problems.push(
+      problem(
+        fragment,
+        'error',
+        `${family} variant is ${String(lineCount)} lines; the limit is ${String(LINE_LIMIT)}`,
+      ),
+    );
+  }
+  return problems;
+}
+
+/**
+ * Non-language rule fragments need both Contract fences (ts/tsx + js/jsx) or a
+ * fragment-level TypeScript-only marker (a line that is only the marker). A JS-only
+ * Contract would leave TypeScript rendering with no example after fence selection.
+ * A marker on a directive line does not exempt the fragment. Language fragments
+ * are single-language and exempt.
+ */
+function dualExampleProblems(fragment: Fragment): RegistryProblem[] {
+  if (fragment.meta.category === 'language') return [];
+  if (hasTypescriptOnlyMarker(fragment.body)) return [];
+  const hasJs = hasJavaScriptContractFence(fragment.body);
+  const hasTs = hasTypeScriptContractFence(fragment.body);
+  if (hasJs && hasTs) return [];
+  if (hasJs && !hasTs) {
+    return [
+      problem(
+        fragment,
+        'error',
+        'JavaScript Contract fence without a TypeScript sibling (```ts / ```tsx); TypeScript rendering would drop the only example',
+      ),
+    ];
+  }
+  return [
+    problem(
+      fragment,
+      'error',
+      'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
+    ),
+  ];
 }
 
 /** Picker `hint` is display-only; warn when missing or longer than the Clack line budget. */

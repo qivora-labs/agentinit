@@ -24,7 +24,7 @@ sources:
   - https://playwright.dev/docs/api/class-frame
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 A locator is lazy: it re-queries the DOM when an action or assertion uses it. `click` and `fill` wait until the target is actionable. `getByRole` matches the element's role and accessible name. A web-first assertion retries until the condition holds or the expect timeout ends. The default expect timeout is 5 seconds. Each test gets its own `page`, storage, and cookies. `page.waitForTimeout` is for debugging. A test that waits a fixed time is flaky.
 

@@ -1,7 +1,7 @@
 import type { PlaceholderContext } from './placeholders.js';
 import type { FileOp, FragmentCategory, FragmentScope, ProjectProfile } from '../types.js';
 
-/** A rule fragment after `{{src}}`, `{{pm}}`, and `{{scripts.*}}` rendering. */
+/** A rule fragment after language-example selection and placeholder rendering. */
 export interface RenderedFragment {
   readonly id: string;
   readonly name: string;
