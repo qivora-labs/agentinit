@@ -267,8 +267,9 @@ function lineBudgetProblems(fragment: Fragment): RegistryProblem[] {
 }
 
 /**
- * Non-language rule fragments need a JavaScript Contract fence or an explicit
- * TypeScript-only marker. Language fragments are single-language and exempt.
+ * Non-language rule fragments need a JavaScript Contract fence or a fragment-level
+ * TypeScript-only marker (a line that is only the marker). A marker on a directive
+ * line does not exempt the fragment. Language fragments are single-language and exempt.
  */
 function dualExampleProblems(fragment: Fragment): RegistryProblem[] {
   if (fragment.meta.category === 'language') return [];
@@ -278,7 +279,7 @@ function dualExampleProblems(fragment: Fragment): RegistryProblem[] {
     problem(
       fragment,
       'error',
-      'missing a JavaScript Contract fence (```js / ```jsx) or an <!-- agentinit:typescript-only --> marker',
+      'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
     ),
   ];
 }

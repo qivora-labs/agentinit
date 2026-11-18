@@ -17,8 +17,14 @@ export function exampleLanguageFamily(language: Language): ExampleLanguageFamily
   return language === 'javascript' || language === 'javascript-jsdoc' ? 'javascript' : 'typescript';
 }
 
+/**
+ * True when the body has a fragment-level TypeScript-only marker: a line that is
+ * only `<!-- agentinit:typescript-only -->`. A marker trailing a directive does
+ * not count — that marks one directive, not the whole fragment.
+ */
 export function hasTypescriptOnlyMarker(body: string): boolean {
-  return markerPattern().test(body);
+  const { lines } = splitLines(body);
+  return lines.some((line) => markerPattern().test(line) && isMarkerOnlyLine(line));
 }
 
 /** True when `## Contract` contains at least one fenced block in the JavaScript family. */

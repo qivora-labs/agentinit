@@ -86,7 +86,22 @@ describe('checkFragments', () => {
     const body = ['ALWAYS keep the boundary.', '', FENCE].join('\n');
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
       error(
-        'missing a JavaScript Contract fence (```js / ```jsx) or an <!-- agentinit:typescript-only --> marker',
+        'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
+      ),
+    ]);
+  });
+
+  it('rejects a directive-line TypeScript-only marker without a JS Contract fence', () => {
+    const body = [
+      `- **ALWAYS** use \`z.infer\`. ${TS_ONLY}`,
+      '- **ALWAYS** set defaultValues.',
+      '',
+      '## Contract',
+      FENCE,
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      error(
+        'missing a JavaScript Contract fence (```js / ```jsx) or a fragment-level <!-- agentinit:typescript-only --> marker',
       ),
     ]);
   });

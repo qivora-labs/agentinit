@@ -87,8 +87,18 @@ describe('hasJavaScriptContractFence / hasTypescriptOnlyMarker', () => {
     expect(hasJavaScriptContractFence(['## Other', JS_FENCE].join('\n'))).toBe(false);
   });
 
-  it('detects the TypeScript-only marker', () => {
+  it('detects a fragment-level TypeScript-only marker', () => {
     expect(hasTypescriptOnlyMarker(`${TYPESCRIPT_ONLY_MARKER}\n## Contract\n${TS_FENCE}`)).toBe(true);
     expect(hasTypescriptOnlyMarker(['## Contract', TS_FENCE].join('\n'))).toBe(false);
+  });
+
+  it('ignores a TypeScript-only marker that trails a directive line', () => {
+    const body = [
+      `- **ALWAYS** use \`z.infer\`. ${TYPESCRIPT_ONLY_MARKER}`,
+      '',
+      '## Contract',
+      TS_FENCE,
+    ].join('\n');
+    expect(hasTypescriptOnlyMarker(body)).toBe(false);
   });
 });
