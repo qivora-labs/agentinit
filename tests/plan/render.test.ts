@@ -1,14 +1,28 @@
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRegistry, type Registry } from '../../src/registry/load.js';
-import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
+import {
+  hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
+  hasTypescriptOnlyMarker,
+} from '../../src/plan/language-examples.js';
 import { agentRuleBody, renderTargetContext } from '../../src/plan/render.js';
+import { defaultRegistryDir } from '../../src/registry/locate.js';
+import { loadRegistry, type Registry } from '../../src/registry/load.js';
+import { getSections } from '../../src/registry/parse.js';
+import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
 import { copilotAdapter } from '../../src/targets/copilot.js';
 import { cursorAdapter } from '../../src/targets/cursor.js';
 import { windsurfAdapter } from '../../src/targets/windsurf.js';
 import { layeredFragment, profile, resolved, ruleFragment, workflowFragment } from './helpers.js';
 
 const sampleDir = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
+const ARCHITECTURE_IDS = [
+  'atomic-design',
+  'feature-based',
+  'flat',
+  'layered',
+  'modular',
+] as const;
 
 describe('renderTargetContext', () => {
   let registry: Registry;
@@ -200,6 +214,64 @@ describe('renderTargetContext', () => {
     );
     expect(fromDual.fragments.always[0]?.body).toBe(fromSingle.fragments.always[0]?.body);
     expect(fromDual.fragments.always[0]?.body).toBe(single);
+  });
+
+  it('renders architecture dual Contracts and prose extensions per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of ARCHITECTURE_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const feature = bundled.fragments.find((entry) => entry.meta.id === 'feature-based');
+    expect(feature).toBeDefined();
+    if (feature === undefined) return;
+    const featureSelection = resolved([feature]);
+    const featureTs = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'feature-based', confidence: 1 } }),
+      featureSelection,
+    );
+    const featureJs = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'feature-based', confidence: 1 } }),
+      featureSelection,
+    );
+    const featureTsBody = featureTs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    const featureJsBody = featureJs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    expect(getSections(featureTsBody).get('Summary')).toContain('index.ts');
+    expect(getSections(featureTsBody).get('Summary')).not.toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).not.toContain('index.ts');
+    expect(featureTsBody).toContain('```ts');
+    expect(featureTsBody).not.toContain('```js');
+    expect(featureJsBody).toContain('```js');
+    expect(featureJsBody).not.toContain('```ts');
+    expect(featureTsBody).toContain('import type { Invoice }');
+    expect(featureJsBody).not.toContain('import type');
+
+    const layered = bundled.fragments.find((entry) => entry.meta.id === 'layered');
+    expect(layered).toBeDefined();
+    if (layered === undefined) return;
+    const layeredSelection = resolved([layered]);
+    const layeredTs = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredJs = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredTsBody = layeredTs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    const layeredJsBody = layeredJs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    expect(layeredTsBody).toContain('load-invoice.ts');
+    expect(layeredTsBody).toContain('import type { Invoice }');
+    expect(layeredTsBody).toContain('import type { InvoiceStore }');
+    expect(layeredJsBody).toContain('load-invoice.js');
+    expect(layeredJsBody).not.toContain('import type');
+    expect(layeredJsBody).toContain('export function loadInvoice(store, id)');
   });
 
   it('sorts each scope by order then id, including workflows', () => {

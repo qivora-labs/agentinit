@@ -22,7 +22,7 @@ backups/
     "workflows": true
   },
   "fragments": {
-    "flat": "1.0.0",
+    "flat": "1.1.0",
     "nextjs-app-router": "1.0.1",
     "typescript-strict": "1.1.0"
   },
