@@ -1,6 +1,6 @@
 ---
 description: Behavior assertions, top-level vi.mock, and fake timers.
-globs: "**/*.test.tsx,**/*.spec.tsx,*.test.ts,*.spec.ts,src/**/*.test.ts,src/**/*.spec.ts,app/**/*.test.ts,app/**/*.spec.ts,lib/**/*.test.ts,lib/**/*.spec.ts,server/**/*.test.ts,server/**/*.spec.ts,pages/**/*.test.ts,pages/**/*.spec.ts,components/**/*.test.ts,components/**/*.spec.ts,test/**/*.test.ts,test/**/*.spec.ts,tests/*.test.ts,tests/unit/**/*.test.ts,tests/integration/**/*.test.ts,__tests__/**/*.test.ts,__tests__/**/*.spec.ts"
+globs: "**/*.test.tsx,**/*.test.jsx,**/*.spec.tsx,**/*.spec.jsx,*.test.ts,*.test.js,*.spec.ts,*.spec.js,src/**/*.test.ts,src/**/*.test.js,src/**/*.spec.ts,src/**/*.spec.js,app/**/*.test.ts,app/**/*.test.js,app/**/*.spec.ts,app/**/*.spec.js,lib/**/*.test.ts,lib/**/*.test.js,lib/**/*.spec.ts,lib/**/*.spec.js,server/**/*.test.ts,server/**/*.test.js,server/**/*.spec.ts,server/**/*.spec.js,pages/**/*.test.ts,pages/**/*.test.js,pages/**/*.spec.ts,pages/**/*.spec.js,components/**/*.test.ts,components/**/*.test.js,components/**/*.spec.ts,components/**/*.spec.js,test/**/*.test.ts,test/**/*.test.js,test/**/*.spec.ts,test/**/*.spec.js,tests/*.test.ts,tests/*.test.js,tests/unit/**/*.test.ts,tests/unit/**/*.test.js,tests/integration/**/*.test.ts,tests/integration/**/*.test.js,__tests__/**/*.test.ts,__tests__/**/*.test.js,__tests__/**/*.spec.ts,__tests__/**/*.spec.js"
 alwaysApply: false
 ---
 
