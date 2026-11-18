@@ -230,27 +230,48 @@ describe('renderTargetContext', () => {
     const feature = bundled.fragments.find((entry) => entry.meta.id === 'feature-based');
     expect(feature).toBeDefined();
     if (feature === undefined) return;
-    const selection = resolved([feature]);
-    const ts = renderTargetContext(
+    const featureSelection = resolved([feature]);
+    const featureTs = renderTargetContext(
       profile({ language: 'typescript-strict', architecture: { id: 'feature-based', confidence: 1 } }),
-      selection,
+      featureSelection,
     );
-    const js = renderTargetContext(
+    const featureJs = renderTargetContext(
       profile({ language: 'javascript', architecture: { id: 'feature-based', confidence: 1 } }),
-      selection,
+      featureSelection,
     );
-    const tsBody = ts.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
-    const jsBody = js.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
-    expect(getSections(tsBody).get('Summary')).toContain('index.ts');
-    expect(getSections(tsBody).get('Summary')).not.toContain('index.js');
-    expect(getSections(jsBody).get('Summary')).toContain('index.js');
-    expect(getSections(jsBody).get('Summary')).not.toContain('index.ts');
-    expect(tsBody).toContain('```ts');
-    expect(tsBody).not.toContain('```js');
-    expect(jsBody).toContain('```js');
-    expect(jsBody).not.toContain('```ts');
-    expect(tsBody).toContain('import type { Invoice }');
-    expect(jsBody).not.toContain('import type');
+    const featureTsBody = featureTs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    const featureJsBody = featureJs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    expect(getSections(featureTsBody).get('Summary')).toContain('index.ts');
+    expect(getSections(featureTsBody).get('Summary')).not.toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).not.toContain('index.ts');
+    expect(featureTsBody).toContain('```ts');
+    expect(featureTsBody).not.toContain('```js');
+    expect(featureJsBody).toContain('```js');
+    expect(featureJsBody).not.toContain('```ts');
+    expect(featureTsBody).toContain('import type { Invoice }');
+    expect(featureJsBody).not.toContain('import type');
+
+    const layered = bundled.fragments.find((entry) => entry.meta.id === 'layered');
+    expect(layered).toBeDefined();
+    if (layered === undefined) return;
+    const layeredSelection = resolved([layered]);
+    const layeredTs = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredJs = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredTsBody = layeredTs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    const layeredJsBody = layeredJs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    expect(layeredTsBody).toContain('load-invoice.ts');
+    expect(layeredTsBody).toContain('import type { Invoice }');
+    expect(layeredTsBody).toContain('import type { InvoiceStore }');
+    expect(layeredJsBody).toContain('load-invoice.js');
+    expect(layeredJsBody).not.toContain('import type');
+    expect(layeredJsBody).toContain('export function loadInvoice(store, id)');
   });
 
   it('sorts each scope by order then id, including workflows', () => {
