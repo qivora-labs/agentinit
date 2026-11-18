@@ -2,16 +2,15 @@
 id: flat
 name: Flat / Minimal
 category: architecture
-version: 1.0.0
+version: 1.1.0
 order: 10
 description: Group a small project by file type, and start a feature folder for the next domain.
 hint: Group by type; add a feature folder as you grow
 scope: always
 sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-<!-- agentinit:typescript-only -->
 ## Summary
 - Put new components in `{{src}}components/` and new hooks in `{{src}}hooks/`.
 - Put new helpers in `{{src}}utils/` and shared types in `{{src}}types/`.
@@ -39,10 +38,20 @@ Use this layout while the project is small enough that each folder holds one kin
 ## Contract
 ```ts
 // ✅ Good: one domain, grouped by file type
-// {{src}}components/button.ts
-// {{src}}hooks/use-theme.ts
+// {{src}}components/button.{{ext}}
+// {{src}}hooks/use-theme.{{ext}}
 
 // ❌ Anti-pattern: components/ mixing invoices and comments
-// {{src}}components/invoice-table.ts
-// {{src}}components/comment-thread.ts
+// {{src}}components/invoice-table.{{ext}}
+// {{src}}components/comment-thread.{{ext}}
+```
+
+```js
+// ✅ Good: one domain, grouped by file type
+// {{src}}components/button.{{ext}}
+// {{src}}hooks/use-theme.{{ext}}
+
+// ❌ Anti-pattern: components/ mixing invoices and comments
+// {{src}}components/invoice-table.{{ext}}
+// {{src}}components/comment-thread.{{ext}}
 ```

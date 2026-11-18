@@ -2,16 +2,15 @@
 id: layered
 name: Layered / Clean
 category: architecture
-version: 1.0.0
+version: 1.1.0
 order: 10
 description: Domain, application, infrastructure, and presentation, with dependencies pointing inward.
 hint: Domain→app→infra→UI; deps point inward
 scope: always
 sources:
   - https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-<!-- agentinit:typescript-only -->
 ## Summary
 - Put business rules in `{{src}}domain/` and use cases in `{{src}}application/`.
 - Put database, HTTP, and filesystem adapters in `{{src}}infrastructure/`.
@@ -40,7 +39,7 @@ New code goes in the layer that owns that responsibility. `presentation/` and `i
 
 ## Contract
 ```ts
-// ✅ Good: {{src}}application/load-invoice.ts depends on the domain and an inward port
+// ✅ Good: {{src}}application/load-invoice.{{ext}} depends on the domain and an inward port
 import type { Invoice } from '../domain/invoice';
 import type { InvoiceStore } from './invoice-store';
 
@@ -48,6 +47,16 @@ export function loadInvoice(store: InvoiceStore, id: string): Promise<Invoice> {
   return store.find(id);
 }
 
-// ❌ Anti-pattern: {{src}}domain/invoice.ts names an outer adapter
+// ❌ Anti-pattern: {{src}}domain/invoice.{{ext}} names an outer adapter
+import { db } from '../infrastructure/db';
+```
+
+```js
+// ✅ Good: {{src}}application/load-invoice.{{ext}} depends on the domain and an inward port
+export function loadInvoice(store, id) {
+  return store.find(id);
+}
+
+// ❌ Anti-pattern: {{src}}domain/invoice.{{ext}} names an outer adapter
 import { db } from '../infrastructure/db';
 ```

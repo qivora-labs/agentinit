@@ -1,14 +1,28 @@
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRegistry, type Registry } from '../../src/registry/load.js';
-import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
+import {
+  hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
+  hasTypescriptOnlyMarker,
+} from '../../src/plan/language-examples.js';
 import { agentRuleBody, renderTargetContext } from '../../src/plan/render.js';
+import { defaultRegistryDir } from '../../src/registry/locate.js';
+import { loadRegistry, type Registry } from '../../src/registry/load.js';
+import { getSections } from '../../src/registry/parse.js';
+import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
 import { copilotAdapter } from '../../src/targets/copilot.js';
 import { cursorAdapter } from '../../src/targets/cursor.js';
 import { windsurfAdapter } from '../../src/targets/windsurf.js';
 import { layeredFragment, profile, resolved, ruleFragment, workflowFragment } from './helpers.js';
 
 const sampleDir = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
+const ARCHITECTURE_IDS = [
+  'atomic-design',
+  'feature-based',
+  'flat',
+  'layered',
+  'modular',
+] as const;
 
 describe('renderTargetContext', () => {
   let registry: Registry;
@@ -200,6 +214,43 @@ describe('renderTargetContext', () => {
     );
     expect(fromDual.fragments.always[0]?.body).toBe(fromSingle.fragments.always[0]?.body);
     expect(fromDual.fragments.always[0]?.body).toBe(single);
+  });
+
+  it('renders architecture dual Contracts and prose extensions per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of ARCHITECTURE_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const feature = bundled.fragments.find((entry) => entry.meta.id === 'feature-based');
+    expect(feature).toBeDefined();
+    if (feature === undefined) return;
+    const selection = resolved([feature]);
+    const ts = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'feature-based', confidence: 1 } }),
+      selection,
+    );
+    const js = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'feature-based', confidence: 1 } }),
+      selection,
+    );
+    const tsBody = ts.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    const jsBody = js.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    expect(getSections(tsBody).get('Summary')).toContain('index.ts');
+    expect(getSections(tsBody).get('Summary')).not.toContain('index.js');
+    expect(getSections(jsBody).get('Summary')).toContain('index.js');
+    expect(getSections(jsBody).get('Summary')).not.toContain('index.ts');
+    expect(tsBody).toContain('```ts');
+    expect(tsBody).not.toContain('```js');
+    expect(jsBody).toContain('```js');
+    expect(jsBody).not.toContain('```ts');
+    expect(tsBody).toContain('import type { Invoice }');
+    expect(jsBody).not.toContain('import type');
   });
 
   it('sorts each scope by order then id, including workflows', () => {

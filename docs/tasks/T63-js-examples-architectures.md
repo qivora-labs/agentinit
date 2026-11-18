@@ -34,10 +34,10 @@ Fragments: `flat`, `feature-based`, `layered`, `atomic-design`, `modular`.
 - TypeScript rendered output should stay equivalent for pure-TS profiles (T62 invariant).
 
 ## Acceptance criteria
-- [ ] All five architecture fragments have JS + TS Contract variants and language-neutral prose extensions.
-- [ ] `pnpm registry:check` passes with no TypeScript-only markers remaining on these files.
-- [ ] Content Tasks checklist completed; human review noted under **Notes**.
-- [ ] A TypeScript-only profile still renders the previous TypeScript meaning (spot-check Summary / Contract).
+- [x] All five architecture fragments have JS + TS Contract variants and language-neutral prose extensions.
+- [x] `pnpm registry:check` passes with no TypeScript-only markers remaining on these files.
+- [x] Content Tasks checklist completed; human review noted under **Notes**.
+- [x] A TypeScript-only profile still renders the previous TypeScript meaning (spot-check Summary / Contract).
 
 ## Verify
 ```bash
@@ -49,4 +49,5 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript examples to architecture fragments`
 
 ## Notes
-(Human review date and reviewer go here after merge readiness.)
+Content Tasks checklist (agent): dual Contract fences + `{{ext}}`/`{{jsxExt}}` prose; sources unchanged (structure guidance only); no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. Human review of fragment wording still required before merge.
+Human review: pending (owner).
