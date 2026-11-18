@@ -26,7 +26,7 @@ sources:
   - https://expressjs.com/en/guide/migrating-5/
 verifiedAt: 2026-11-05
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

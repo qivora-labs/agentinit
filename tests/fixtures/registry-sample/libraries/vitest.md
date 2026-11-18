@@ -15,7 +15,7 @@ sources:
   - https://vitest.dev/guide/
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 Unit tests sit beside the code they cover.
 

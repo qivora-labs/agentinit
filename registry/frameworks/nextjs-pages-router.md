@@ -23,7 +23,7 @@ sources:
   - https://nextjs.org/docs/app/getting-started/route-handlers
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

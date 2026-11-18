@@ -115,7 +115,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T59](T59-javascript-language-fragments.md) | Content: `javascript` and `javascript-jsdoc` language fragments | M11 | — | M | done |
 | [T60](T60-language-detection.md) | Language detection replaces the TypeScript gate | M11 | T59 | M | done |
 | [T61](T61-language-aware-globs.md) | Language-aware globs | M11 | T60 | M | done |
-| [T62](T62-per-language-examples.md) | Per-language examples: mechanism and registry check | M11 | T61 | M | todo |
+| [T62](T62-per-language-examples.md) | Per-language examples: mechanism and registry check | M11 | T61 | M | done |
 | [T63](T63-js-examples-architectures.md) | Content: JavaScript examples for architectures | M11 | T62 | M | todo |
 | [T64](T64-js-examples-frameworks.md) | Content: JavaScript examples for frameworks | M11 | T62 | L | todo |
 | [T65](T65-js-examples-libraries-ui-state.md) | Content: JS examples for Tailwind, shadcn, TanStack Query, Zustand | M11 | T62 | M | todo |

@@ -11,7 +11,7 @@ sources:
   - https://atomicdesign.bradfrost.com/chapter-2/
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 - Put the smallest UI pieces in `{{src}}components/atoms/`.
 - Put a simple group of atoms in `{{src}}components/molecules/`.

@@ -15,8 +15,11 @@ A fragment id (e.g., `zustand`) and, for new fragments, its category. Given by t
    - Rules: Boundary → Directives → Good vs. Anti-Pattern code block.
    - Architecture: also `## Summary` (≤ 10 lines) and `## Map`.
    - Workflows: `## Purpose`, `## Input`, `## Steps`, `## Output`, `## Guardrails`.
+   - **Dual Contract examples (non-language rules):** in the same `## Contract` section, add a TypeScript fence (`ts` / `tsx`) and a JavaScript fence (`js` / `jsx`). Hand-author the JavaScript example; do not strip types mechanically. Until the JS example exists, put `<!-- agentinit:typescript-only -->` on its own line (usually the first body line). A directive that only applies to TypeScript ends with that same marker on the directive line.
+   - **Prose extensions:** use `{{ext}}` (`ts`/`js`) and `{{jsxExt}}` (`tsx`/`jsx`) in Summary, Map, and directive file names—not hard-coded `.ts` / `.js`.
+   - Bump fragment `version` (minor) when adding a JavaScript example so re-`init` records the change.
 6. Cross-check every directive against the listed sources. Remove anything you couldn't verify.
-7. Run `pnpm registry:check` and fix all errors.
+7. Run `pnpm registry:check` and fix all errors. The 120-line budget is per rendered language variant (shared prose once), not the raw dual-fence source.
 8. Render a preview if the CLI exists (`node dist/cli.js init --dry-run --cwd <fixture>`) and check the fragment reads well in each agent's output.
 
 ## Output
@@ -25,5 +28,5 @@ The fragment file, plus a summary: sources used, scope/glob choice and why, and 
 ## Guardrails
 - Never instruct agents to move existing files, run network commands, install packages, read secrets, or disable safeguards.
 - No generic advice; every directive must be specific to this library or pattern.
-- Stay within 120 lines (workflows: 60).
+- Stay within 120 lines per rendered language variant (workflows: 60).
 - A human must review the content before merge.

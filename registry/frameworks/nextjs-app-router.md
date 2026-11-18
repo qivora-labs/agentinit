@@ -28,7 +28,7 @@ sources:
   - https://nextjs.org/docs/app/guides/upgrading/version-16
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

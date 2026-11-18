@@ -392,13 +392,15 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 
 **Default scope by category:** architecture and language → `always`; framework and library → `glob` or `auto`; workflows have no scope.
 
-**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner). A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
+**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner), `{{ext}}` (`ts` or `js`), and `{{jsxExt}}` (`tsx` or `jsx`) for prose file names in Summary, Map, and directives. A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
 
 **Language-aware globs (plan layer):** fragments keep declaring each TypeScript extension once (`.ts` / `.tsx`). After placeholders render, the plan expands extensions from profile language facts—never from whether `.js` files exist on disk (so `doctor` does not flip when someone adds a `.js` file without `allowJs` changing):
 - **JavaScript** (`javascript` / `javascript-jsdoc`): rewrite `.ts` → `.js` and `.tsx` → `.jsx` (replacement; no `.ts` / `.tsx` remain).
 - **TypeScript with `allowJs`:** keep each original glob and insert its JavaScript sibling immediately after (deduplicated).
 - **TypeScript without `allowJs`:** leave globs unchanged (byte-identical to pre-expansion output).
 - Mapping is only `.ts` ↔ `.js` and `.tsx` ↔ `.jsx` (no `.mjs` / `.cjs` / `.mts` / `.cts`; `.tsx` does not also map to `.js`). Targets receive the expanded list and stay unaware of the mapping. Expansion never introduces braces or commas inside a single pattern.
+
+**Per-language Contract examples (plan layer):** non-language rule fragments put TypeScript and JavaScript examples in the same `## Contract` section as sibling fenced blocks (info strings `ts` / `tsx` and `js` / `jsx`). The plan keeps the fence(s) that match the profile language family and drops the other. Shared non-Contract body stays. A directive that applies only to TypeScript ends with `<!-- agentinit:typescript-only -->` (stripped from TypeScript output; the whole line is dropped for JavaScript). Until a JavaScript example is authored, the fragment may carry a fragment-level `<!-- agentinit:typescript-only -->` instead of a JS fence; `check-registry` requires one or the other. Language fragments are single-language and exempt. Output for existing TypeScript projects without `allowJs` stays byte-identical when the TypeScript fence and prose are unchanged.
 
 **Workflows** are always included; there is no per-workflow selection in v0.1.
 
@@ -451,7 +453,7 @@ export default function Page() { /* useEffect(() => fetch('/api/posts')) */ }
 ````
 
 **Budgets:**
-- Each fragment ≤ **120 lines** (~800 tokens).
+- Each **rendered** language variant of a rule fragment ≤ **120 lines** (~800 tokens). Shared prose counts once per variant; dual Contract fences are not both counted in the same variant. `check-registry` applies this after language-example selection.
 - The always-on core in `AGENTS.md` should stay ≤ **~1,500 tokens**; the CLI reports the estimate and warns above it.
 - Token estimate = `ceil(characters / 4)`; it's a guide, not an exact count.
 - Windsurf rule files must stay below **12,000 characters** (enforced by the compiler).
@@ -776,13 +778,14 @@ Rule fixes ship as patch releases via changesets. Team fragments (v0.3) and opt-
 
 `CONTRIBUTING.md` enforces:
 1. **No CLI code required:** adding a library or framework means adding one `.md` file under `registry/` with valid frontmatter.
-2. **Token budget:** each fragment stays under **120 lines** (~800 tokens).
+2. **Token budget:** each rendered language variant stays under **120 lines** (~800 tokens); dual Contract fences are budgeted per variant.
 3. **Actionable directives only:** imperative verbs (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`); no textbook explanations.
 4. **Version-aware and sourced:** set `appliesTo` when guidance depends on a major version; cite official docs in `sources` and set `verifiedAt`.
 5. **Portable globs:** no brace patterns and no commas; use one glob per extension.
-6. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
-7. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
-8. **Freshness:** fragments with `verifiedAt` older than 6 months are flagged in CI and re-verified or deprecated.
+6. **Dual examples:** non-language rule fragments include TypeScript and JavaScript Contract fences (info strings `ts` / `tsx` and `js` / `jsx`), or an explicit `<!-- agentinit:typescript-only -->` marker. Use `{{ext}}` / `{{jsxExt}}` in prose file names. Bump the fragment content `version` (minor) when adding a JavaScript example.
+7. **Safety:** fragments must never instruct agents to run network commands, install packages, read secrets, or disable safeguards. `registry/` changes require CODEOWNERS review.
+8. **Stable ids:** published `id`s are never renamed; deprecate and replace instead.
+9. **Freshness:** fragments with `verifiedAt` older than 6 months are flagged in CI and re-verified or deprecated.
 
 ---
 

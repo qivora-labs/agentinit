@@ -37,7 +37,13 @@ describe('renderTargetContext', () => {
     ]);
     expect(ctx.fragments.always[0]?.body).toContain('src/domain/');
     expect(ctx.fragments.always[0]?.body).not.toContain('{{src}}');
-    expect(ctx.placeholders).toEqual({ src: 'src/', pm: 'pnpm', scripts: { lint: 'eslint .', test: 'vitest' } });
+    expect(ctx.placeholders).toEqual({
+      src: 'src/',
+      pm: 'pnpm',
+      scripts: { lint: 'eslint .', test: 'vitest' },
+      ext: 'ts',
+      jsxExt: 'tsx',
+    });
     expect(ctx.workflows.map((workflow) => workflow.id)).toEqual(['new-feature', 'review-arch']);
     expect(ctx.workflows[0]?.argumentHint).toBe('<feature-name>');
     expect(ctx.workflows[1]).not.toHaveProperty('argumentHint');
@@ -111,6 +117,89 @@ describe('renderTargetContext', () => {
       'src/app/**/*.tsx',
       'src/app/**/*.jsx',
     ]);
+  });
+
+  it('renders only the matching Contract fence and prose extensions per language', () => {
+    const body = [
+      '<!-- agentinit:typescript-only -->',
+      'Export from `index.{{ext}}` and `widget.{{jsxExt}}`.',
+      '',
+      '## Contract',
+      '```ts',
+      'const typed: number = 1;',
+      '```',
+      '',
+      '```js',
+      'const plain = 1;',
+      '```',
+    ].join('\n');
+    // Marker-only exemption; dual fences still exercise selection (content tasks drop the marker).
+    const dual = body.replace('<!-- agentinit:typescript-only -->\n', '');
+    const fragment = ruleFragment({
+      id: 'example-lib',
+      name: 'Example',
+      category: 'library',
+      scope: 'glob',
+      order: 40,
+      body: dual,
+      globs: ['{{src}}**/*.ts'],
+    });
+    const selection = resolved([fragment]);
+    const ts = renderTargetContext(profile({ language: 'typescript-strict' }), selection);
+    const js = renderTargetContext(profile({ language: 'javascript' }), selection);
+    expect(ts.fragments.glob[0]?.body).toBe(
+      [
+        'Export from `index.ts` and `widget.tsx`.',
+        '',
+        '## Contract',
+        '```ts',
+        'const typed: number = 1;',
+        '```',
+      ].join('\n'),
+    );
+    expect(js.fragments.glob[0]?.body).toBe(
+      [
+        'Export from `index.js` and `widget.jsx`.',
+        '',
+        '## Contract',
+        '```js',
+        'const plain = 1;',
+        '```',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps TypeScript output byte-identical to the single-fence body when the TS fence is unchanged', () => {
+    const single = ['## Contract', '```ts', 'const typed: number = 1;', '```'].join('\n');
+    const dual = [single, '', '```js', 'const plain = 1;', '```'].join('\n');
+    const fromSingle = renderTargetContext(
+      profile({ language: 'typescript-strict' }),
+      resolved([
+        ruleFragment({
+          id: 'example-lib',
+          name: 'Example',
+          category: 'library',
+          scope: 'always',
+          order: 40,
+          body: single,
+        }),
+      ]),
+    );
+    const fromDual = renderTargetContext(
+      profile({ language: 'typescript-strict' }),
+      resolved([
+        ruleFragment({
+          id: 'example-lib',
+          name: 'Example',
+          category: 'library',
+          scope: 'always',
+          order: 40,
+          body: dual,
+        }),
+      ]),
+    );
+    expect(fromDual.fragments.always[0]?.body).toBe(fromSingle.fragments.always[0]?.body);
+    expect(fromDual.fragments.always[0]?.body).toBe(single);
   });
 
   it('sorts each scope by order then id, including workflows', () => {

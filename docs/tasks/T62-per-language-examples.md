@@ -41,12 +41,12 @@ Record the answers under **Notes** and in the PRD.
 - Pure modules only in `plan/`.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] Given a fragment with both fences, a JavaScript profile renders only the JS example; a TypeScript profile renders only the TS example; TypeScript output matches the previous single-fence content when the TS fence is unchanged.
-- [ ] `check-registry` fails when a non-language rule fragment lacks a JS fence and lacks a TypeScript-only marker.
-- [ ] Line budget follows decision 2.
-- [ ] Fragment template and write-fragment workflow document the format.
-- [ ] A changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] Given a fragment with both fences, a JavaScript profile renders only the JS example; a TypeScript profile renders only the TS example; TypeScript output matches the previous single-fence content when the TS fence is unchanged.
+- [x] `check-registry` fails when a non-language rule fragment lacks a JS fence and lacks a TypeScript-only marker.
+- [x] Line budget follows decision 2.
+- [x] Fragment template and write-fragment workflow document the format.
+- [x] A changeset exists.
 
 ## Verify
 ```bash
@@ -58,4 +58,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(plan): render per-language contract examples`
 
 ## Notes
-Recommendations match the 2026-11-13 planning session. Confirm fence info-string conventions before coding so T63–T66 can follow them.
+Owner confirmed all five recommendations (2026-11-18): same-section fences by info string; per-rendered-variant 120-line budget; `<!-- agentinit:typescript-only -->` on directive lines and as a temporary fragment-level marker; placeholders `{{ext}}` / `{{jsxExt}}`; bump fragment `version` (minor) when adding a JS example (content tasks). Non-language rule fragments carry temporary fragment-level markers until T63–T66; `react-hook-form-zod` also marks its `z.infer` directive line.

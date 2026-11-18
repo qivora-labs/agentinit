@@ -20,7 +20,7 @@ sources:
   - https://tailwindcss.com/docs
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 Utility classes stay in component markup.
 

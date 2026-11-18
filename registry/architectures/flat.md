@@ -11,7 +11,7 @@ sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 - Put new components in `{{src}}components/` and new hooks in `{{src}}hooks/`.
 - Put new helpers in `{{src}}utils/` and shared types in `{{src}}types/`.

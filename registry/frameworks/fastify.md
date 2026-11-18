@@ -25,7 +25,7 @@ sources:
   - https://fastify.dev/docs/v5.12.x/Reference/Decorators/
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |

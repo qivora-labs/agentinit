@@ -8,17 +8,24 @@ const SCRIPT_PREFIX = 'scripts.';
  * `src` is `src/` or empty so `{{src}}app` stays a relative glob.
  * `scripts` lists names that exist in package.json; the command comes from
  * `scriptCommand`, not from the script body.
+ * `ext` / `jsxExt` are prose file-extension placeholders (`ts`/`tsx` or `js`/`jsx`).
  */
 export interface PlaceholderContext {
   src: '' | 'src/';
   /** Null in greenfield mode, where `{{pm}}` and `{{scripts.*}}` cannot render. */
   pm: PackageManager | null;
   scripts: Record<string, string>;
+  /** `ts` for TypeScript family languages; `js` for JavaScript. */
+  ext: 'ts' | 'js';
+  /** `tsx` for TypeScript family languages; `jsx` for JavaScript. */
+  jsxExt: 'tsx' | 'jsx';
 }
 
 type KnownPlaceholder =
   | { readonly kind: 'src' }
   | { readonly kind: 'pm' }
+  | { readonly kind: 'ext' }
+  | { readonly kind: 'jsxExt' }
   | { readonly kind: 'script'; readonly name: string };
 
 interface FenceSpan {
@@ -53,7 +60,7 @@ export function findPlaceholders(text: string): string[] {
   return names;
 }
 
-/** `src`, `pm`, and `scripts.<name>` (`<name>` is non-empty and has no whitespace). */
+/** `src`, `pm`, `ext`, `jsxExt`, and `scripts.<name>` (`<name>` is non-empty and has no whitespace). */
 export function isKnownPlaceholder(name: string): boolean {
   return classify(name).kind !== 'unknown';
 }
@@ -95,6 +102,8 @@ function classify(raw: string): KnownPlaceholder | { readonly kind: 'unknown'; r
   const name = raw.trim();
   if (name === 'src') return { kind: 'src' };
   if (name === 'pm') return { kind: 'pm' };
+  if (name === 'ext') return { kind: 'ext' };
+  if (name === 'jsxExt') return { kind: 'jsxExt' };
   if (name.startsWith(SCRIPT_PREFIX)) {
     const scriptName = name.slice(SCRIPT_PREFIX.length);
     if (/^\S+$/u.test(scriptName)) return { kind: 'script', name: scriptName };
@@ -108,9 +117,17 @@ function replacement(placeholder: KnownPlaceholder, ctx: PlaceholderContext): st
       return ctx.src;
     case 'pm':
       return ctx.pm;
+    case 'ext':
+      return ctx.ext;
+    case 'jsxExt':
+      return ctx.jsxExt;
     case 'script':
       if (ctx.pm === null || !Object.hasOwn(ctx.scripts, placeholder.name)) return null;
       return scriptCommand(ctx.pm, placeholder.name);
+    default: {
+      const unexpected: never = placeholder;
+      throw new AgentInitError(`Unhandled placeholder: ${String(unexpected)}`);
+    }
   }
 }
 

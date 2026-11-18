@@ -15,7 +15,7 @@ sources:
   - https://expressjs.com/en/starter/faq.html
 verifiedAt: 2026-11-06
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 - Put each concern in its own top-level folder under `{{src}}`.
 - Put types and contracts shared by more than one concern at the `{{src}}` root.
