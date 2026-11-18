@@ -450,6 +450,18 @@ export default async function Page() {
 'use client';
 export default function Page() { /* useEffect(() => fetch('/api/posts')) */ }
 ```
+
+```jsx
+// ✅ Good: server page, client leaf
+export default async function Page() {
+  const posts = await getPosts();
+  return <PostList posts={posts} />; // PostList renders <LikeButton /> ('use client')
+}
+
+// ❌ Anti-pattern: whole page forced to the client
+'use client';
+export default function Page() { /* useEffect(() => fetch('/api/posts')) */ }
+```
 ````
 
 **Budgets:**
