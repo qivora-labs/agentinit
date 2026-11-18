@@ -4,6 +4,7 @@ import {
   applyLanguageExamples,
   exampleLanguageFamily,
   hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
   hasTypescriptOnlyMarker,
 } from '../../src/plan/language-examples.js';
 
@@ -80,11 +81,17 @@ describe('applyLanguageExamples', () => {
   });
 });
 
-describe('hasJavaScriptContractFence / hasTypescriptOnlyMarker', () => {
+describe('hasJavaScriptContractFence / hasTypeScriptContractFence / hasTypescriptOnlyMarker', () => {
   it('detects a JavaScript Contract fence', () => {
     expect(hasJavaScriptContractFence(['## Contract', JS_FENCE].join('\n'))).toBe(true);
     expect(hasJavaScriptContractFence(['## Contract', TS_FENCE].join('\n'))).toBe(false);
     expect(hasJavaScriptContractFence(['## Other', JS_FENCE].join('\n'))).toBe(false);
+  });
+
+  it('detects a TypeScript Contract fence', () => {
+    expect(hasTypeScriptContractFence(['## Contract', TS_FENCE].join('\n'))).toBe(true);
+    expect(hasTypeScriptContractFence(['## Contract', JS_FENCE].join('\n'))).toBe(false);
+    expect(hasTypeScriptContractFence(['## Other', TS_FENCE].join('\n'))).toBe(false);
   });
 
   it('detects a fragment-level TypeScript-only marker', () => {

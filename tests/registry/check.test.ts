@@ -122,6 +122,22 @@ describe('checkFragments', () => {
     expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([]);
   });
 
+  it('rejects a JavaScript-only Contract fence without a TypeScript sibling', () => {
+    const body = [
+      'ALWAYS keep the boundary.',
+      '',
+      '## Contract',
+      '```js',
+      'const ok = true;',
+      '```',
+    ].join('\n');
+    expect(checkFragments([ruleFragment({ body })], TODAY)).toEqual([
+      error(
+        'JavaScript Contract fence without a TypeScript sibling (```ts / ```tsx); TypeScript rendering would drop the only example',
+      ),
+    ]);
+  });
+
   it('does not require a JavaScript Contract fence on language fragments', () => {
     const body = ['ALWAYS keep the boundary.', '', FENCE].join('\n');
     expect(checkFragments([ruleFragment({ body, category: 'language', id: 'typescript' })], TODAY)).toEqual(

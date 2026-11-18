@@ -4,6 +4,7 @@ import { AgentInitError } from '../errors.js';
 import {
   applyLanguageExamples,
   hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
   hasTypescriptOnlyMarker,
 } from '../plan/language-examples.js';
 import { findPlaceholders, isKnownPlaceholder } from '../plan/placeholders.js';
@@ -267,14 +268,27 @@ function lineBudgetProblems(fragment: Fragment): RegistryProblem[] {
 }
 
 /**
- * Non-language rule fragments need a JavaScript Contract fence or a fragment-level
- * TypeScript-only marker (a line that is only the marker). A marker on a directive
- * line does not exempt the fragment. Language fragments are single-language and exempt.
+ * Non-language rule fragments need both Contract fences (ts/tsx + js/jsx) or a
+ * fragment-level TypeScript-only marker (a line that is only the marker). A JS-only
+ * Contract would leave TypeScript rendering with no example after fence selection.
+ * A marker on a directive line does not exempt the fragment. Language fragments
+ * are single-language and exempt.
  */
 function dualExampleProblems(fragment: Fragment): RegistryProblem[] {
   if (fragment.meta.category === 'language') return [];
-  if (hasJavaScriptContractFence(fragment.body)) return [];
   if (hasTypescriptOnlyMarker(fragment.body)) return [];
+  const hasJs = hasJavaScriptContractFence(fragment.body);
+  const hasTs = hasTypeScriptContractFence(fragment.body);
+  if (hasJs && hasTs) return [];
+  if (hasJs && !hasTs) {
+    return [
+      problem(
+        fragment,
+        'error',
+        'JavaScript Contract fence without a TypeScript sibling (```ts / ```tsx); TypeScript rendering would drop the only example',
+      ),
+    ];
+  }
   return [
     problem(
       fragment,

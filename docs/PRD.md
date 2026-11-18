@@ -400,7 +400,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 - **TypeScript without `allowJs`:** leave globs unchanged (byte-identical to pre-expansion output).
 - Mapping is only `.ts` ↔ `.js` and `.tsx` ↔ `.jsx` (no `.mjs` / `.cjs` / `.mts` / `.cts`; `.tsx` does not also map to `.js`). Targets receive the expanded list and stay unaware of the mapping. Expansion never introduces braces or commas inside a single pattern.
 
-**Per-language Contract examples (plan layer):** non-language rule fragments put TypeScript and JavaScript examples in the same `## Contract` section as sibling fenced blocks (info strings `ts` / `tsx` and `js` / `jsx`). The plan keeps the fence(s) that match the profile language family and drops the other. Shared non-Contract body stays. A directive that applies only to TypeScript ends with `<!-- agentinit:typescript-only -->` (stripped from TypeScript output; the whole line is dropped for JavaScript). Until a JavaScript example is authored, the fragment may carry a fragment-level `<!-- agentinit:typescript-only -->` instead of a JS fence; `check-registry` requires one or the other. Language fragments are single-language and exempt. Output for existing TypeScript projects without `allowJs` stays byte-identical when the TypeScript fence and prose are unchanged.
+**Per-language Contract examples (plan layer):** non-language rule fragments put TypeScript and JavaScript examples in the same `## Contract` section as sibling fenced blocks (info strings `ts` / `tsx` and `js` / `jsx`). The plan keeps the fence(s) that match the profile language family and drops the other. Shared non-Contract body stays. A directive that applies only to TypeScript ends with `<!-- agentinit:typescript-only -->` (stripped from TypeScript output; the whole line is dropped for JavaScript). Until a JavaScript example is authored, the fragment may carry a fragment-level `<!-- agentinit:typescript-only -->` instead of dual fences; `check-registry` requires both Contract fences or that marker (a JS-only Contract is rejected because TypeScript rendering would drop the only example). Language fragments are single-language and exempt. Output for existing TypeScript projects without `allowJs` stays byte-identical when the TypeScript fence and prose are unchanged.
 
 **Workflows** are always included; there is no per-workflow selection in v0.1.
 
@@ -438,7 +438,7 @@ verifiedAt: 2026-10-17
 - **NEVER** create internal route handlers (`app/api/*`) only to fetch data for a Server Component.
 - **ALWAYS** validate Server Action inputs with Zod before mutating.
 
-### 3. Contract
+## Contract
 ```tsx
 // ✅ Good: server page, client leaf
 export default async function Page() {
