@@ -49,5 +49,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript examples to architecture fragments`
 
 ## Notes
-Content Tasks checklist (agent): dual Contract fences + `{{ext}}`/`{{jsxExt}}` prose; sources unchanged (structure guidance only); no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. Human review of fragment wording still required before merge.
-Human review: pending (owner).
+Content Tasks checklist: dual Contract fences + `{{ext}}`/`{{jsxExt}}` prose; sources unchanged (structure guidance only); no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. Human review of fragment bodies completed 2026-11-19 (owner).
