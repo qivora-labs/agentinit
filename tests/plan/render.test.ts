@@ -24,6 +24,29 @@ const ARCHITECTURE_IDS = [
   'modular',
 ] as const;
 
+const FRAMEWORK_IDS = [
+  'express',
+  'express-4',
+  'fastify',
+  'nextjs-app-router',
+  'nextjs-app-router-15',
+  'nextjs-pages-router',
+  'react-vite',
+] as const;
+
+function renderedFragmentBody(
+  ctx: ReturnType<typeof renderTargetContext>,
+  id: string,
+): string {
+  const fragments = [
+    ...ctx.fragments.always,
+    ...ctx.fragments.glob,
+    ...ctx.fragments.auto,
+    ...ctx.fragments.manual,
+  ];
+  return fragments.find((entry) => entry.id === id)?.body ?? '';
+}
+
 describe('renderTargetContext', () => {
   let registry: Registry;
   let sample: ResolvedSelection;
@@ -272,6 +295,78 @@ describe('renderTargetContext', () => {
     expect(layeredJsBody).toContain('load-invoice.js');
     expect(layeredJsBody).not.toContain('import type');
     expect(layeredJsBody).toContain('export function loadInvoice(store, id)');
+  });
+
+  it('renders framework dual Contracts and prose extensions per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of FRAMEWORK_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const next = bundled.fragments.find((entry) => entry.meta.id === 'nextjs-app-router');
+    expect(next).toBeDefined();
+    if (next === undefined) return;
+    const nextSelection = resolved([next]);
+    const nextTs = renderTargetContext(profile({ language: 'typescript-strict' }), nextSelection);
+    const nextJs = renderTargetContext(profile({ language: 'javascript' }), nextSelection);
+    const nextTsBody = renderedFragmentBody(nextTs, 'nextjs-app-router');
+    const nextJsBody = renderedFragmentBody(nextJs, 'nextjs-app-router');
+    expect(nextTsBody).toContain('route.ts');
+    expect(nextTsBody).toContain('error.tsx');
+    expect(nextTsBody).not.toContain('route.js');
+    expect(nextJsBody).toContain('route.js');
+    expect(nextJsBody).toContain('error.jsx');
+    expect(nextJsBody).not.toContain('route.ts');
+    expect(nextTsBody).toContain('```tsx');
+    expect(nextTsBody).not.toContain('```jsx');
+    expect(nextJsBody).toContain('```jsx');
+    expect(nextJsBody).not.toContain('```tsx');
+    expect(nextTsBody).toContain('params: Promise<{ id: string }>');
+    expect(nextJsBody).toContain('export default async function Page({ params })');
+    expect(nextJsBody).not.toContain('Promise<{ id: string }>');
+
+    const express = bundled.fragments.find((entry) => entry.meta.id === 'express');
+    expect(express).toBeDefined();
+    if (express === undefined) return;
+    const expressSelection = resolved([express]);
+    const expressTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), expressSelection),
+      'express',
+    );
+    const expressJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), expressSelection),
+      'express',
+    );
+    expect(expressTsBody).toContain('(err: unknown, _req: Request, res: Response, _next: NextFunction)');
+    expect(expressJsBody).toContain('(err, _req, res, _next)');
+    expect(expressJsBody).not.toContain('err: unknown');
+    expect(expressTsBody).toContain('```ts');
+    expect(expressTsBody).not.toContain('```js');
+    expect(expressJsBody).toContain('```js');
+    expect(expressJsBody).not.toContain('```ts');
+
+    const fastify = bundled.fragments.find((entry) => entry.meta.id === 'fastify');
+    expect(fastify).toBeDefined();
+    if (fastify === undefined) return;
+    const fastifySelection = resolved([fastify]);
+    const fastifyTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), fastifySelection),
+      'fastify',
+    );
+    const fastifyJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), fastifySelection),
+      'fastify',
+    );
+    expect(fastifyTsBody).toContain('withTypeProvider');
+    expect(fastifyTsBody).toContain('fastify: FastifyInstance');
+    expect(fastifyJsBody).not.toContain('withTypeProvider');
+    expect(fastifyJsBody).not.toContain('FastifyInstance');
+    expect(fastifyJsBody).toContain('export async function userRoutes(fastify)');
   });
 
   it('sorts each scope by order then id, including workflows', () => {

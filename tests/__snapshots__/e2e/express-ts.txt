@@ -22,7 +22,7 @@ backups/
     "workflows": true
   },
   "fragments": {
-    "express": "1.0.1",
+    "express": "1.1.0",
     "flat": "1.1.0",
     "typescript-strict": "1.1.0"
   },

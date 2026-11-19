@@ -2,7 +2,7 @@
 id: nextjs-pages-router
 name: Next.js Pages Router
 category: framework
-version: 1.0.1
+version: 1.1.0
 order: 30
 description: Pages Router data fetching, API routes, and coexistence with the App Router.
 hint: Pages data fetching, API routes, coexistence
@@ -21,9 +21,8 @@ sources:
   - https://nextjs.org/docs/pages/building-your-application/routing/api-routes
   - https://nextjs.org/docs/pages/guides/migrating/app-router-migration
   - https://nextjs.org/docs/app/getting-started/route-handlers
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-<!-- agentinit:typescript-only -->
 ## Map
 | Path | Responsibility |
 | :--- | :--- |
@@ -52,6 +51,23 @@ export const getServerSideProps = (async () => {
 }) satisfies GetServerSideProps<{ title: string }>;
 
 export default function Page({ title }: { title: string }) {
+  return <h1>{title}</h1>;
+}
+
+// ❌ Anti-pattern: an App Router metadata API inside pages
+export async function generateMetadata() {
+  return { title: 'Post' };
+}
+```
+
+```jsx
+// ✅ Good: request-time data from the page module, no internal API hop
+export async function getServerSideProps() {
+  const post = await getPost();
+  return { props: { title: post.title } };
+}
+
+export default function Page({ title }) {
   return <h1>{title}</h1>;
 }
 

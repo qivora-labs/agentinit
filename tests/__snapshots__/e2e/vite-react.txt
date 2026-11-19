@@ -23,7 +23,7 @@ backups/
   },
   "fragments": {
     "flat": "1.1.0",
-    "react-vite": "1.0.1",
+    "react-vite": "1.1.0",
     "typescript-strict": "1.1.0"
   },
   "files": {
