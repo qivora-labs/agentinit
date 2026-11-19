@@ -709,7 +709,7 @@ describe('runRegistryCheck', () => {
         appliesTo: undefined,
         requires: ['tailwind'],
         compatibleWith: web,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -720,7 +720,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { tailwindcss: '>=4' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -736,7 +736,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { '@tanstack/react-query': '>=5' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -787,7 +787,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { zustand: '>=5' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
     ]);

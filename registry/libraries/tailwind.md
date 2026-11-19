@@ -2,7 +2,7 @@
 id: tailwind
 name: Tailwind CSS
 category: library
-version: 1.0.0
+version: 1.1.0
 order: 40
 description: CSS-first tokens, complete class strings, and cn for conflicting utilities.
 hint: CSS-first tokens, full class strings, cn()
@@ -25,9 +25,8 @@ sources:
   - https://tailwindcss.com/docs/upgrade-guide
   - https://tailwindcss.com/docs/detecting-classes-in-source-files
   - https://github.com/shadcn-ui/cn
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-<!-- agentinit:typescript-only -->
 ## Boundary
 These rules apply to Tailwind classes in components and to the CSS file that loads Tailwind. v4 reads configuration from that CSS. The scanner treats source as plain text and emits a utility only when the full class name appears. When the project already has `cn`, that helper joins conditional classes and lets a later utility replace an earlier one in the same group.
 
@@ -47,6 +46,20 @@ export function Banner({ error, className }: { error: boolean; className?: strin
 
 // ❌ Anti-pattern: the full class never appears, so Tailwind emits nothing
 export function Bad({ error }: { error: boolean }) {
+  const color = error ? "red" : "green";
+  return <p className={`text-${color}-600`}>Saved</p>;
+}
+```
+
+```jsx
+// import { cn } from the module this project already uses
+
+export function Banner({ error, className }) {
+  return <p className={cn("px-3 text-green-600", error && "text-red-600", className)}>Saved</p>;
+}
+
+// ❌ Anti-pattern: the full class never appears, so Tailwind emits nothing
+export function Bad({ error }) {
   const color = error ? "red" : "green";
   return <p className={`text-${color}-600`}>Saved</p>;
 }

@@ -33,8 +33,8 @@ These are mostly `tsx`-oriented. Zustand and TanStack Query examples use generic
 - Do not strip types mechanically from the TS fence.
 
 ## Acceptance criteria
-- [ ] All four fragments have JS + TS Contract variants.
-- [ ] `pnpm registry:check` passes; Content Tasks checklist completed; human review in **Notes**.
+- [x] All four fragments have JS + TS Contract variants.
+- [x] `pnpm registry:check` passes; Content Tasks checklist completed; human review in **Notes**.
 
 ## Verify
 ```bash
@@ -46,4 +46,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript examples to ui and state library fragments`
 
 ## Notes
-(Human review date and reviewer go here after merge readiness.)
+Content Tasks checklist: dual Contract fences on all four UI/state libraries; no prose `{{ext}}`/`{{jsxExt}}` needed (no file-extension names in directives); shadcn Boundary + JS fence note `"tsx": false` → `.jsx` under `aliases.ui` (added `https://ui.shadcn.com/docs/javascript` to sources); Zustand JS uses non-curried `create((set) => …)`; TanStack Query JS drops `UseMutationResult` / typed params while keeping `queryOptions` + key factory; sources otherwise unchanged; `verifiedAt: 2026-11-19`; versions bumped to `1.1.0`; no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. Human review of fragment bodies completed 2026-11-19 (owner).

@@ -34,6 +34,8 @@ const FRAMEWORK_IDS = [
   'react-vite',
 ] as const;
 
+const UI_STATE_LIBRARY_IDS = ['shadcn', 'tailwind', 'tanstack-query', 'zustand'] as const;
+
 function renderedFragmentBody(
   ctx: ReturnType<typeof renderTargetContext>,
   id: string,
@@ -367,6 +369,66 @@ describe('renderTargetContext', () => {
     expect(fastifyJsBody).not.toContain('withTypeProvider');
     expect(fastifyJsBody).not.toContain('FastifyInstance');
     expect(fastifyJsBody).toContain('export async function userRoutes(fastify)');
+  });
+
+  it('renders ui and state library dual Contracts per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of UI_STATE_LIBRARY_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const tanstack = bundled.fragments.find((entry) => entry.meta.id === 'tanstack-query');
+    expect(tanstack).toBeDefined();
+    if (tanstack === undefined) return;
+    const tanstackSelection = resolved([tanstack]);
+    const tanstackTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), tanstackSelection),
+      'tanstack-query',
+    );
+    const tanstackJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), tanstackSelection),
+      'tanstack-query',
+    );
+    expect(tanstackTsBody).toContain('```tsx');
+    expect(tanstackTsBody).not.toContain('```jsx');
+    expect(tanstackJsBody).toContain('```jsx');
+    expect(tanstackJsBody).not.toContain('```tsx');
+    expect(tanstackTsBody).toContain('UseMutationResult<unknown, Error, unknown>');
+    expect(tanstackJsBody).toContain('export function useAddTodo()');
+    expect(tanstackJsBody).not.toContain('UseMutationResult');
+
+    const zustand = bundled.fragments.find((entry) => entry.meta.id === 'zustand');
+    expect(zustand).toBeDefined();
+    if (zustand === undefined) return;
+    const zustandSelection = resolved([zustand]);
+    const zustandTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), zustandSelection),
+      'zustand',
+    );
+    const zustandJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), zustandSelection),
+      'zustand',
+    );
+    expect(zustandTsBody).toContain('create<CartState>()((set) => ({');
+    expect(zustandJsBody).toContain('create((set) => ({');
+    expect(zustandJsBody).not.toContain('create<CartState>');
+    expect(zustandJsBody).toContain('useShallow((state) => ({ count: state.count, add: state.add }))');
+
+    const shadcn = bundled.fragments.find((entry) => entry.meta.id === 'shadcn');
+    expect(shadcn).toBeDefined();
+    if (shadcn === undefined) return;
+    const shadcnSelection = resolved([shadcn]);
+    const shadcnJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), shadcnSelection),
+      'shadcn',
+    );
+    expect(shadcnJsBody).toContain('"tsx": false');
+    expect(shadcnJsBody).toContain('buttonVariants({ variant: "outline" })');
   });
 
   it('sorts each scope by order then id, including workflows', () => {
