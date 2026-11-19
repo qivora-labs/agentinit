@@ -597,7 +597,7 @@ describe('runRegistryCheck', () => {
         scope: 'auto',
         globs: expressGlobs,
         appliesTo: { express: '>=5' },
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -605,7 +605,7 @@ describe('runRegistryCheck', () => {
         scope: 'auto',
         globs: expressGlobs,
         appliesTo: { express: '>=4 <5' },
-        verifiedAt: '2026-11-05',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -618,7 +618,7 @@ describe('runRegistryCheck', () => {
           '{{src}}**/*.plugin.ts',
         ],
         appliesTo: { fastify: '>=5' },
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -626,7 +626,7 @@ describe('runRegistryCheck', () => {
         scope: 'glob',
         globs: ['{{src}}app/**/*.ts', '{{src}}app/**/*.tsx'],
         appliesTo: { next: '>=16.3.0' },
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -634,7 +634,7 @@ describe('runRegistryCheck', () => {
         scope: 'glob',
         globs: ['{{src}}app/**/*.ts', '{{src}}app/**/*.tsx'],
         appliesTo: { next: '>=15.0.0 <16.3.0' },
-        verifiedAt: '2026-11-05',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -642,7 +642,7 @@ describe('runRegistryCheck', () => {
         scope: 'glob',
         globs: ['{{src}}pages/**/*.ts', '{{src}}pages/**/*.tsx'],
         appliesTo: { next: '>=13' },
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
       {
@@ -650,7 +650,7 @@ describe('runRegistryCheck', () => {
         scope: 'auto',
         globs: ['{{src}}**/*.tsx'],
         appliesTo: { react: '>=19', vite: '>=6' },
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-19',
         sourced: true,
       },
     ]);

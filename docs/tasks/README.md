@@ -117,7 +117,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T61](T61-language-aware-globs.md) | Language-aware globs | M11 | T60 | M | done |
 | [T62](T62-per-language-examples.md) | Per-language examples: mechanism and registry check | M11 | T61 | M | done |
 | [T63](T63-js-examples-architectures.md) | Content: JavaScript examples for architectures | M11 | T62 | M | done |
-| [T64](T64-js-examples-frameworks.md) | Content: JavaScript examples for frameworks | M11 | T62 | L | todo |
+| [T64](T64-js-examples-frameworks.md) | Content: JavaScript examples for frameworks | M11 | T62 | L | done |
 | [T65](T65-js-examples-libraries-ui-state.md) | Content: JS examples for Tailwind, shadcn, TanStack Query, Zustand | M11 | T62 | M | todo |
 | [T66](T66-js-examples-libraries-forms-testing.md) | Content: JS examples for RHF + Zod, Vitest, Playwright | M11 | T62 | M | todo |
 | [T67](T67-wizard-summary-js.md) | Wizard, summary, and error text for JavaScript | M11 | T60 | M | todo |
