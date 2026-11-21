@@ -2,7 +2,7 @@
 id: vitest
 name: Vitest
 category: library
-version: 1.0.0
+version: 1.1.0
 order: 40
 description: Behavior assertions, top-level vi.mock, and fake timers.
 hint: Behavior asserts, top-level mock, fake timers
@@ -42,9 +42,8 @@ sources:
   - https://vitest.dev/guide/mocking/timers
   - https://vitest.dev/guide/snapshot
   - https://v3.vitest.dev/guide/mocking
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-21
 ---
-<!-- agentinit:typescript-only -->
 ## Boundary
 `describe` groups the tests for one unit. `it` and `test` are the same function. `vi.mock` is hoisted to the top of the file and runs before imports. `vi.useFakeTimers` replaces `setTimeout`, `setInterval`, and `Date` until `vi.useRealTimers`. `toMatchSnapshot` compares serialized output with a file stored next to the test.
 
@@ -66,6 +65,45 @@ vi.mock("./rates", () => ({
 }));
 
 function runLater(callback: () => void, ms: number) {
+  setTimeout(callback, ms);
+}
+
+describe("priceAfter", () => {
+  it("returns the price times the rate", () => {
+    expect(priceAfter(10)).toBe(20);
+  });
+});
+
+describe("runLater", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("runs the callback after one second", () => {
+    vi.useFakeTimers();
+    const callback = vi.fn();
+    runLater(callback, 1000);
+    vi.advanceTimersByTime(1000);
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ❌ Anti-pattern: a hoisted mock of the unit, and a name that describes an internal call
+// vi.mock("./price-after");
+// it("calls loadRate", () => {
+//   expect(true).toBe(true);
+// });
+```
+
+```js
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { priceAfter } from "./price-after";
+
+vi.mock("./rates", () => ({
+  loadRate: () => 2,
+}));
+
+function runLater(callback, ms) {
   setTimeout(callback, ms);
 }
 

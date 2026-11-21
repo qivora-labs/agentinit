@@ -2,7 +2,7 @@
 id: playwright
 name: Playwright
 category: library
-version: 1.0.0
+version: 1.1.0
 order: 40
 description: Role locators, web-first assertions, and isolated browser tests.
 hint: Role locators, web-first asserts, isolation
@@ -22,9 +22,8 @@ sources:
   - https://playwright.dev/docs/test-assertions
   - https://playwright.dev/docs/pom
   - https://playwright.dev/docs/api/class-frame
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-21
 ---
-<!-- agentinit:typescript-only -->
 ## Boundary
 A locator is lazy: it re-queries the DOM when an action or assertion uses it. `click` and `fill` wait until the target is actionable. `getByRole` matches the element's role and accessible name. A web-first assertion retries until the condition holds or the expect timeout ends. The default expect timeout is 5 seconds. Each test gets its own `page`, storage, and cookies. `page.waitForTimeout` is for debugging. A test that waits a fixed time is flaky.
 
@@ -38,6 +37,22 @@ A locator is lazy: it re-queries the DOM when an action or assertion uses it. `c
 
 ## Contract
 ```ts
+import { expect, test } from "@playwright/test";
+
+test("shows the saved name", async ({ page }) => {
+  await page.goto("/profile");
+  await page.getByLabel("Name").fill("Ada");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status", { name: "Saved Ada" })).toHaveText("Saved Ada");
+});
+
+// ❌ Anti-pattern: a class selector, a fixed wait, and a check that does not retry
+await page.locator("button.save").click();
+await page.waitForTimeout(1000);
+expect(await page.locator(".status").isVisible()).toBe(true);
+```
+
+```js
 import { expect, test } from "@playwright/test";
 
 test("shows the saved name", async ({ page }) => {

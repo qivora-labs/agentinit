@@ -682,7 +682,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { '@playwright/test': '>=1.40' },
         requires: undefined,
         compatibleWith: undefined,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-21',
         sourced: true,
       },
       {
@@ -698,7 +698,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { 'react-hook-form': '>=7', zod: '>=4' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-21',
         sourced: true,
       },
       {
@@ -771,7 +771,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { vitest: '>=3' },
         requires: undefined,
         compatibleWith: undefined,
-        verifiedAt: '2026-10-28',
+        verifiedAt: '2026-11-21',
         sourced: true,
       },
       {

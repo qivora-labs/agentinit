@@ -33,8 +33,8 @@ Promoted from `backlog.md` J3 (content). Fragments: `react-hook-form-zod`, `vite
 - Confirm the JS RHF + Zod example works with Zod 4 APIs already required by `appliesTo`.
 
 ## Acceptance criteria
-- [ ] All three fragments have JS + TS Contract variants; TypeScript-only lines are marked and omitted for JavaScript profiles in tests.
-- [ ] `pnpm registry:check` passes; Content Tasks checklist completed; human review in **Notes**.
+- [x] All three fragments have JS + TS Contract variants; TypeScript-only lines are marked and omitted for JavaScript profiles in tests.
+- [x] `pnpm registry:check` passes; Content Tasks checklist completed; human review in **Notes**.
 
 ## Verify
 ```bash
@@ -46,4 +46,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript examples to forms and testing fragments`
 
 ## Notes
-(Human review date and reviewer go here after merge readiness.)
+Content Tasks checklist: dual Contract fences on all three forms/testing libraries; RHF Boundary no longer mentions `z.infer` (shared prose); the `z.infer` / `z.input` / `z.output` directive keeps a trailing `<!-- agentinit:typescript-only -->` and is dropped for JavaScript profiles; no prose `{{ext}}`/`{{jsxExt}}` needed (no file-extension names in directives); Zod 4 `{ error }` API re-checked against https://zod.dev/v4 and RHF zod integration docs; Playwright JS fence mirrors role locators + web-first asserts from cited docs; sources unchanged; `verifiedAt: 2026-11-21`; versions bumped to `1.1.0`; no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. Human review of fragment bodies completed 2026-11-21 (owner).

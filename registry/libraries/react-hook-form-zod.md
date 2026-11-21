@@ -2,7 +2,7 @@
 id: react-hook-form-zod
 name: React Hook Form + Zod
 category: library
-version: 1.0.1
+version: 1.1.0
 order: 40
 description: One Zod schema for field types, resolver errors, and server parsing.
 hint: One Zod schema for fields, errors, server
@@ -29,11 +29,10 @@ sources:
   - https://react-hook-form.com/docs/usecontroller/controller
   - https://zod.dev/basics
   - https://zod.dev/v4
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-21
 ---
-<!-- agentinit:typescript-only -->
 ## Boundary
-One Zod object is the form's rules. `z.infer` is that schema's output type. `zodResolver` copies Zod issues into `formState.errors`. `register` attaches a native input and leaves it uncontrolled. `Controller` attaches a component that takes `value` and `onChange`. Server code parses untrusted input with the same schema's `safeParse` or `parse`.
+One Zod object is the form's rules. `zodResolver` copies Zod issues into `formState.errors`. `register` attaches a native input and leaves it uncontrolled. `Controller` attaches a component that takes `value` and `onChange`. Server code parses untrusted input with the same schema's `safeParse` or `parse`.
 
 ## Directives
 - **ALWAYS** put each rule on the schema and pass that schema to `zodResolver`. **NEVER** copy a schema rule into `register` options.
@@ -73,6 +72,67 @@ export function ProfileForm() {
     defaultValues: { name: "", age: 0, nickname: "" },
   });
   const onSubmit: SubmitHandler<ProfileValues> = (values) => {
+    console.log(values);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <label htmlFor="name">Name</label>
+      <input
+        id="name"
+        aria-invalid={errors.name ? "true" : "false"}
+        aria-describedby={errors.name ? "name-error" : undefined}
+        {...register("name")}
+      />
+      {errors.name && (
+        <p id="name-error" role="alert">
+          {errors.name.message}
+        </p>
+      )}
+      <input type="number" {...register("age", { valueAsNumber: true })} />
+      <Controller
+        name="nickname"
+        control={control}
+        render={({ field }) => <input {...field} />}
+      />
+    </form>
+  );
+}
+
+// ❌ Anti-pattern: the schema rule is copied into register, and register is spread with field
+<input {...register("name", { required: "Enter your name" })} />
+<Controller
+  name="nickname"
+  render={({ field }) => <input {...field} {...register("nickname")} />}
+/>
+```
+
+```jsx
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+
+export const profileSchema = z.object({
+  name: z.string().min(1, { error: "Enter your name" }),
+  age: z.number(),
+  nickname: z.string().default(""),
+});
+
+export function parseProfile(input) {
+  return profileSchema.safeParse(input);
+}
+
+export function ProfileForm() {
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { name: "", age: 0, nickname: "" },
+  });
+  const onSubmit = (values) => {
     console.log(values);
   };
 
