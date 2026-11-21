@@ -1,5 +1,13 @@
 # @agentinit/cli
 
+## 0.2.0
+
+### Minor Changes
+
+- 0040972: BREAKING CHANGE: JavaScript-only projects exit `0` and write rules instead of exiting `1`. `selections.language` may be `javascript` or `javascript-jsdoc`. Detection records `allowJs`, `checkJs`, and module-system facts on the profile each run (not in the manifest).
+- 123010c: Scoped rule globs follow the project language: JavaScript projects get `.js` / `.jsx` patterns, and TypeScript with `allowJs` gets both TypeScript and JavaScript extensions. Fragments still declare each TypeScript glob once.
+- 08b7b14: Rule fragments can ship TypeScript and JavaScript Contract examples in the same section; the plan keeps the matching fence and resolves `{{ext}}` / `{{jsxExt}}` from the project language. `check-registry` requires a JavaScript fence or an explicit TypeScript-only marker, and budgets each rendered variant at 120 lines.
+
 ## 0.1.2
 
 ### Patch Changes
