@@ -429,6 +429,30 @@ describe('renderTargetContext', () => {
     );
     expect(shadcnJsBody).toContain('"tsx": false');
     expect(shadcnJsBody).toContain('buttonVariants({ variant: "outline" })');
+
+    const tailwind = bundled.fragments.find((entry) => entry.meta.id === 'tailwind');
+    expect(tailwind).toBeDefined();
+    if (tailwind === undefined) return;
+    const tailwindSelection = resolved([tailwind]);
+    const tailwindTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), tailwindSelection),
+      'tailwind',
+    );
+    const tailwindJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), tailwindSelection),
+      'tailwind',
+    );
+    expect(tailwindTsBody).toContain('```tsx');
+    expect(tailwindTsBody).not.toContain('```jsx');
+    expect(tailwindJsBody).toContain('```jsx');
+    expect(tailwindJsBody).not.toContain('```tsx');
+    expect(tailwindTsBody).toContain(
+      'export function Banner({ error, className }: { error: boolean; className?: string })',
+    );
+    expect(tailwindJsBody).toContain('export function Banner({ error, className })');
+    expect(tailwindJsBody).not.toContain('error: boolean');
+    expect(tailwindJsBody).toContain('cn("px-3 text-green-600", error && "text-red-600", className)');
+    expect(tailwindJsBody).toContain('text-${color}-600');
   });
 
   it('sorts each scope by order then id, including workflows', () => {
