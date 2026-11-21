@@ -37,23 +37,24 @@ Hand-written agent docs for this repo: [`AGENTS.md`](AGENTS.md) and [`ARCHITECTU
 ### Rules for fragments (PRD §10)
 
 1. **No CLI code required** — a library or framework is one `.md` under `registry/` with valid frontmatter.
-2. **Token budget** — each fragment stays under **120 lines** (~800 tokens). Workflows ≤ 60 lines.
+2. **Token budget** — each **rendered** language variant stays under **120 lines** (~800 tokens). Dual Contract fences are budgeted per variant. Workflows ≤ 60 lines.
 3. **Actionable directives only** — imperative verbs (`ALWAYS`, `NEVER`, `PREFER`, `FORBID`, `DEFAULT`); no textbook explanations.
 4. **Version-aware and sourced** — set `appliesTo` when guidance depends on a major version; cite official docs in `sources`; set `verifiedAt`.
 5. **Portable globs** — no brace patterns (`{ts,tsx}`) and no commas; one glob per extension; use `{{src}}` for the source root.
-6. **Safety** — never instruct agents to run network commands, install packages, read secrets, or disable safeguards.
-7. **Stable ids** — published `id`s are never renamed; deprecate and replace instead.
-8. **Freshness** — fragments with `verifiedAt` older than 6 months are flagged in CI; re-verify or deprecate.
+6. **Dual examples** — non-language rule fragments include TypeScript and JavaScript Contract fences (info strings `ts` / `tsx` and `js` / `jsx`), or an explicit `<!-- agentinit:typescript-only -->` marker. Use `{{ext}}` / `{{jsxExt}}` in prose file names. Bump fragment `version` (minor) when adding a JavaScript example.
+7. **Safety** — never instruct agents to run network commands, install packages, read secrets, or disable safeguards.
+8. **Stable ids** — published `id`s are never renamed; deprecate and replace instead.
+9. **Freshness** — fragments with `verifiedAt` older than 6 months are flagged in CI; re-verify or deprecate.
 
 ### 3-part formula (rule fragments)
 
 1. **Boundary** — where the code lives and how modules interact.
-2. **Directives** — imperative constraints (`ALWAYS` / `NEVER` / `PREFER` / `FORBID` / `DEFAULT`).
-3. **Contract** — a short Good vs. Anti-Pattern fenced code block.
+2. **Directives** — imperative constraints (`ALWAYS` / `NEVER` / `PREFER` / `FORBID` / `DEFAULT`). TypeScript-only directives end with `<!-- agentinit:typescript-only -->`.
+3. **Contract** — Good vs. Anti-Pattern fenced blocks for TypeScript and JavaScript in the same section (or a TypeScript-only marker until the JS example exists).
 
 Architecture fragments also need `## Summary` (≤ 10 lines, copied into `AGENTS.md`) and `## Map` (for `ARCHITECTURE.md`). Workflows use `## Purpose`, `## Input`, `## Steps`, `## Output`, `## Guardrails`.
 
-Placeholders in bodies and globs: `{{src}}`, `{{pm}}`, `{{scripts.<name>}}`. Never hard-code `npm`.
+Placeholders in bodies and globs: `{{src}}`, `{{pm}}`, `{{scripts.<name>}}`, `{{ext}}`, `{{jsxExt}}`. Never hard-code `npm`.
 
 ## Commit convention
 

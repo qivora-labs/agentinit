@@ -44,7 +44,7 @@ sources:
   - https://v3.vitest.dev/guide/mocking
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 `describe` groups the tests for one unit. `it` and `test` are the same function. `vi.mock` is hoisted to the top of the file and runs before imports. `vi.useFakeTimers` replaces `setTimeout`, `setInterval`, and `Date` until `vi.useRealTimers`. `toMatchSnapshot` compares serialized output with a file stored next to the test.
 

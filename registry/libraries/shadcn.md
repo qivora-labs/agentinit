@@ -2,7 +2,7 @@
 id: shadcn
 name: shadcn/ui
 category: library
-version: 1.0.0
+version: 1.1.0
 order: 40
 description: Project-owned UI primitives, extended with variants instead of rewrites.
 hint: Owned UI primitives; extend with variants
@@ -23,12 +23,12 @@ sources:
   - https://ui.shadcn.com/docs/components-json
   - https://ui.shadcn.com/docs/installation/manual
   - https://ui.shadcn.com/docs/components/button
+  - https://ui.shadcn.com/docs/javascript
   - https://ui.shadcn.com/docs/changelog/2023-06-new-cli
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Boundary
-shadcn/ui copies component source into this project. `components.json` field `aliases.ui` is the import alias for that folder. The usual value is `@/components/ui`. Import a primitive from that alias. A missing primitive is added by a person.
+shadcn/ui copies component source into this project. `components.json` field `aliases.ui` is the import alias for that folder. The usual value is `@/components/ui`. Import a primitive from that alias. A missing primitive is added by a person. When `tsx` is `false`, the CLI writes `.jsx` files under that alias instead of `.tsx`.
 
 ## Directives
 - **ALWAYS** import a primitive from the project's UI alias, such as `@/components/ui/button`. **NEVER** import a component from a `shadcn/ui` package path.
@@ -38,6 +38,24 @@ shadcn/ui copies component source into this project. `components.json` field `al
 
 ## Contract
 ```tsx
+import { Button, buttonVariants } from "@/components/ui/button";
+
+export function Save() {
+  return <Button variant="outline" className="w-full">Save</Button>;
+}
+
+export function SaveLink() {
+  return <a className={buttonVariants({ variant: "outline" })} href="/saved">Saved</a>;
+}
+
+// ❌ Anti-pattern: a one-off copy of the primitive
+export function SaveButton() {
+  return <button className="border bg-background">Save</button>;
+}
+```
+
+```jsx
+// With "tsx": false in components.json, the CLI writes .jsx under aliases.ui
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export function Save() {

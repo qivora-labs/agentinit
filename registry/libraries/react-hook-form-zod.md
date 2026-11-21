@@ -31,13 +31,13 @@ sources:
   - https://zod.dev/v4
 verifiedAt: 2026-10-28
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 One Zod object is the form's rules. `z.infer` is that schema's output type. `zodResolver` copies Zod issues into `formState.errors`. `register` attaches a native input and leaves it uncontrolled. `Controller` attaches a component that takes `value` and `onChange`. Server code parses untrusted input with the same schema's `safeParse` or `parse`.
 
 ## Directives
 - **ALWAYS** put each rule on the schema and pass that schema to `zodResolver`. **NEVER** copy a schema rule into `register` options.
-- **ALWAYS** take submitted values from `z.infer`. When the schema uses `.default()` or `.transform()`, input and output differ: pass `z.input`, `unknown`, and `z.output` to `useForm`.
+- **ALWAYS** take submitted values from `z.infer`. When the schema uses `.default()` or `.transform()`, input and output differ: pass `z.input`, `unknown`, and `z.output` to `useForm`. <!-- agentinit:typescript-only -->
 - **ALWAYS** `register` a native input. **ALWAYS** use `Controller` for a component that takes `value` and `onChange`, and spread `field` only. **NEVER** spread `register` and `field` onto the same element.
 - **ALWAYS** set `defaultValues`. A controlled `value` that is `undefined` on the first render starts the input uncontrolled.
 - **ALWAYS** pass `{ valueAsNumber: true }` to `register` for a native number input. A `Controller` number field uses `z.coerce.number()` in the schema, or converts in `onChange`. **NEVER** pass the raw input string to `z.number()`. **NEVER** put `valueAsNumber` on `Controller` `rules`.

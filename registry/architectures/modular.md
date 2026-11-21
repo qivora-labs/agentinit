@@ -2,7 +2,7 @@
 id: modular
 name: Modular / By Concern
 category: architecture
-version: 1.1.0
+version: 1.2.0
 order: 10
 description: One top-level folder per concern, shared contracts at the source root, and no import cycles.
 hint: One folder per concern; deps in ARCHITECTURE.md
@@ -13,9 +13,8 @@ sources:
   - https://docs.nestjs.com/fundamentals/circular-dependency
   - https://expressjs.com/en/guide/routing.html
   - https://expressjs.com/en/starter/faq.html
-verifiedAt: 2026-11-06
+verifiedAt: 2026-11-19
 ---
-
 ## Summary
 - Put each concern in its own top-level folder under `{{src}}`.
 - Put types and contracts shared by more than one concern at the `{{src}}` root.
@@ -41,7 +40,7 @@ New work for one concern lives under that concern's top-level folder. Types and 
 
 ## Contract
 ```ts
-// ✅ Good: {{src}}handlers/create-user.ts uses a shared type and another concern's public API
+// ✅ Good: {{src}}handlers/create-user.{{ext}} uses a shared type and another concern's public API
 import type { UserId } from '../types';
 import { createUser } from '../services/users';
 
@@ -49,6 +48,18 @@ export function createUserHandler(id: UserId): Promise<void> {
   return createUser(id);
 }
 
-// ❌ Anti-pattern: {{src}}services/users.ts imports a handler (cycle with handlers → services)
+// ❌ Anti-pattern: {{src}}services/users.{{ext}} imports a handler (cycle with handlers → services)
+import { createUserHandler } from '../handlers/create-user';
+```
+
+```js
+// ✅ Good: {{src}}handlers/create-user.{{ext}} uses a shared value and another concern's public API
+import { createUser } from '../services/users';
+
+export function createUserHandler(id) {
+  return createUser(id);
+}
+
+// ❌ Anti-pattern: {{src}}services/users.{{ext}} imports a handler (cycle with handlers → services)
 import { createUserHandler } from '../handlers/create-user';
 ```

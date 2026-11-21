@@ -2,7 +2,7 @@
 id: zustand
 name: Zustand
 category: library
-version: 1.0.0
+version: 1.1.0
 order: 40
 description: Small client stores, stable selectors, and useShallow.
 hint: Small stores, stable selectors, useShallow
@@ -25,9 +25,8 @@ sources:
   - https://github.com/pmndrs/zustand
   - https://zustand.docs.pmnd.rs/reference/hooks/use-shallow
   - https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Boundary
 A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run, and in v5 that can update forever. `useShallow` from `zustand/react/shallow` keeps the previous result when a shallow compare matches.
 
@@ -48,6 +47,34 @@ type CartState = {
 };
 
 export const useCartStore = create<CartState>()((set) => ({
+  count: 0,
+  add: () => set((state) => ({ count: state.count + 1 })),
+}));
+
+export function CartCount() {
+  const count = useCartStore((state) => state.count);
+  return <span>{count}</span>;
+}
+
+export function CartButton() {
+  const { count, add } = useCartStore(
+    useShallow((state) => ({ count: state.count, add: state.add })),
+  );
+  return <button onClick={add}>{count}</button>;
+}
+
+// ❌ Anti-pattern: a new array every render, which can loop in v5
+export function Bad() {
+  const [count, add] = useCartStore((state) => [state.count, state.add]);
+  return <button onClick={add}>{count}</button>;
+}
+```
+
+```jsx
+import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
+
+export const useCartStore = create((set) => ({
   count: 0,
   add: () => set((state) => ({ count: state.count + 1 })),
 }));

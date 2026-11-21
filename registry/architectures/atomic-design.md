@@ -2,16 +2,15 @@
 id: atomic-design
 name: Atomic Design
 category: architecture
-version: 1.0.0
+version: 1.1.0
 order: 10
 description: UI composed only from lower levels, from atoms up through pages.
 hint: Compose UI from atoms up through pages
 scope: always
 sources:
   - https://atomicdesign.bradfrost.com/chapter-2/
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Summary
 - Put the smallest UI pieces in `{{src}}components/atoms/`.
 - Put a simple group of atoms in `{{src}}components/molecules/`.
@@ -41,7 +40,7 @@ New UI lands in the lowest level that describes it. Atoms are the floor. A compo
 
 ## Contract
 ```tsx
-// ✅ Good: {{src}}components/molecules/search-form.tsx composes atoms
+// ✅ Good: {{src}}components/molecules/search-form.{{jsxExt}} composes atoms
 import { Button } from '../atoms/button';
 import { Input } from '../atoms/input';
 
@@ -54,6 +53,24 @@ export function SearchForm() {
   );
 }
 
-// ❌ Anti-pattern: {{src}}components/atoms/button.tsx imports a molecule
+// ❌ Anti-pattern: {{src}}components/atoms/button.{{jsxExt}} imports a molecule
+import { SearchForm } from '../molecules/search-form';
+```
+
+```jsx
+// ✅ Good: {{src}}components/molecules/search-form.{{jsxExt}} composes atoms
+import { Button } from '../atoms/button';
+import { Input } from '../atoms/input';
+
+export function SearchForm() {
+  return (
+    <form>
+      <Input name="q" />
+      <Button type="submit">Search</Button>
+    </form>
+  );
+}
+
+// ❌ Anti-pattern: {{src}}components/atoms/button.{{jsxExt}} imports a molecule
 import { SearchForm } from '../molecules/search-form';
 ```

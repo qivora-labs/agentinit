@@ -1,14 +1,53 @@
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRegistry, type Registry } from '../../src/registry/load.js';
-import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
+import {
+  hasJavaScriptContractFence,
+  hasTypeScriptContractFence,
+  hasTypescriptOnlyMarker,
+} from '../../src/plan/language-examples.js';
 import { agentRuleBody, renderTargetContext } from '../../src/plan/render.js';
+import { defaultRegistryDir } from '../../src/registry/locate.js';
+import { loadRegistry, type Registry } from '../../src/registry/load.js';
+import { getSections } from '../../src/registry/parse.js';
+import { resolveSelection, type ResolvedSelection } from '../../src/registry/resolve.js';
 import { copilotAdapter } from '../../src/targets/copilot.js';
 import { cursorAdapter } from '../../src/targets/cursor.js';
 import { windsurfAdapter } from '../../src/targets/windsurf.js';
 import { layeredFragment, profile, resolved, ruleFragment, workflowFragment } from './helpers.js';
 
 const sampleDir = fileURLToPath(new URL('../fixtures/registry-sample', import.meta.url));
+const ARCHITECTURE_IDS = [
+  'atomic-design',
+  'feature-based',
+  'flat',
+  'layered',
+  'modular',
+] as const;
+
+const FRAMEWORK_IDS = [
+  'express',
+  'express-4',
+  'fastify',
+  'nextjs-app-router',
+  'nextjs-app-router-15',
+  'nextjs-pages-router',
+  'react-vite',
+] as const;
+
+const UI_STATE_LIBRARY_IDS = ['shadcn', 'tailwind', 'tanstack-query', 'zustand'] as const;
+
+function renderedFragmentBody(
+  ctx: ReturnType<typeof renderTargetContext>,
+  id: string,
+): string {
+  const fragments = [
+    ...ctx.fragments.always,
+    ...ctx.fragments.glob,
+    ...ctx.fragments.auto,
+    ...ctx.fragments.manual,
+  ];
+  return fragments.find((entry) => entry.id === id)?.body ?? '';
+}
 
 describe('renderTargetContext', () => {
   let registry: Registry;
@@ -37,7 +76,13 @@ describe('renderTargetContext', () => {
     ]);
     expect(ctx.fragments.always[0]?.body).toContain('src/domain/');
     expect(ctx.fragments.always[0]?.body).not.toContain('{{src}}');
-    expect(ctx.placeholders).toEqual({ src: 'src/', pm: 'pnpm', scripts: { lint: 'eslint .', test: 'vitest' } });
+    expect(ctx.placeholders).toEqual({
+      src: 'src/',
+      pm: 'pnpm',
+      scripts: { lint: 'eslint .', test: 'vitest' },
+      ext: 'ts',
+      jsxExt: 'tsx',
+    });
     expect(ctx.workflows.map((workflow) => workflow.id)).toEqual(['new-feature', 'review-arch']);
     expect(ctx.workflows[0]?.argumentHint).toBe('<feature-name>');
     expect(ctx.workflows[1]).not.toHaveProperty('argumentHint');
@@ -111,6 +156,303 @@ describe('renderTargetContext', () => {
       'src/app/**/*.tsx',
       'src/app/**/*.jsx',
     ]);
+  });
+
+  it('renders only the matching Contract fence and prose extensions per language', () => {
+    const body = [
+      '<!-- agentinit:typescript-only -->',
+      'Export from `index.{{ext}}` and `widget.{{jsxExt}}`.',
+      '',
+      '## Contract',
+      '```ts',
+      'const typed: number = 1;',
+      '```',
+      '',
+      '```js',
+      'const plain = 1;',
+      '```',
+    ].join('\n');
+    // Marker-only exemption; dual fences still exercise selection (content tasks drop the marker).
+    const dual = body.replace('<!-- agentinit:typescript-only -->\n', '');
+    const fragment = ruleFragment({
+      id: 'example-lib',
+      name: 'Example',
+      category: 'library',
+      scope: 'glob',
+      order: 40,
+      body: dual,
+      globs: ['{{src}}**/*.ts'],
+    });
+    const selection = resolved([fragment]);
+    const ts = renderTargetContext(profile({ language: 'typescript-strict' }), selection);
+    const js = renderTargetContext(profile({ language: 'javascript' }), selection);
+    expect(ts.fragments.glob[0]?.body).toBe(
+      [
+        'Export from `index.ts` and `widget.tsx`.',
+        '',
+        '## Contract',
+        '```ts',
+        'const typed: number = 1;',
+        '```',
+      ].join('\n'),
+    );
+    expect(js.fragments.glob[0]?.body).toBe(
+      [
+        'Export from `index.js` and `widget.jsx`.',
+        '',
+        '## Contract',
+        '```js',
+        'const plain = 1;',
+        '```',
+      ].join('\n'),
+    );
+  });
+
+  it('keeps TypeScript output byte-identical to the single-fence body when the TS fence is unchanged', () => {
+    const single = ['## Contract', '```ts', 'const typed: number = 1;', '```'].join('\n');
+    const dual = [single, '', '```js', 'const plain = 1;', '```'].join('\n');
+    const fromSingle = renderTargetContext(
+      profile({ language: 'typescript-strict' }),
+      resolved([
+        ruleFragment({
+          id: 'example-lib',
+          name: 'Example',
+          category: 'library',
+          scope: 'always',
+          order: 40,
+          body: single,
+        }),
+      ]),
+    );
+    const fromDual = renderTargetContext(
+      profile({ language: 'typescript-strict' }),
+      resolved([
+        ruleFragment({
+          id: 'example-lib',
+          name: 'Example',
+          category: 'library',
+          scope: 'always',
+          order: 40,
+          body: dual,
+        }),
+      ]),
+    );
+    expect(fromDual.fragments.always[0]?.body).toBe(fromSingle.fragments.always[0]?.body);
+    expect(fromDual.fragments.always[0]?.body).toBe(single);
+  });
+
+  it('renders architecture dual Contracts and prose extensions per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of ARCHITECTURE_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const feature = bundled.fragments.find((entry) => entry.meta.id === 'feature-based');
+    expect(feature).toBeDefined();
+    if (feature === undefined) return;
+    const featureSelection = resolved([feature]);
+    const featureTs = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'feature-based', confidence: 1 } }),
+      featureSelection,
+    );
+    const featureJs = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'feature-based', confidence: 1 } }),
+      featureSelection,
+    );
+    const featureTsBody = featureTs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    const featureJsBody = featureJs.fragments.always.find((entry) => entry.id === 'feature-based')?.body ?? '';
+    expect(getSections(featureTsBody).get('Summary')).toContain('index.ts');
+    expect(getSections(featureTsBody).get('Summary')).not.toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).toContain('index.js');
+    expect(getSections(featureJsBody).get('Summary')).not.toContain('index.ts');
+    expect(featureTsBody).toContain('```ts');
+    expect(featureTsBody).not.toContain('```js');
+    expect(featureJsBody).toContain('```js');
+    expect(featureJsBody).not.toContain('```ts');
+    expect(featureTsBody).toContain('import type { Invoice }');
+    expect(featureJsBody).not.toContain('import type');
+
+    const layered = bundled.fragments.find((entry) => entry.meta.id === 'layered');
+    expect(layered).toBeDefined();
+    if (layered === undefined) return;
+    const layeredSelection = resolved([layered]);
+    const layeredTs = renderTargetContext(
+      profile({ language: 'typescript-strict', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredJs = renderTargetContext(
+      profile({ language: 'javascript', architecture: { id: 'layered', confidence: 1 } }),
+      layeredSelection,
+    );
+    const layeredTsBody = layeredTs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    const layeredJsBody = layeredJs.fragments.always.find((entry) => entry.id === 'layered')?.body ?? '';
+    expect(layeredTsBody).toContain('load-invoice.ts');
+    expect(layeredTsBody).toContain('import type { Invoice }');
+    expect(layeredTsBody).toContain('import type { InvoiceStore }');
+    expect(layeredJsBody).toContain('load-invoice.js');
+    expect(layeredJsBody).not.toContain('import type');
+    expect(layeredJsBody).toContain('export function loadInvoice(store, id)');
+  });
+
+  it('renders framework dual Contracts and prose extensions per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of FRAMEWORK_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const next = bundled.fragments.find((entry) => entry.meta.id === 'nextjs-app-router');
+    expect(next).toBeDefined();
+    if (next === undefined) return;
+    const nextSelection = resolved([next]);
+    const nextTs = renderTargetContext(profile({ language: 'typescript-strict' }), nextSelection);
+    const nextJs = renderTargetContext(profile({ language: 'javascript' }), nextSelection);
+    const nextTsBody = renderedFragmentBody(nextTs, 'nextjs-app-router');
+    const nextJsBody = renderedFragmentBody(nextJs, 'nextjs-app-router');
+    expect(nextTsBody).toContain('route.ts');
+    expect(nextTsBody).toContain('error.tsx');
+    expect(nextTsBody).not.toContain('route.js');
+    expect(nextJsBody).toContain('route.js');
+    expect(nextJsBody).toContain('error.jsx');
+    expect(nextJsBody).not.toContain('route.ts');
+    expect(nextTsBody).toContain('```tsx');
+    expect(nextTsBody).not.toContain('```jsx');
+    expect(nextJsBody).toContain('```jsx');
+    expect(nextJsBody).not.toContain('```tsx');
+    expect(nextTsBody).toContain('params: Promise<{ id: string }>');
+    expect(nextJsBody).toContain('export default async function Page({ params })');
+    expect(nextJsBody).not.toContain('Promise<{ id: string }>');
+
+    const express = bundled.fragments.find((entry) => entry.meta.id === 'express');
+    expect(express).toBeDefined();
+    if (express === undefined) return;
+    const expressSelection = resolved([express]);
+    const expressTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), expressSelection),
+      'express',
+    );
+    const expressJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), expressSelection),
+      'express',
+    );
+    expect(expressTsBody).toContain('(err: unknown, _req: Request, res: Response, _next: NextFunction)');
+    expect(expressJsBody).toContain('(err, _req, res, _next)');
+    expect(expressJsBody).not.toContain('err: unknown');
+    expect(expressTsBody).toContain('```ts');
+    expect(expressTsBody).not.toContain('```js');
+    expect(expressJsBody).toContain('```js');
+    expect(expressJsBody).not.toContain('```ts');
+
+    const fastify = bundled.fragments.find((entry) => entry.meta.id === 'fastify');
+    expect(fastify).toBeDefined();
+    if (fastify === undefined) return;
+    const fastifySelection = resolved([fastify]);
+    const fastifyTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), fastifySelection),
+      'fastify',
+    );
+    const fastifyJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), fastifySelection),
+      'fastify',
+    );
+    expect(fastifyTsBody).toContain('withTypeProvider');
+    expect(fastifyTsBody).toContain('fastify: FastifyInstance');
+    expect(fastifyJsBody).not.toContain('withTypeProvider');
+    expect(fastifyJsBody).not.toContain('FastifyInstance');
+    expect(fastifyJsBody).toContain('export async function userRoutes(fastify)');
+  });
+
+  it('renders ui and state library dual Contracts per language', async () => {
+    const bundled = await loadRegistry(defaultRegistryDir());
+    for (const id of UI_STATE_LIBRARY_IDS) {
+      const fragment = bundled.fragments.find((entry) => entry.meta.id === id);
+      expect(fragment, id).toBeDefined();
+      if (fragment === undefined) continue;
+      expect(hasTypescriptOnlyMarker(fragment.body), id).toBe(false);
+      expect(hasTypeScriptContractFence(fragment.body), id).toBe(true);
+      expect(hasJavaScriptContractFence(fragment.body), id).toBe(true);
+    }
+
+    const tanstack = bundled.fragments.find((entry) => entry.meta.id === 'tanstack-query');
+    expect(tanstack).toBeDefined();
+    if (tanstack === undefined) return;
+    const tanstackSelection = resolved([tanstack]);
+    const tanstackTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), tanstackSelection),
+      'tanstack-query',
+    );
+    const tanstackJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), tanstackSelection),
+      'tanstack-query',
+    );
+    expect(tanstackTsBody).toContain('```tsx');
+    expect(tanstackTsBody).not.toContain('```jsx');
+    expect(tanstackJsBody).toContain('```jsx');
+    expect(tanstackJsBody).not.toContain('```tsx');
+    expect(tanstackTsBody).toContain('UseMutationResult<unknown, Error, unknown>');
+    expect(tanstackJsBody).toContain('export function useAddTodo()');
+    expect(tanstackJsBody).not.toContain('UseMutationResult');
+
+    const zustand = bundled.fragments.find((entry) => entry.meta.id === 'zustand');
+    expect(zustand).toBeDefined();
+    if (zustand === undefined) return;
+    const zustandSelection = resolved([zustand]);
+    const zustandTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), zustandSelection),
+      'zustand',
+    );
+    const zustandJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), zustandSelection),
+      'zustand',
+    );
+    expect(zustandTsBody).toContain('create<CartState>()((set) => ({');
+    expect(zustandJsBody).toContain('create((set) => ({');
+    expect(zustandJsBody).not.toContain('create<CartState>');
+    expect(zustandJsBody).toContain('useShallow((state) => ({ count: state.count, add: state.add }))');
+
+    const shadcn = bundled.fragments.find((entry) => entry.meta.id === 'shadcn');
+    expect(shadcn).toBeDefined();
+    if (shadcn === undefined) return;
+    const shadcnSelection = resolved([shadcn]);
+    const shadcnJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), shadcnSelection),
+      'shadcn',
+    );
+    expect(shadcnJsBody).toContain('"tsx": false');
+    expect(shadcnJsBody).toContain('buttonVariants({ variant: "outline" })');
+
+    const tailwind = bundled.fragments.find((entry) => entry.meta.id === 'tailwind');
+    expect(tailwind).toBeDefined();
+    if (tailwind === undefined) return;
+    const tailwindSelection = resolved([tailwind]);
+    const tailwindTsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'typescript-strict' }), tailwindSelection),
+      'tailwind',
+    );
+    const tailwindJsBody = renderedFragmentBody(
+      renderTargetContext(profile({ language: 'javascript' }), tailwindSelection),
+      'tailwind',
+    );
+    expect(tailwindTsBody).toContain('```tsx');
+    expect(tailwindTsBody).not.toContain('```jsx');
+    expect(tailwindJsBody).toContain('```jsx');
+    expect(tailwindJsBody).not.toContain('```tsx');
+    expect(tailwindTsBody).toContain(
+      'export function Banner({ error, className }: { error: boolean; className?: string })',
+    );
+    expect(tailwindJsBody).toContain('export function Banner({ error, className })');
+    expect(tailwindJsBody).not.toContain('error: boolean');
+    expect(tailwindJsBody).toContain('cn("px-3 text-green-600", error && "text-red-600", className)');
+    expect(tailwindJsBody).toContain('text-${color}-600');
   });
 
   it('sorts each scope by order then id, including workflows', () => {

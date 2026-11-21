@@ -2,7 +2,7 @@
 id: express-4
 name: Express 4
 category: framework
-version: 1.0.1
+version: 1.1.0
 order: 30
 description: Express 4 routers, boundary validation, and explicit async error forwarding.
 hint: express 4.x · catch async, routers
@@ -24,9 +24,8 @@ sources:
   - https://expressjs.com/en/4x/api/router/
   - https://expressjs.com/en/4x/api/application/
   - https://expressjs.com/en/guide/migrating-5/
-verifiedAt: 2026-11-05
+verifiedAt: 2026-11-19
 ---
-
 ## Map
 | Path | Responsibility |
 | :--- | :--- |
@@ -58,6 +57,28 @@ router.get('/users/:id', async (req, res, next) => {
 });
 app.use('/users', router);
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not passed to next, so Express 4 never sees it
+app.get('/', async (_req, _res) => {
+  await Promise.reject(new Error('fail'));
+});
+```
+
+```js
+// ✅ Good: async handler forwards rejection; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res, next) => {
+  try {
+    const id = userId(req.params.id);
+    res.json(await getUser(id));
+  } catch (err) {
+    next(err);
+  }
+});
+app.use('/users', router);
+app.use((err, _req, res, _next) => {
   res.status(500).json({ message: 'Internal error' });
 });
 

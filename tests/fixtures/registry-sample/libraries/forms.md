@@ -15,7 +15,7 @@ sources:
   - https://example.com/docs/forms
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 Form state stays in client components.
 

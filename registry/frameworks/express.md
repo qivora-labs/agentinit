@@ -2,7 +2,7 @@
 id: express
 name: Express 5
 category: framework
-version: 1.0.1
+version: 1.1.0
 order: 30
 description: Express 5 async errors, boundary validation, and modular routers.
 hint: express ≥5 · async errors, routers
@@ -23,9 +23,8 @@ sources:
   - https://expressjs.com/en/guide/migrating-5/
   - https://expressjs.com/en/5x/guide/using-middleware/
   - https://expressjs.com/en/5x/guide/routing.html
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Map
 | Path | Responsibility |
 | :--- | :--- |
@@ -53,6 +52,24 @@ router.get('/users/:id', async (req, res) => {
 });
 app.use('/users', router);
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({ message: 'Internal error' });
+});
+
+// ❌ Anti-pattern: the rejection is not returned, so Express never sees it
+app.get('/', (_req, _res) => {
+  Promise.reject(new Error('fail'));
+});
+```
+
+```js
+// ✅ Good: async router handler; error middleware is last and has four parameters
+const router = express.Router();
+router.get('/users/:id', async (req, res) => {
+  const id = userId(req.params.id);
+  res.json(await getUser(id));
+});
+app.use('/users', router);
+app.use((err, _req, res, _next) => {
   res.status(500).json({ message: 'Internal error' });
 });
 

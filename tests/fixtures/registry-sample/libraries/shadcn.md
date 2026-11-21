@@ -22,7 +22,7 @@ sources:
   - https://ui.shadcn.com/docs
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Boundary
 Generated components live under components/ui.
 

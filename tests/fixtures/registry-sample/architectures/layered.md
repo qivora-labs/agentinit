@@ -11,7 +11,7 @@ sources:
   - https://example.com/docs/layered
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 Controllers call services, and services call the data layer.
 

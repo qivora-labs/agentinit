@@ -4,16 +4,23 @@ import type { ResolvedSelection } from '../registry/resolve.js';
 import type { Fragment, RuleFragmentMeta, WorkflowFragmentMeta } from '../registry/schema.js';
 import type { FragmentScope, ProjectProfile } from '../types.js';
 import { omitSection } from '../registry/parse.js';
+import {
+  applyLanguageExamples,
+  exampleLanguageFamily,
+} from './language-examples.js';
 import { expandLanguageGlobs, type LanguageGlobFacts } from './language-globs.js';
 import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
 import { NO_OMIT_H1, type RenderedFragment, type RenderedWorkflow, type ScopedFragments, type TargetContext } from './types.js';
 
-/** `src/` or empty, plus the profile's package manager and scripts. */
+/** `src/` or empty, plus the profile's package manager, scripts, and prose extensions. */
 export function placeholderContextFor(profile: ProjectProfile): PlaceholderContext {
+  const javascript = exampleLanguageFamily(profile.language) === 'javascript';
   return {
     src: profile.srcDir === 'src' ? 'src/' : '',
     pm: profile.packageManager,
     scripts: profile.scripts,
+    ext: javascript ? 'js' : 'ts',
+    jsxExt: javascript ? 'jsx' : 'tsx',
   };
 }
 
@@ -96,6 +103,8 @@ function renderRule(
   const meta = fragment.meta;
   const renderedGlobs =
     meta.globs === undefined ? [] : renderGlobs(meta.globs, placeholders);
+  const family = exampleLanguageFamily(languageGlobs.language);
+  const languageBody = applyLanguageExamples(fragment.body, family);
   return {
     id: meta.id,
     name: meta.name,
@@ -103,7 +112,7 @@ function renderRule(
     category: meta.category,
     scope: meta.scope,
     order: meta.order,
-    body: renderBody(fragment.body, placeholders),
+    body: renderBody(languageBody, placeholders),
     globs: expandLanguageGlobs(renderedGlobs, languageGlobs),
   };
 }

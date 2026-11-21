@@ -18,7 +18,7 @@ sources:
   - https://nextjs.org/docs/pages
 verifiedAt: 2026-10-17
 ---
-
+<!-- agentinit:typescript-only -->
 ## Summary
 Pages Router conventions for Next.js.
 

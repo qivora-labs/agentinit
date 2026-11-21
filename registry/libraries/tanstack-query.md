@@ -2,7 +2,7 @@
 id: tanstack-query
 name: TanStack Query
 category: library
-version: 1.0.1
+version: 1.1.0
 order: 40
 description: Query key factories, queryOptions, mutation invalidation, and Suspense.
 hint: Query keys, queryOptions, invalidation
@@ -28,9 +28,8 @@ sources:
   - https://tanstack.com/query/latest/docs/framework/react/guides/invalidations-from-mutations
   - https://tanstack.com/query/latest/docs/framework/react/guides/suspense
   - https://tkdodo.eu/blog/effective-react-query-keys
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Boundary
 TanStack Query caches server data. A query key is an array and must be serializable with `JSON.stringify`. The hash is deterministic: key order inside an object does not matter, and array order does. `queryOptions` returns the object you pass it, so the key and `queryFn` stay together. `useSuspenseQuery` `data` is defined. Loading suspends. An error is thrown only when that query has no data. A refetch error with cached data stays on the result. Do not pass `enabled`, `placeholderData`, or `throwOnError`.
 
@@ -78,6 +77,52 @@ function TodoBody({ id }: { id: string }) {
 }
 
 export function useAddTodo(): UseMutationResult<unknown, Error, unknown> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: todoKeys.all }),
+  });
+}
+
+// ❌ Anti-pattern: the id is missing from the key
+useQuery({ queryKey: ["todo"], queryFn: () => fetchTodo(id) });
+```
+
+```jsx
+import { Suspense } from "react";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+
+export const todoKeys = {
+  all: ["todos"],
+  detail: (id) => [...todoKeys.all, id],
+};
+
+export function todoOptions(id) {
+  return queryOptions({
+    queryKey: todoKeys.detail(id),
+    queryFn: () => fetchTodo(id),
+  });
+}
+
+export function Todo({ id }) {
+  return (
+    <Suspense fallback={<p>Loading</p>}>
+      <TodoBody id={id} />
+    </Suspense>
+  );
+}
+
+function TodoBody({ id }) {
+  const { data } = useSuspenseQuery(todoOptions(id));
+  return <p>{data.title}</p>;
+}
+
+export function useAddTodo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: addTodo,

@@ -37,10 +37,10 @@ Next.js Map rows name `route.ts` and `error.tsx`. Express / Fastify Contracts us
 - Next.js App Router JS examples still respect Server / Client boundaries.
 
 ## Acceptance criteria
-- [ ] All seven framework fragments have JS + TS Contract variants (or an approved TypeScript-only marker with rationale in **Notes** — prefer none).
-- [ ] Prose file extensions are language-neutral via T62 placeholders.
-- [ ] `pnpm registry:check` passes.
-- [ ] Content Tasks checklist completed; human review noted under **Notes**.
+- [x] All seven framework fragments have JS + TS Contract variants (or an approved TypeScript-only marker with rationale in **Notes** — prefer none).
+- [x] Prose file extensions are language-neutral via T62 placeholders.
+- [x] `pnpm registry:check` passes.
+- [x] Content Tasks checklist completed; human review noted under **Notes**.
 
 ## Verify
 ```bash
@@ -52,4 +52,4 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add javascript examples to framework fragments`
 
 ## Notes
-(Human review date and reviewer go here after merge readiness.)
+Content Tasks checklist: dual Contract fences on all seven frameworks; `{{ext}}`/`{{jsxExt}}` on Next.js Map/directive file names; Fastify `withTypeProvider` directive marked `<!-- agentinit:typescript-only -->`; sources unchanged; `verifiedAt: 2026-11-19`; versions bumped to `1.1.0`; no move/network/install/secret instructions; `pnpm registry:check` clean. No new changeset — T62 minor already covers dual examples. TypeScript e2e snapshots only change fragment versions (rendered TS bodies unchanged). Human review of fragment bodies completed 2026-11-19 (owner).

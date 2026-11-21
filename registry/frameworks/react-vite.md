@@ -2,7 +2,7 @@
 id: react-vite
 name: React + Vite
 category: framework
-version: 1.0.1
+version: 1.1.0
 order: 30
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
 hint: React 19 actions/use, Vite env, lazy load
@@ -21,9 +21,8 @@ sources:
   - https://react.dev/blog/2024/12/05/react-19
   - https://vite.dev/guide/env-and-mode
   - https://vite.dev/config/shared-options
-verifiedAt: 2026-10-28
+verifiedAt: 2026-11-19
 ---
-
 ## Map
 | Path | Responsibility |
 | :--- | :--- |
@@ -47,6 +46,28 @@ const ThemeContext = createContext<string | null>(null);
 const Preview = lazy(() => import('./Preview'));
 
 export function Title({ show }: { show: boolean }) {
+  if (!show) return null;
+  const name = use(ThemeContext);
+  return (
+    <Suspense fallback="Loading">
+      <Preview title={name ?? import.meta.env.VITE_APP_TITLE} />
+    </Suspense>
+  );
+}
+
+// ❌ Anti-pattern: lazy during render, and a secret behind the public prefix
+export function Bad() {
+  const Chart = lazy(() => import('./Chart'));
+  return <Chart token={import.meta.env.VITE_SECRET} />;
+}
+```
+
+```jsx
+// ✅ Good: conditional use, public env string, lazy at module scope
+const ThemeContext = createContext(null);
+const Preview = lazy(() => import('./Preview'));
+
+export function Title({ show }) {
   if (!show) return null;
   const name = use(ThemeContext);
   return (
