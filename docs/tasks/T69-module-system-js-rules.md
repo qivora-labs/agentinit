@@ -38,12 +38,12 @@ Record the answers under **Notes** and in the PRD.
 - Keep the always-on token budget in mind (≤ ~1,500).
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD / backlog P2.4 note updated.
-- [ ] JavaScript + Express (no `"type": "module"`): language rules mention CommonJS.
-- [ ] JavaScript + Next.js or React + Vite: language rules mention ES modules even without `"type": "module"`.
-- [ ] TypeScript language fragment output unchanged.
-- [ ] Unknown placeholder in greenfield drops the line without failing the plan.
-- [ ] A changeset exists if shipping alone.
+- [x] Decisions recorded under **Notes**, and the PRD / backlog P2.4 note updated.
+- [x] JavaScript + Express (no `"type": "module"`): language rules mention CommonJS.
+- [x] JavaScript + Next.js or React + Vite: language rules mention ES modules even without `"type": "module"`.
+- [x] TypeScript language fragment output unchanged.
+- [x] Unknown placeholder in greenfield drops the line without failing the plan.
+- [x] A changeset exists if shipping alone.
 
 ## Verify
 ```bash
@@ -55,4 +55,8 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(plan): state module system in javascript language rules`
 
 ## Notes
-Recommendations match the 2026-11-13 planning session. Confirm the bundler framework id list when new frameworks land.
+Owner confirmed 2026-11-22 (recommendations from 2026-11-13 planning session):
+1. Bundler frameworks → ES modules; else `"type": "module"` → ESM; else CommonJS for existing projects (Node default when `"type"` is absent). Greenfield without a bundler leaves the label unset.
+2. Placeholder `{{moduleSystem}}` → `ES modules` / `CommonJS`.
+3. Only `javascript` and `javascript-jsdoc` use it in 0.2.
+Confirm the bundler framework id list when new frameworks land.

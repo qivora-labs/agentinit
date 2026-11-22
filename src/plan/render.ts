@@ -9,10 +9,15 @@ import {
   exampleLanguageFamily,
 } from './language-examples.js';
 import { expandLanguageGlobs, type LanguageGlobFacts } from './language-globs.js';
-import { renderBody, renderGlobs, type PlaceholderContext } from './placeholders.js';
+import {
+  moduleSystemLabelFor,
+  renderBody,
+  renderGlobs,
+  type PlaceholderContext,
+} from './placeholders.js';
 import { NO_OMIT_H1, type RenderedFragment, type RenderedWorkflow, type ScopedFragments, type TargetContext } from './types.js';
 
-/** `src/` or empty, plus the profile's package manager, scripts, and prose extensions. */
+/** `src/` or empty, plus the profile's package manager, scripts, prose extensions, and module system. */
 export function placeholderContextFor(profile: ProjectProfile): PlaceholderContext {
   const javascript = exampleLanguageFamily(profile.language) === 'javascript';
   return {
@@ -21,6 +26,11 @@ export function placeholderContextFor(profile: ProjectProfile): PlaceholderConte
     scripts: profile.scripts,
     ext: javascript ? 'js' : 'ts',
     jsxExt: javascript ? 'jsx' : 'tsx',
+    moduleSystem: moduleSystemLabelFor({
+      moduleSystem: profile.moduleSystem,
+      frameworks: profile.frameworks,
+      mode: profile.mode,
+    }),
   };
 }
 

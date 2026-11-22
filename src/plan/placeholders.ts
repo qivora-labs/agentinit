@@ -1,14 +1,28 @@
 import { AgentInitError } from '../errors.js';
-import type { PackageManager } from '../types.js';
+import type { ModuleSystem, PackageManager } from '../types.js';
 
 const PLACEHOLDER = /\{\{([^{}\n]+)\}\}/gu;
 const SCRIPT_PREFIX = 'scripts.';
+
+/**
+ * Framework ids whose tooling treats `.js` as ESM even when `package.json`
+ * omits `"type": "module"` (Next.js, Vite). Keep in sync when bundler ids land.
+ */
+export const BUNDLER_FRAMEWORK_IDS: ReadonlySet<string> = new Set([
+  'nextjs-app-router',
+  'nextjs-app-router-15',
+  'nextjs-pages-router',
+  'react-vite',
+]);
+
+export type ModuleSystemLabel = 'ES modules' | 'CommonJS';
 
 /**
  * `src` is `src/` or empty so `{{src}}app` stays a relative glob.
  * `scripts` lists names that exist in package.json; the command comes from
  * `scriptCommand`, not from the script body.
  * `ext` / `jsxExt` are prose file-extension placeholders (`ts`/`tsx` or `js`/`jsx`).
+ * `moduleSystem` is the display phrase for JavaScript language rules; null drops the line.
  */
 export interface PlaceholderContext {
   src: '' | 'src/';
@@ -19,6 +33,11 @@ export interface PlaceholderContext {
   ext: 'ts' | 'js';
   /** `tsx` for TypeScript family languages; `jsx` for JavaScript. */
   jsxExt: 'tsx' | 'jsx';
+  /**
+   * Null when greenfield has no package `"type"` and no bundler framework
+   * (the `{{moduleSystem}}` line is dropped).
+   */
+  moduleSystem: ModuleSystemLabel | null;
 }
 
 type KnownPlaceholder =
@@ -26,7 +45,25 @@ type KnownPlaceholder =
   | { readonly kind: 'pm' }
   | { readonly kind: 'ext' }
   | { readonly kind: 'jsxExt' }
+  | { readonly kind: 'moduleSystem' }
   | { readonly kind: 'script'; readonly name: string };
+
+/**
+ * Bundler frameworks → ES modules; else `"type": "module"` → ESM; else CommonJS
+ * for existing projects (Node's default when `"type"` is absent). Greenfield
+ * without a bundler or detected type leaves the label unset so the line drops.
+ */
+export function moduleSystemLabelFor(input: {
+  readonly moduleSystem: ModuleSystem | null;
+  readonly frameworks: readonly string[];
+  readonly mode: 'existing' | 'greenfield';
+}): ModuleSystemLabel | null {
+  if (input.frameworks.some((id) => BUNDLER_FRAMEWORK_IDS.has(id))) return 'ES modules';
+  if (input.moduleSystem === 'esm') return 'ES modules';
+  if (input.moduleSystem === 'cjs') return 'CommonJS';
+  if (input.mode === 'existing') return 'CommonJS';
+  return null;
+}
 
 interface FenceSpan {
   readonly start: number;
@@ -60,7 +97,7 @@ export function findPlaceholders(text: string): string[] {
   return names;
 }
 
-/** `src`, `pm`, `ext`, `jsxExt`, and `scripts.<name>` (`<name>` is non-empty and has no whitespace). */
+/** `src`, `pm`, `ext`, `jsxExt`, `moduleSystem`, and `scripts.<name>` (`<name>` is non-empty and has no whitespace). */
 export function isKnownPlaceholder(name: string): boolean {
   return classify(name).kind !== 'unknown';
 }
@@ -104,6 +141,7 @@ function classify(raw: string): KnownPlaceholder | { readonly kind: 'unknown'; r
   if (name === 'pm') return { kind: 'pm' };
   if (name === 'ext') return { kind: 'ext' };
   if (name === 'jsxExt') return { kind: 'jsxExt' };
+  if (name === 'moduleSystem') return { kind: 'moduleSystem' };
   if (name.startsWith(SCRIPT_PREFIX)) {
     const scriptName = name.slice(SCRIPT_PREFIX.length);
     if (/^\S+$/u.test(scriptName)) return { kind: 'script', name: scriptName };
@@ -121,6 +159,8 @@ function replacement(placeholder: KnownPlaceholder, ctx: PlaceholderContext): st
       return ctx.ext;
     case 'jsxExt':
       return ctx.jsxExt;
+    case 'moduleSystem':
+      return ctx.moduleSystem;
     case 'script':
       if (ctx.pm === null || !Object.hasOwn(ctx.scripts, placeholder.name)) return null;
       return scriptCommand(ctx.pm, placeholder.name);

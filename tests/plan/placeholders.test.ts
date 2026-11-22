@@ -3,6 +3,7 @@ import { AgentInitError } from '../../src/errors.js';
 import {
   findPlaceholders,
   isKnownPlaceholder,
+  moduleSystemLabelFor,
   renderBody,
   renderGlobs,
   scriptCommand,
@@ -17,6 +18,7 @@ function context(overrides: Partial<PlaceholderContext> = {}): PlaceholderContex
     scripts: { test: 'vitest' },
     ext: 'ts',
     jsxExt: 'tsx',
+    moduleSystem: 'CommonJS',
     ...overrides,
   };
 }
@@ -235,9 +237,12 @@ describe('findPlaceholders', () => {
 });
 
 describe('isKnownPlaceholder', () => {
-  it.each(['src', 'pm', 'ext', 'jsxExt', 'scripts.test', ' scripts.test '])('accepts %j', (name) => {
-    expect(isKnownPlaceholder(name)).toBe(true);
-  });
+  it.each(['src', 'pm', 'ext', 'jsxExt', 'moduleSystem', 'scripts.test', ' scripts.test '])(
+    'accepts %j',
+    (name) => {
+      expect(isKnownPlaceholder(name)).toBe(true);
+    },
+  );
 
   it.each(['foo', 'scripts.', 'scripts.my test', 'Scripts.test'])('rejects %j', (name) => {
     expect(isKnownPlaceholder(name)).toBe(false);
@@ -258,5 +263,65 @@ describe('ext / jsxExt placeholders', () => {
         context({ ext: 'js', jsxExt: 'jsx' }),
       ),
     ).toBe('Use `index.js` and `page.jsx`.');
+  });
+});
+
+describe('moduleSystemLabelFor', () => {
+  it('treats bundler frameworks as ES modules even when package type is unset', () => {
+    expect(
+      moduleSystemLabelFor({
+        moduleSystem: null,
+        frameworks: ['express', 'nextjs-app-router'],
+        mode: 'existing',
+      }),
+    ).toBe('ES modules');
+    expect(
+      moduleSystemLabelFor({
+        moduleSystem: 'cjs',
+        frameworks: ['react-vite'],
+        mode: 'existing',
+      }),
+    ).toBe('ES modules');
+  });
+
+  it('maps package.json type module and commonjs when no bundler is selected', () => {
+    expect(
+      moduleSystemLabelFor({ moduleSystem: 'esm', frameworks: ['express'], mode: 'existing' }),
+    ).toBe('ES modules');
+    expect(
+      moduleSystemLabelFor({ moduleSystem: 'cjs', frameworks: ['express'], mode: 'existing' }),
+    ).toBe('CommonJS');
+  });
+
+  it('defaults existing projects without type to CommonJS', () => {
+    expect(
+      moduleSystemLabelFor({ moduleSystem: null, frameworks: ['express'], mode: 'existing' }),
+    ).toBe('CommonJS');
+  });
+
+  it('leaves greenfield without a bundler unset so the line can drop', () => {
+    expect(
+      moduleSystemLabelFor({ moduleSystem: null, frameworks: ['express'], mode: 'greenfield' }),
+    ).toBeNull();
+  });
+});
+
+describe('moduleSystem placeholder', () => {
+  it('renders ES modules and CommonJS phrases', () => {
+    expect(renderBody('Use {{moduleSystem}}.', context({ moduleSystem: 'ES modules' }))).toBe(
+      'Use ES modules.',
+    );
+    expect(renderBody('Use {{moduleSystem}}.', context({ moduleSystem: 'CommonJS' }))).toBe(
+      'Use CommonJS.',
+    );
+  });
+
+  it('drops a line when moduleSystem is unset', () => {
+    expect(
+      renderBody(
+        '- **ALWAYS** treat this as {{moduleSystem}}.\n- Keep this.',
+        context({ moduleSystem: null }),
+      ),
+    ).toBe('- Keep this.');
   });
 });

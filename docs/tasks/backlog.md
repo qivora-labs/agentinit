@@ -67,7 +67,7 @@ Owner decisions on 2026-11-13: two JavaScript language ids (`javascript` and a J
 - ~~J6 Effectiveness eval on a JavaScript fixture~~ — [T75](T75-js-effectiveness-eval.md).
 - ~~P1.1 Older majors for libraries and React + Vite~~ — [T72](T72-react18-vite5.md), [T73](T73-zustand-4.md), [T74](T74-vitest-2.md); [T71](T71-doctor-version-aware-unselected.md) first so new coverage does not fail unpinned CI.
 - Language change check (new, 2026-11-13) — [T68](T68-language-change-check.md).
-- Module system in JavaScript rules (new, 2026-11-13; slice of P2.4) — [T69](T69-module-system-js-rules.md).
+- ~~Module system in JavaScript rules~~ (new, 2026-11-13; slice of P2.4) — [T69](T69-module-system-js-rules.md).
 - 0.2 release gate — [T76](T76-release-gate-0-2.md).
 
 Zod 3, Jest, and Tailwind v3 stay out of 0.2.0 (Jest and Tailwind v3 remain in P3.2). New fragments are additive, so they can ship in a 0.2.x release.
@@ -101,8 +101,8 @@ These change the product's shape. They build on PRD §6.6 and the v0.3 roadmap, 
   - path aliases from tsconfig or jsconfig `paths` (already parsed for tsconfig),
   - where tests live (colocated vs. `tests/`),
   - lint and format tools (ESLint, Biome, Prettier configs),
-  - module system (detection started in T60; **stating it in JavaScript language rules shipped as [T69](T69-module-system-js-rules.md)** — remove that bullet from the remaining work),
   - import style (relative vs. alias, sampled from a bounded number of files).
+  - ~~module system in JavaScript language rules~~ — shipped as [T69](T69-module-system-js-rules.md) (detection started in T60).
 - **Open decisions:** sampling limits (time budget under 60 s, PRD §8.1); how facts appear in `ProjectProfile`; whether facts are frozen in the manifest so `doctor` can report convention drift.
 - **Depends on:** T60 (was J1). **Size:** L. **PRD:** new section under §3.3 and §5.1.
 
