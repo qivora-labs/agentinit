@@ -333,13 +333,38 @@ describe('cliVersionsDiffer', () => {
 });
 
 describe('checkUnselected', () => {
-  it('names the matching fragment and points at init', () => {
-    expect(checkUnselected([{ id: 'zustand', name: 'Zustand' }])).toEqual([
+  it('errors when CLI versions match', () => {
+    expect(checkUnselected([{ id: 'zustand', name: 'Zustand' }], SAME_VERSIONS)).toEqual([
       {
         kind: 'unselected',
         severity: 'error',
         message: 'Zustand (zustand) matches this project and is not selected.',
         fix: FIX,
+      },
+    ]);
+  });
+
+  it('warns when the manifest was written by an older CLI', () => {
+    const versions: DoctorCliVersions = { running: '0.2.0', manifest: '0.1.0' };
+    expect(checkUnselected([{ id: 'zustand', name: 'Zustand' }], versions)).toEqual([
+      {
+        kind: 'unselected',
+        severity: 'warning',
+        message:
+          'Zustand (zustand) matches this project but was not selected under agentinit 0.1.0.',
+        fix: 'npx @agentinit/cli@0.2.0 init',
+      },
+    ]);
+  });
+
+  it('warns when either CLI version is not valid semver', () => {
+    const versions: DoctorCliVersions = { running: '0.1.0', manifest: 'latest' };
+    expect(checkUnselected([{ id: 'react', name: 'React' }], versions)).toEqual([
+      {
+        kind: 'unselected',
+        severity: 'warning',
+        message: 'React (react) matches this project but was not selected under agentinit latest.',
+        fix: 'npx @agentinit/cli@0.1.0 init',
       },
     ]);
   });

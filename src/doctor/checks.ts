@@ -184,7 +184,7 @@ export interface CheckedFragment {
   readonly appliesTo: Readonly<Record<string, string>>;
 }
 
-/** Running CLI vs the version that wrote the manifest (for `rules-update`). */
+/** Running CLI vs the version that wrote the manifest (`rules-update`, `unselected`). */
 export interface DoctorCliVersions {
   readonly running: string;
   readonly manifest: string;
@@ -234,7 +234,7 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
   if (!input.initialized) return [notInitializedIssue()];
   return [
     ...checkChanges(input.changes, input.cliVersions),
-    ...checkUnselected(input.unselected),
+    ...checkUnselected(input.unselected, input.cliVersions),
     ...checkLanguageChange(input.language),
     ...checkFragmentPackages(input.fragments, input.packages),
     ...checkAlwaysOn(input.warnings),
@@ -356,13 +356,28 @@ export function checkChanges(
   return issues;
 }
 
-export function checkUnselected(fragments: readonly NamedFragment[]): DoctorIssue[] {
-  return fragments.map((fragment) =>
-    issue('unselected', {
+/**
+ * Matching fragment not selected and not excluded. Error when CLI versions match;
+ * warning when they differ so new coverage from a newer CLI does not fail unpinned CI.
+ */
+export function checkUnselected(
+  fragments: readonly NamedFragment[],
+  cliVersions: DoctorCliVersions,
+): DoctorIssue[] {
+  const differ = cliVersionsDiffer(cliVersions);
+  return fragments.map((fragment) => {
+    if (differ) {
+      return issue('unselected', {
+        severity: 'warning',
+        message: `${fragment.name} (${fragment.id}) matches this project but was not selected under agentinit ${cliVersions.manifest}.`,
+        fix: `npx @agentinit/cli@${cliVersions.running} init`,
+      });
+    }
+    return issue('unselected', {
       message: `${fragment.name} (${fragment.id}) matches this project and is not selected.`,
       fix: INIT_FIX,
-    }),
-  );
+    });
+  });
 }
 
 /**
@@ -432,11 +447,17 @@ export function checkLegacy(paths: readonly string[]): DoctorIssue[] {
 
 function issue(
   kind: DoctorIssueKind,
-  fields: { readonly message: string; readonly fix: string; readonly path?: string },
+  fields: {
+    readonly message: string;
+    readonly fix: string;
+    readonly path?: string;
+    /** Override when a kind's severity depends on inputs (e.g. version-aware `unselected`). */
+    readonly severity?: DoctorSeverity;
+  },
 ): DoctorIssue {
   return {
     kind,
-    severity: severityFor(kind),
+    severity: fields.severity ?? severityFor(kind),
     message: fields.message,
     fix: fields.fix,
     ...(fields.path === undefined ? {} : { path: fields.path }),

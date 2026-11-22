@@ -269,6 +269,53 @@ describe('doctor', () => {
     expect(await treeDigest(dir)).toBe(digest);
   });
 
+  it('warns with unselected when a matching package appears under an older cliVersion', async () => {
+    const dir = await initYes('next15-src');
+    const pkgManifest = await readPackage(dir);
+    pkgManifest.dependencies = { ...pkgManifest.dependencies, zustand: '5.0.0' };
+    await writePackage(dir, pkgManifest);
+    await setManifestCliVersion(dir, '0.0.9');
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(true);
+    expect(report.notices).toEqual([`Set up with agentinit 0.0.9 · running ${pkg.version}`]);
+    expect(report.issues).toContainEqual({
+      kind: 'unselected',
+      severity: 'warning',
+      message: 'Zustand (zustand) matches this project but was not selected under agentinit 0.0.9.',
+      fix: `npx @agentinit/cli@${pkg.version} init`,
+    });
+
+    const tty = await runCli(['doctor', '--cwd', dir], { stdoutTTY: true });
+    const stdout = stripAnsi(tty.stdout);
+    expect(tty.code).toBe(0);
+    expect(stdout).toContain('was not selected under');
+    expect(stdout).toContain('0.0.9');
+    expect(stdout).toMatch(/[!▲] {2}detected packages/);
+    expect(stdout).toContain('1 warning found.');
+  });
+
+  it('errors with unselected when the same package appears under the running cliVersion', async () => {
+    const dir = await initYes('next15-src');
+    const pkgManifest = await readPackage(dir);
+    pkgManifest.dependencies = { ...pkgManifest.dependencies, zustand: '5.0.0' };
+    await writePackage(dir, pkgManifest);
+    await setManifestCliVersion(dir, pkg.version);
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual({
+      kind: 'unselected',
+      severity: 'error',
+      message: 'Zustand (zustand) matches this project and is not selected.',
+      fix: FIX,
+    });
+  });
+
   it('reports a missing managed file', async () => {
     const dir = await initYes('next15-src');
     const file = '.cursor/rules/agentinit-nextjs-app-router.mdc';

@@ -34,11 +34,11 @@ Record the answers under **Notes** and in the PRD.
 - Screen snapshots if the doctor TTY table changes.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD / README updated.
-- [ ] Manifest `cliVersion` older than running, fragment would be newly selected: `doctor` exits `0` with `unselected` (or new kind) as **warning**.
-- [ ] Same setup with matching `cliVersion`: exits `2` with error severity.
-- [ ] Excluded ids still suppress the issue.
-- [ ] A `minor` changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD / README updated.
+- [x] Manifest `cliVersion` older than running, fragment would be newly selected: `doctor` exits `0` with `unselected` (or new kind) as **warning**.
+- [x] Same setup with matching `cliVersion`: exits `2` with error severity.
+- [x] Excluded ids still suppress the issue.
+- [x] A `minor` changeset exists.
 
 ## Verify
 ```bash
@@ -50,3 +50,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Notes
 Recommendations match the 2026-11-13 planning session. Ship before T72–T74 so those PRs do not break unpinned CI on day one of the release branch merge to main.
+
+**Decisions (2026-11-23):**
+1. Reuse kind `unselected`; severity is **warning** when `cliVersionsDiffer`, else **error** (no new kind).
+2. Warning message names the manifest CLI version and fixes with `npx @agentinit/cli@<running> init`; same-version keeps the previous message and `INIT_FIX`.
