@@ -9,7 +9,7 @@ const temp = createTempProject('agentinit-output-');
 
 afterEach(() => temp.cleanup());
 
-const SNAPSHOT_FIXTURES = ['next15-src', 'vite-react', 'express-ts'] as const;
+const SNAPSHOT_FIXTURES = ['next15-src', 'vite-react', 'express-ts', 'next15-src-js'] as const;
 
 describe('output', () => {
   it('Every generated Cursor, Claude, Windsurf, and Copilot file matches its format in §5.4 and the scope mapping in §5.3', async () => {
@@ -26,12 +26,20 @@ describe('output', () => {
 
   it('Globs resolve correctly for src/ and root layouts and always use forward slashes', async () => {
     const src = await initFixture('next15-src');
-    await assertAppRouterGlobs(src, 'src/app');
+    await assertAppRouterGlobs(src, 'src/app', 'typescript');
     await assertNoBackslashes(src);
 
     const root = await initFixture('next-app-no-src');
-    await assertAppRouterGlobs(root, 'app');
+    await assertAppRouterGlobs(root, 'app', 'typescript');
     await assertNoBackslashes(root);
+
+    const js = await initFixture('next15-src-js');
+    await assertAppRouterGlobs(js, 'src/app', 'javascript');
+    await assertNoBackslashes(js);
+
+    const mixed = await initFixture('mixed-allowjs');
+    await assertAppRouterGlobs(mixed, 'src/app', 'allowJs');
+    await assertNoBackslashes(mixed);
   });
 
   it('AGENTS.md lists only scripts that exist, using the detected package manager', async () => {
@@ -77,19 +85,39 @@ const APP_ROUTER_GLOBS = {
   copilot: '.github/instructions/agentinit-nextjs-app-router.instructions.md',
 } as const;
 
-async function assertAppRouterGlobs(root: string, prefix: 'src/app' | 'app'): Promise<void> {
-  const ts = `${prefix}/**/*.ts`;
-  const tsx = `${prefix}/**/*.tsx`;
-  const joined = `${ts},${tsx}`;
+type GlobMode = 'typescript' | 'javascript' | 'allowJs';
+
+async function assertAppRouterGlobs(
+  root: string,
+  prefix: 'src/app' | 'app',
+  mode: GlobMode,
+): Promise<void> {
+  const patterns =
+    mode === 'javascript'
+      ? [`${prefix}/**/*.js`, `${prefix}/**/*.jsx`]
+      : mode === 'allowJs'
+        ? [
+            `${prefix}/**/*.ts`,
+            `${prefix}/**/*.js`,
+            `${prefix}/**/*.tsx`,
+            `${prefix}/**/*.jsx`,
+          ]
+        : [`${prefix}/**/*.ts`, `${prefix}/**/*.tsx`];
+  const joined = patterns.join(',');
   const cursor = await readFile(path.join(root, APP_ROUTER_GLOBS.cursor), 'utf8');
   const claude = await readFile(path.join(root, APP_ROUTER_GLOBS.claude), 'utf8');
   const windsurf = await readFile(path.join(root, APP_ROUTER_GLOBS.windsurf), 'utf8');
   const copilot = await readFile(path.join(root, APP_ROUTER_GLOBS.copilot), 'utf8');
   expect(cursor).toContain(`globs: ${joined}`);
-  expect(claude).toContain(`  - "${ts}"`);
-  expect(claude).toContain(`  - "${tsx}"`);
+  for (const pattern of patterns) {
+    expect(claude).toContain(`  - "${pattern}"`);
+  }
   expect(windsurf).toContain(`globs: ${joined}`);
   expect(copilot).toContain(`applyTo: "${joined}"`);
+  if (mode === 'javascript') {
+    expect(cursor).not.toContain(`${prefix}/**/*.ts`);
+    expect(cursor).not.toContain(`${prefix}/**/*.tsx`);
+  }
   if (prefix === 'app') {
     expect(cursor).not.toContain('src/app/');
     expect(claude).not.toContain('src/app/');

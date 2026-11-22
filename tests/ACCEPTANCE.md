@@ -4,7 +4,7 @@ Each row is one criterion from PRD §8.1. Automated rows name the test that prov
 
 | Criterion | Test | Result |
 | :--- | :--- | :--- |
-| A JavaScript-only project exits 1 and writes nothing, with or without `--yes`. | `tests/e2e/detection.test.ts` — A JavaScript-only project exits 1 and writes nothing, with or without --yes | automated |
+| A JavaScript-only project exits `0` with `--yes`, selects `javascript` (or `javascript-jsdoc` when `checkJs` is on), and writes files. | `tests/e2e/detection.test.ts` — A JavaScript-only project exits 0 with --yes, selects javascript, and writes files | automated |
 | A monorepo root exits 1 with instructions; running inside a workspace package works. | `tests/e2e/detection.test.ts` — A monorepo root exits 1 with instructions; running inside a workspace package works | automated |
 | Versions are resolved from `node_modules` first; a `workspace:*` or `catalog:` specifier never crashes detection. | `tests/e2e/detection.test.ts` — Versions are resolved from node_modules first; a workspace:* or catalog: specifier never crashes detection | automated |
 | A `tsconfig.json` with comments, trailing commas, and `extends` is parsed correctly. | `tests/e2e/detection.test.ts` — A tsconfig.json with comments, trailing commas, and extends is parsed correctly | automated |
@@ -14,6 +14,8 @@ Each row is one criterion from PRD §8.1. Automated rows name the test that prov
 | No rule text appears in more than one generated file (excluding pointers and imports). | `tests/e2e/no-duplication.test.ts` — No rule text appears in more than one generated file (excluding pointers and imports) | automated |
 | Every generated Cursor, Claude, Windsurf, and Copilot file matches its format in §5.4 and the scope mapping in §5.3. | `tests/e2e/output.test.ts` — Every generated Cursor, Claude, Windsurf, and Copilot file matches its format in §5.4 and the scope mapping in §5.3 | automated |
 | Globs resolve correctly for `src/` and root layouts and always use forward slashes. | `tests/e2e/output.test.ts` — Globs resolve correctly for src/ and root layouts and always use forward slashes | automated |
+| A JavaScript profile rewrites scoped `.ts` / `.tsx` globs to `.js` / `.jsx`; TypeScript without `allowJs` keeps TypeScript-only globs; TypeScript with `allowJs` includes both. | `tests/e2e/output.test.ts` — Globs resolve correctly for src/ and root layouts and always use forward slashes (`next15-src-js`, `mixed-allowjs`) | automated |
+| Expanded library globs (widest case: `vitest` + `allowJs`) keep Cursor, Windsurf, and Copilot joined-string rule files under Windsurf's 12,000-character limit. | `tests/plan/render.test.ts` / plan glob unit coverage | automated |
 | `AGENTS.md` lists only scripts that exist, using the detected package manager. | `tests/e2e/output.test.ts` — AGENTS.md lists only scripts that exist, using the detected package manager | automated |
 | Content outside managed blocks is byte-for-byte unchanged after `init`. | `tests/e2e/safety.test.ts` — Content outside managed blocks is byte-for-byte unchanged after init | automated |
 | Re-running `init` with no project changes writes nothing and prints "Already up to date." | `tests/e2e/safety.test.ts` — Re-running init with no project changes writes nothing and prints "Already up to date." | automated |

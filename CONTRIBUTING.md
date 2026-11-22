@@ -20,8 +20,9 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 | `pnpm check:package` | publint |
 | `pnpm registry:check` | Validate every fragment in `registry/` |
 | `node dist/cli.js --help` | Exercise the built CLI |
+| `node dist/cli.js init --yes --cwd tests/fixtures/js-only` | Try init on a JavaScript fixture (also `next15-src-js`, `vite-react-js`, `express-cjs`, `mixed-allowjs`) |
 
-Node: `^22.18.0 || ^24.11.0 || >=26.0.0`. Package manager: pnpm (see `packageManager` in `package.json`).
+Node: `^22.18.0 || ^24.11.0 || >=26.0.0`. Package manager: pnpm (see `packageManager` in `package.json`). Fixtures under `tests/fixtures/` cover TypeScript and JavaScript projects.
 
 Hand-written agent docs for this repo: [`AGENTS.md`](AGENTS.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md). Product requirements: [`docs/PRD.md`](docs/PRD.md).
 
