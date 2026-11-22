@@ -119,7 +119,7 @@ Always-on content lives once in `AGENTS.md`. Scoped rules and workflows go only 
 
 ## Supported stack
 
-From `npx @agentinit/cli list` (TypeScript web projects in v0.1). A fragment is suggested only when the installed version is in its range:
+From `npx @agentinit/cli list` (TypeScript and JavaScript web projects). A fragment is suggested only when the installed version is in its range:
 
 | Category | Fragment | Applies to |
 | :--- | :--- | :--- |
