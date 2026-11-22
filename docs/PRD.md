@@ -163,7 +163,7 @@ Triggered when `package.json` exists in the target directory.
    - **Marker files:** detects tools that aren't npm packages (e.g., shadcn/ui via `components.json`). Marker files, `tsconfig.json` / `jsconfig.json`, and layout stay in the project directory.
    - **Package manager:** the project's `packageManager` field, then the `packageManager` field of the `package.json` at the lookup root, then the lockfile at the lookup root (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`).
    - **Scripts:** only scripts that actually exist (`build`, `dev`, `lint`, `test`, `typecheck`) are documented, using the detected package manager.
-   - **Compiler config:** prefers `tsconfig.json` when present (JSONC, `extends`, `strict`, `allowJs`, `checkJs`, `paths`); otherwise reads `jsconfig.json` for `paths` and `checkJs`. Records `allowJs`, `checkJs`, and module system from `package.json` `"type"` (`"module"` → esm, `"commonjs"` → cjs, otherwise unset) on the profile every run; these facts are not stored in the manifest.
+   - **Compiler config:** prefers `tsconfig.json` when present (JSONC, `extends`, `strict`, `allowJs`, `checkJs`, `paths`); otherwise reads `jsconfig.json` for `paths` and `checkJs`. Records `allowJs`, `checkJs`, and module system from `package.json` `"type"` (`"module"` → esm, `"commonjs"` → cjs, otherwise unset) on the profile every run; these facts are not stored in the manifest. The plan layer states the module system in JavaScript language rules (`{{moduleSystem}}`): bundler frameworks (`nextjs-app-router`, `nextjs-app-router-15`, `nextjs-pages-router`, `react-vite`) count as ES modules; otherwise `"type": "module"` → ES modules and everything else on an existing project → CommonJS (Node's default when `"type"` is absent). Greenfield without a bundler drops the line.
    - **Layout:** `src/` vs. root (`.ts` / `.tsx` / `.js` / `.jsx` / `.mjs` / `.cjs`; declaration files do not count); Next.js `app/` and/or `pages/` (both fragments are selected when both exist); architecture inference with a confidence score.
    - **Existing agent files:** `AGENTS.md`, `CLAUDE.md`, `.cursor/`, `.cursorrules`, `.claude/`, `.windsurfrules`, `.windsurf/`, `.devin/`, `.github/copilot-instructions.md`, `.github/instructions/`. `.devin/` is Windsurf's directory in Devin Desktop and preselects `windsurf`, the same as `.windsurf/` and `.windsurfrules`. v0.1 still writes `.windsurf/` (§5.2).
    - **Subdirectory:** if run below the git root, notes it and offers to use the git root instead.
@@ -394,7 +394,7 @@ Architecture fragments additionally contain a `## Summary` section (≤ 10 lines
 
 **Default scope by category:** architecture and language → `always`; framework and library → `glob` or `auto`; workflows have no scope.
 
-**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner), `{{ext}}` (`ts` or `js`), and `{{jsxExt}}` (`tsx` or `jsx`) for prose file names in Summary, Map, and directives. A line that references a missing script (or `{{pm}}` in greenfield mode) is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
+**Placeholders** available in fragment bodies and globs: `{{src}}`, `{{pm}}` (package manager), `{{scripts.<name>}}` (full command, e.g. `pnpm test`; `bun run test` for Bun, because `bun test` runs Bun's own test runner), `{{ext}}` (`ts` or `js`), `{{jsxExt}}` (`tsx` or `jsx`) for prose file names in Summary, Map, and directives, and `{{moduleSystem}}` (`ES modules` or `CommonJS`) for JavaScript language rules (§3.3). A line that references a missing script, an unset `{{moduleSystem}}` (greenfield without a bundler), or `{{pm}}` in greenfield mode is dropped, a heading left with no content is dropped too, and ordered lists that lost an item are renumbered (same starting number, no gaps). Unknown placeholders are an error.
 
 **Language-aware globs (plan layer):** fragments keep declaring each TypeScript extension once (`.ts` / `.tsx`). After placeholders render, the plan expands extensions from profile language facts—never from whether `.js` files exist on disk (so `doctor` does not flip when someone adds a `.js` file without `allowJs` changing):
 - **JavaScript** (`javascript` / `javascript-jsdoc`): rewrite `.ts` → `.js` and `.tsx` → `.jsx` (replacement; no `.ts` / `.tsx` remain).
@@ -479,7 +479,7 @@ export default function Page() { /* useEffect(() => fetch('/api/posts')) */ }
 ### 5.1 Layered Output Model
 Most agents read `AGENTS.md` **and** their own files. To avoid loading the same rules twice:
 
-1. **Always-on core → `AGENTS.md` only.** Project commands, the architecture summary (with a link to `ARCHITECTURE.md`), language rules, and other `scope: always` fragments, sorted by `order`, with a short table of contents.
+1. **Always-on core → `AGENTS.md` only.** Project commands, the architecture summary (with a link to `ARCHITECTURE.md`), language rules, and other `scope: always` fragments, sorted by `order`, with a short table of contents. For JavaScript projects, the language rules name the module system (`ES modules` or `CommonJS`) via `{{moduleSystem}}` (§3.3, §4.4); TypeScript language fragments do not.
 2. **Scoped fragments → each tool's native scoped format only.** Never copied into `AGENTS.md`.
 3. **Tool entry files reference `AGENTS.md`** instead of duplicating it.
 4. **Workflows → each tool's native slash-command format.**
@@ -702,7 +702,7 @@ Item-level tasks are T59–T76 in [`docs/tasks/README.md`](tasks/README.md). Own
 - **Two JavaScript language ids**, mirroring TypeScript: `javascript` (no JSDoc rules) and `javascript-jsdoc` (JSDoc type rules for `checkJs`), suggested when `checkJs` is on. Published ids are never renamed.
 - Language detection replaces the TypeScript gate; scoped globs follow the project's language via plan-layer extension mapping (§4.4); each non-language rule fragment carries a JavaScript Contract example beside the TypeScript one (or an explicit TypeScript-only marker).
 - **Language family drift:** `init` and `doctor` report when the project moves between JavaScript and TypeScript (strictness / JSDoc stay preferences).
-- **Module system** (slice of later project-conventions work): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
+- **Module system** (slice of later project-conventions work; shipped in T69): a JavaScript project's language rules state CommonJS or ES modules (bundler frameworks count as ESM).
 - **Version-aware `unselected` in `doctor`:** a matching fragment that isn't selected is a warning when the manifest was written by a different CLI version, so new coverage does not fail unpinned CI.
 - Older majors: React 18 / Vite 5, Zustand 4, Vitest 2.
 - Work lands on a `release/0.2` branch that merges to `main` once for `0.2.0`.

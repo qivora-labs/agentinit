@@ -83,6 +83,7 @@ describe('renderTargetContext', () => {
       scripts: { lint: 'eslint .', test: 'vitest' },
       ext: 'ts',
       jsxExt: 'tsx',
+      moduleSystem: 'CommonJS',
     });
     expect(ctx.workflows.map((workflow) => workflow.id)).toEqual(['new-feature', 'review-arch']);
     expect(ctx.workflows[0]?.argumentHint).toBe('<feature-name>');
@@ -660,4 +661,129 @@ describe('agentRuleBody', () => {
     expect(agentRuleBody(framework)).toContain('Server Components by default.');
     expect(agentRuleBody(library)).toBe(library.body);
   });
+
+  it.each(['javascript', 'javascript-jsdoc'] as const)(
+    'states CommonJS for %s + Express when package type is unset',
+    async (language) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
+        architecture: 'layered',
+        frameworks: ['express'],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            language,
+            moduleSystem: null,
+            frameworks: ['express'],
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body).toContain('treat this project\'s module system as CommonJS');
+      expect(body).not.toContain('{{moduleSystem}}');
+      expect(body).not.toContain('module system as ES modules');
+    },
+  );
+
+  it.each(
+    (['javascript', 'javascript-jsdoc'] as const).flatMap((language) =>
+      (
+        [
+          'nextjs-app-router',
+          'nextjs-app-router-15',
+          'nextjs-pages-router',
+          'react-vite',
+        ] as const
+      ).map((frameworkId) => [language, frameworkId] as const),
+    ),
+  )(
+    'states ES modules for %s + %s even without package type module',
+    async (language, frameworkId) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
+        architecture: 'layered',
+        frameworks: [frameworkId],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            language,
+            moduleSystem: null,
+            frameworks: [frameworkId],
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body).toContain('treat this project\'s module system as ES modules');
+      expect(body).not.toContain('{{moduleSystem}}');
+    },
+  );
+
+  it.each(['typescript', 'typescript-strict'] as const)(
+    'leaves %s language body free of the module-system placeholder',
+    async (language) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
+        architecture: 'layered',
+        frameworks: ['express'],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            language,
+            moduleSystem: null,
+            frameworks: ['express'],
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body.length).toBeGreaterThan(0);
+      expect(body).not.toContain('{{moduleSystem}}');
+      expect(body).not.toMatch(/module system as (?:ES modules|CommonJS)/u);
+    },
+  );
+
+  it.each(['javascript', 'javascript-jsdoc'] as const)(
+    'drops the module-system directive for greenfield %s without a bundler',
+    async (language) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
+        architecture: 'layered',
+        frameworks: [],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            mode: 'greenfield',
+            language,
+            moduleSystem: null,
+            frameworks: [],
+            packageManager: null,
+            scripts: {},
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body).not.toContain('{{moduleSystem}}');
+      expect(body).not.toContain('module system as');
+      expect(body).toContain('**NEVER** write TypeScript-only syntax');
+    },
+  );
 });
