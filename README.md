@@ -207,7 +207,7 @@ Each issue is an **error** or a **warning**. Only errors exit `2`:
 | Severity | Exit | Issues |
 | :--- | :---: | :--- |
 | Error | `2` | No manifest; a generated file or block that is missing, edited, outdated, unmanaged, or stale; a detected fragment that isn't selected or excluded (when CLI versions match); a selected fragment whose package was removed or whose version left the fragment's range |
-| Warning | `0` | Generated rules that differ because another CLI version wrote them (`rules-update`); a matching fragment the older CLI never selected (`unselected`); legacy `.cursorrules` / `.windsurfrules` still present; always-on content over the 1,500-token budget |
+| Warning | `0` | Generated rules that differ because another CLI version wrote them (`rules-update`); a matching fragment not selected under a different CLI version (`unselected`); legacy `.cursorrules` / `.windsurfrules` still present; always-on content over the 1,500-token budget |
 
 ```text
 Legacy files
@@ -235,7 +235,7 @@ jobs:
       - run: npx --yes @agentinit/cli@0.1.2 doctor
 ```
 
-**Pin the version in CI** for reproducible checks. From 0.1.1, an unpinned `npx @agentinit/cli doctor` warns (`rules-update`) instead of failing when a newer release generates different rule text than your committed files. From 0.2, new package coverage from a newer CLI also warns (`unselected`) until you re-run `init` or exclude the fragment. Pinning is still recommended so CI and local runs use the same CLI. To upgrade, run `npx @agentinit/cli@<new version> init` locally, commit the result, and bump the pin in the same pull request.
+**Pin the version in CI** for reproducible checks. From 0.1.1, an unpinned `npx @agentinit/cli doctor` warns (`rules-update`) instead of failing when a newer release generates different rule text than your committed files. From 0.2, new package coverage under a different CLI version also warns (`unselected`) until you re-run `init` or exclude the fragment. Pinning is still recommended so CI and local runs use the same CLI. To upgrade, run `npx @agentinit/cli@<new version> init` locally, commit the result, and bump the pin in the same pull request.
 
 If you'd rather have Dependabot or Renovate propose upgrades, add the CLI as a dev dependency and run that copy instead: `npm install --save-dev @agentinit/cli`, then `npx --no agentinit doctor` in the workflow, after installing dependencies. `--no` stops npx from downloading the unrelated unscoped `agentinit` package when the local copy is missing.
 

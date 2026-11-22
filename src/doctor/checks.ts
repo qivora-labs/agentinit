@@ -109,8 +109,10 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
 };
 
 /**
- * Severity per issue kind (PRD §6.5). A new kind must pick a severity —
+ * Default severity per issue kind (PRD §6.5). A new kind must pick a severity —
  * the `never` branch fails the typecheck until it does.
+ * `unselected` stays `error` here; `checkUnselected` overrides to `warning`
+ * when CLI versions differ (passed via `issue(..., { severity })`).
  */
 const SEVERITY_FOR_KIND = {
   'not-initialized': 'error',
