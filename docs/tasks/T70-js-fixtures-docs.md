@@ -37,11 +37,11 @@ Depends on language detection, globs, examples, wizard copy, language-change che
 - Update `docs/tasks/README.md` Content checklist notes only if needed (usually not).
 
 ## Acceptance criteria
-- [ ] JavaScript Next, Vite, Express CJS, and mixed fixtures exist; `init --yes` exits `0` on each; `doctor` exits `0` after init.
-- [ ] One full JS tree snapshot is committed and reviewed.
-- [ ] Former "JS rejected" e2e assertion is gone or inverted.
-- [ ] README, PRD §8.1/§8.2, and FAQ describe JavaScript support accurately.
-- [ ] Existing TS tree snapshots unchanged unless a listed exception applies.
+- [x] JavaScript Next, Vite, Express CJS, and mixed fixtures exist; `init --yes` exits `0` on each; `doctor` exits `0` after init.
+- [x] One full JS tree snapshot is committed and reviewed.
+- [x] Former "JS rejected" e2e assertion is gone or inverted.
+- [x] README, PRD §8.1/§8.2, and FAQ describe JavaScript support accurately.
+- [x] Existing TS tree snapshots unchanged unless a listed exception applies.
 
 ## Verify
 ```bash
@@ -53,4 +53,4 @@ pnpm smoke
 `test: add javascript fixtures and document javascript support`
 
 ## Notes
-(List fixture directory names and which one is snapshotted.)
+Fixtures: `js-only` (accepted minimal), `next15-src-js` (Next App Router JS; full tree snapshot), `vite-react-js`, `express-cjs` (Express 5 CommonJS), `mixed-allowjs` (TypeScript + `allowJs` with a `.js` helper). Docs-only `patch` changeset because T60–T69 already shipped the runtime behavior.

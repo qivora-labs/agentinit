@@ -14,13 +14,17 @@ const MIN_PARAGRAPH = 40;
 
 const FIXTURES = [
   'next15-src',
+  'next15-src-js',
   'next-app-no-src',
   'next-app-and-pages',
   'vite-react',
+  'vite-react-js',
   'express-ts',
+  'express-cjs',
   'fastify-ts',
   'node-cli-ts',
   'js-only',
+  'mixed-allowjs',
   'empty',
   'pnpm-monorepo',
   'existing-claude-md',

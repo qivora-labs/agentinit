@@ -1,6 +1,6 @@
 # `@agentinit/cli`
 
-**ESLint + Prettier for AI coding agent rules.** Detect your TypeScript stack, stitch curated fragments into tool-native configs for Cursor, Claude Code, Windsurf, and GitHub Copilot, and keep them honest with `doctor`.
+**ESLint + Prettier for AI coding agent rules.** Detect your TypeScript or JavaScript stack, stitch curated fragments into tool-native configs for Cursor, Claude Code, Windsurf, and GitHub Copilot, and keep them honest with `doctor`.
 
 ```bash
 npx @agentinit/cli
@@ -16,7 +16,7 @@ No accounts, API keys, LLM calls, or telemetry.
 
 ## Quick start
 
-**Existing project** — reads `package.json`, installed versions, `tsconfig.json`, and folder layout:
+**Existing project** — reads `package.json`, installed versions, `tsconfig.json` / `jsconfig.json`, and folder layout:
 
 ```bash
 cd your-app
@@ -119,7 +119,7 @@ Always-on content lives once in `AGENTS.md`. Scoped rules and workflows go only 
 
 ## Supported stack
 
-From `npx @agentinit/cli list` (TypeScript web projects in v0.1). A fragment is suggested only when the installed version is in its range:
+From `npx @agentinit/cli list` (TypeScript and JavaScript web projects). A fragment is suggested only when the installed version is in its range:
 
 | Category | Fragment | Applies to |
 | :--- | :--- | :--- |
@@ -137,11 +137,11 @@ From `npx @agentinit/cli list` (TypeScript web projects in v0.1). A fragment is 
 | | React Hook Form + Zod (`react-hook-form-zod`) | `react-hook-form >=7`, `zod >=4` |
 | | Vitest (`vitest`) | `vitest >=3` |
 | | Playwright (`playwright`) | `@playwright/test >=1.40` |
-| **Languages** | TypeScript, TypeScript Strict | — |
+| **Languages** | TypeScript, TypeScript Strict, JavaScript, JavaScript with JSDoc | — |
 | **Architectures** | Flat / Minimal, Feature-Based, Layered / Clean, Atomic Design, Modular / By Concern | — |
 | **Workflows** | `/new-feature`, `/refactor`, `/review-arch`, `/write-tests` | included unless `--no-workflows` |
 
-No matching framework? agentinit still writes base rules (language, architecture, compatible libraries, workflows, and `ARCHITECTURE.md`). A version outside every range (for example Next.js 14) gets the same base rules and a notice. JavaScript-only repos are not supported yet.
+No matching framework? agentinit still writes base rules (language, architecture, compatible libraries, workflows, and `ARCHITECTURE.md`). A version outside every range (for example Next.js 14) gets the same base rules and a notice.
 
 Browse fragments: `npx @agentinit/cli list`, `list --category library`, or `list --json`.
 
@@ -263,7 +263,7 @@ Detected, but v0.1 does not compile a whole workspace. Run the CLI inside one pa
 Supported with base rules. agentinit skips framework-specific library fragments and still writes language, architecture, workflows, and `ARCHITECTURE.md`.
 
 **JavaScript-only projects?**  
-Not supported in v0.1. Use a TypeScript project (strict recommended).
+Supported. Detection picks `javascript`, or `javascript-jsdoc` when `checkJs` is on. Scoped globs use `.js` / `.jsx`; language rules state CommonJS or ES modules.
 
 **Copilot surfaces that ignore `AGENTS.md`?**  
 Some JetBrains Copilot features only see the pointer in `.github/copilot-instructions.md`. An opt-in inline mode is planned for v0.3.

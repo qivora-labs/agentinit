@@ -16,11 +16,46 @@ describe('detection', () => {
     expect(yes.code).toBe(0);
     expect(yes.stderr).not.toContain("JavaScript projects aren't supported yet");
     expect(await listFiles(yesDir)).toContain('AGENTS.md');
+    const agents = await readFile(path.join(yesDir, 'AGENTS.md'), 'utf8');
+    expect(agents).toContain("ALWAYS** treat this project's module system as CommonJS");
     const manifest = JSON.parse(await readFile(path.join(yesDir, '.agentinit/manifest.json'), 'utf8')) as {
       selections: { language: string };
     };
     expect(manifest.selections.language).toBe('javascript');
   });
+
+  it.each([
+    ['next15-src-js', 'javascript', 'nextjs-app-router', 'ES modules'],
+    ['vite-react-js', 'javascript', 'react-vite', 'ES modules'],
+    ['express-cjs', 'javascript', 'express', 'CommonJS'],
+    ['mixed-allowjs', 'typescript-strict', 'nextjs-app-router', undefined],
+  ] as const)(
+    'JavaScript fixture %s: init --yes and doctor exit 0',
+    async (fixture, language, framework, moduleSystem) => {
+      const dir = await temp.copyFixture(fixture);
+      const init = await runCli(['init', '--yes', '--cwd', dir]);
+      expect(init.code, fixture).toBe(0);
+      expect(init.stderr, fixture).not.toContain('This is a bug');
+      expect(await listFiles(dir)).toContain('AGENTS.md');
+
+      const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+        selections: { language: string; frameworks: string[] };
+      };
+      expect(manifest.selections.language).toBe(language);
+      expect(manifest.selections.frameworks).toContain(framework);
+
+      const agents = await readFile(path.join(dir, 'AGENTS.md'), 'utf8');
+      if (moduleSystem !== undefined) {
+        expect(agents).toContain(`ALWAYS** treat this project's module system as ${moduleSystem}`);
+      } else {
+        expect(agents).not.toContain("ALWAYS** treat this project's module system as");
+      }
+
+      const doctor = await runCli(['doctor', '--cwd', dir]);
+      expect(doctor.code, fixture).toBe(0);
+      expect(doctor.stdout).toContain('No issues found.');
+    },
+  );
 
   it('A monorepo root exits 1 with instructions; running inside a workspace package works', async () => {
     const root = await temp.copyFixture('pnpm-monorepo');

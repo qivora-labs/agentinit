@@ -1,6 +1,6 @@
 # `@agentinit/cli` — Product Requirements & Architecture
 
-> **One-Line Pitch:** An open-source, zero-config CLI (`npx @agentinit/cli`) that detects your TypeScript project's stack and generates scoped, version-aware AI coding agent rules, slash-command workflows, and an `ARCHITECTURE.md` for Cursor, Claude Code, Windsurf, and GitHub Copilot — then checks that they stay in sync with your project.
+> **One-Line Pitch:** An open-source, zero-config CLI (`npx @agentinit/cli`) that detects your TypeScript or JavaScript project's stack and generates scoped, version-aware AI coding agent rules, slash-command workflows, and an `ARCHITECTURE.md` for Cursor, Claude Code, Windsurf, and GitHub Copilot — then checks that they stay in sync with your project.
 
 ---
 
@@ -17,7 +17,7 @@ Modern software engineering relies heavily on AI coding agents (Cursor, Claude C
 ### 1.2 The Solution
 A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it generates correct rules (`init`) and checks they stay correct (`doctor`).
 - **100% CLI & open source:** no web dashboard, sign-ups, API keys, token costs, or telemetry.
-- **Smart detection:** reads `package.json`, installed versions, lockfiles, `tsconfig.json`, and folder layout, or guides empty repositories through a short wizard.
+- **Smart detection:** reads `package.json`, installed versions, lockfiles, `tsconfig.json` / `jsconfig.json`, and folder layout, or guides empty repositories through a short wizard.
 - **Curated registry:** stitches reviewed, version-aware Markdown fragments into tool-native configuration.
 - **Write once, no duplication:** always-on rules are written once to `AGENTS.md`; scoped rules go to each tool's native scoped format.
 - **Safe and repeatable:** never overwrites user-written content; re-running is idempotent; `doctor` detects drift and fails CI.
@@ -26,12 +26,12 @@ A fast CLI that acts as **ESLint + Prettier for AI coding agent rules**: it gene
 
 | Persona | Situation | What they need | v0.1 priority |
 | :--- | :--- | :--- | :--- |
-| **Solo developer** | Building a TypeScript web app with one or two agents | Good rules in under a minute, without learning each tool's format | Primary |
+| **Solo developer** | Building a TypeScript or JavaScript web app with one or two agents | Good rules in under a minute, without learning each tool's format | Primary |
 | **Tech lead** (team of 3–15) | Team members use different agents in the same repo | One consistent, committed rule set; CI check that it stays current | Primary |
 | **Open-source maintainer** | Contributors arrive with their own agents | Contributors' agents follow project conventions | Secondary |
 
 ### 1.4 Key Use Cases
-- **UC1 — Existing repo:** run `npx @agentinit/cli` in a Next.js repo, confirm the detected stack, get rules for every agent the team uses.
+- **UC1 — Existing repo:** run `npx @agentinit/cli` in a Next.js (TypeScript or JavaScript) repo, confirm the detected stack, get rules for every agent the team uses.
 - **UC2 — New project:** run it in an empty folder, answer a short wizard, get rules + `ARCHITECTURE.md`, scaffold the app, re-run to refine.
 - **UC3 — Mixed-agent team:** one command writes Cursor, Claude Code, Windsurf, and Copilot files with no duplicated content.
 - **UC4 — Keep rules current:** after adding a library, re-run `init`; in CI, `doctor` fails when rules drift from `package.json`.
@@ -764,9 +764,9 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 - *(manual)* Time from `npx @agentinit/cli` to written files on an existing project is under 60 seconds, excluding download time.
 
 ### 8.2 Fixture Repositories
-`tests/fixtures/`, each minimal but realistic. Full generated trees, covering every target, are snapshotted for `next15-src`, `vite-react`, and `express-ts` under `tests/__snapshots__/e2e/`.
+`tests/fixtures/`, each minimal but realistic. Full generated trees, covering every target, are snapshotted for `next15-src`, `vite-react`, `express-ts`, and `next15-src-js` under `tests/__snapshots__/e2e/`.
 
-`next15-src` (Next 16.3 App Router) · `next15-app` (Next 15.5 App Router + Tailwind 4) · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `express-ts` (Express 5) · `express4-ts` (Express 4) · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (rejected) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-agents-md` (adopt keeps a single H1) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
+`next15-src` (Next 16.3 App Router) · `next15-src-js` (Next 16.3 App Router, JavaScript) · `next15-app` (Next 15.5 App Router + Tailwind 4) · `next-app-no-src` · `next-app-and-pages` · `vite-react` · `vite-react-js` · `express-ts` (Express 5) · `express-cjs` (Express 5 CommonJS) · `express4-ts` (Express 4) · `fastify-ts` · `node-cli-ts` (no framework, base rules) · `js-only` (accepted JavaScript) · `mixed-allowjs` (TypeScript + JavaScript with `allowJs`) · `empty` · `pnpm-monorepo` (rejected at root) · `existing-claude-md` (adopt) · `existing-agents-md` (adopt keeps a single H1) · `existing-workflow-file` (conflict) · `edited-managed-block` (not overwritten) · `jsonc-tsconfig-extends` · `tailwind-v3` (skipped with notice) · `shadcn-components-json` · `crlf-line-endings`.
 
 **Registry CI:** every PR touching `registry/` runs `check-registry` and regenerates snapshots so reviewers can see the effect on output.
 

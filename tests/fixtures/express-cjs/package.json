@@ -1,0 +1,11 @@
+{
+  "name": "express-cjs",
+  "scripts": {
+    "dev": "node src/index.js",
+    "lint": "eslint .",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  }
+}
