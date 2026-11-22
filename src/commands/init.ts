@@ -15,6 +15,7 @@ import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
 import { readManifest, withPreservedExtras, type Manifest } from '../io/manifest.js';
+import { languageFamily } from '../language-family.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { ALWAYS_ON_TOKEN_LIMIT } from '../plan/tokens.js';
 import type { Plan, PlanWarning } from '../plan/types.js';
@@ -25,10 +26,10 @@ import { underRail } from '../ui/brand.js';
 import { confirmGitRoot } from '../ui/git-root.js';
 import { isNonInteractiveSetup, nonInteractiveSelection } from '../ui/defaults.js';
 import {
-  formatLowConfidence,
   formatRegistryNotice,
+  formatSetupNotice,
   formatWarning,
-  type LowConfidenceNotice,
+  type SetupNotice,
 } from '../ui/format.js';
 import type { Logger } from '../ui/logger.js';
 import {
@@ -78,7 +79,7 @@ export interface InitOptions {
 interface Setup {
   readonly selection: Selection;
   readonly agents: readonly AgentTarget[];
-  readonly notices: readonly LowConfidenceNotice[];
+  readonly notices: readonly SetupNotice[];
   readonly excluded: readonly string[];
   /** Ids dropped from `excluded` because they left the registry. */
   readonly excludedNotices: readonly string[];
@@ -742,11 +743,18 @@ async function chooseSetup(
       agents === undefined ? {} : { agents },
     );
     if (!isNonInteractiveSetup(selected)) throw selected;
+    const notices: SetupNotice[] = [...selected.notices];
+    if (
+      saved !== undefined &&
+      languageFamily(saved.language) !== languageFamily(draft.language)
+    ) {
+      notices.push({ kind: 'language-changed', from: saved.language, to: draft.language });
+    }
     // `--yes` never changes excluded (PRD §3.5).
     return {
       selection: selected.selection,
       agents: selected.agents,
-      notices: selected.notices,
+      notices,
       excluded: prunedExcluded,
       excludedNotices,
       workflows,
@@ -928,7 +936,7 @@ function noticeLines(
   registry: Registry,
   detection: DetectionResult,
   resolved: ResolvedSelection,
-  lowConfidence: readonly LowConfidenceNotice[],
+  setupNotices: readonly SetupNotice[],
   options: {
     readonly legacyWarnings: 'include' | 'omit';
     readonly excludedNotices?: readonly string[];
@@ -946,7 +954,7 @@ function noticeLines(
     }
   }
   for (const notice of resolved.notices) lines.push(formatRegistryNotice(notice, registry));
-  for (const notice of lowConfidence) lines.push(formatLowConfidence(notice, registry));
+  for (const notice of setupNotices) lines.push(formatSetupNotice(notice, registry));
   for (const notice of options.excludedNotices ?? []) lines.push(notice);
   return unique(lines);
 }

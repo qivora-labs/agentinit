@@ -33,6 +33,7 @@ const doctorIssueSchema = z
       'unmanaged',
       'stale',
       'unselected',
+      'language-changed',
       'package-removed',
       'unsupported-version',
       'always-on-tokens',
@@ -776,5 +777,77 @@ describe('doctor', () => {
     expect(result.stdout).toContain('Not initialized');
     expect(result.stderr).not.toContain("JavaScript projects aren't supported yet");
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('reports language-changed when a JavaScript project gains tsconfig.json', async () => {
+    const dir = await initYes('js-only');
+    await writeFile(
+      path.join(dir, 'tsconfig.json'),
+      `${JSON.stringify({ compilerOptions: { strict: true } }, null, 2)}\n`,
+    );
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.ok).toBe(false);
+    expect(report.issues).toContainEqual({
+      kind: 'language-changed',
+      severity: 'error',
+      message:
+        'Project language is now TypeScript (manifest has JavaScript; detected TypeScript · strict).',
+      fix: FIX,
+    });
+
+    const fixed = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(fixed.code).toBe(0);
+    const payload = JSON.parse(fixed.stdout) as { notices: string[] };
+    expect(payload.notices.some((notice) => notice.includes('Language family changed'))).toBe(true);
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { language: string };
+    };
+    expect(manifest.selections.language).toBe('typescript-strict');
+    expect((await runCli(['doctor', '--cwd', dir])).code).toBe(0);
+  });
+
+  it('reports language-changed when a TypeScript project becomes JavaScript-only', async () => {
+    const dir = await initYes('next15-src');
+    await unlink(path.join(dir, 'tsconfig.json'));
+    const pkg = await readPackage(dir);
+    const devDependencies = Object.fromEntries(
+      Object.entries(pkg.devDependencies ?? {}).filter(([name]) => name !== 'typescript'),
+    );
+    await writePackage(dir, { ...pkg, devDependencies });
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(2);
+    const report = parseReport(result.stdout);
+    expect(report.issues.some((issue) => issue.kind === 'language-changed')).toBe(true);
+    expect(report.issues.find((issue) => issue.kind === 'language-changed')).toMatchObject({
+      severity: 'error',
+      fix: FIX,
+    });
+
+    const fixed = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(fixed.code).toBe(0);
+    const payload = JSON.parse(fixed.stdout) as { notices: string[] };
+    expect(payload.notices.some((notice) => notice.includes('Language family changed'))).toBe(true);
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { language: string };
+    };
+    expect(manifest.selections.language).toBe('javascript');
+    expect((await runCli(['doctor', '--cwd', dir])).code).toBe(0);
+  });
+
+  it('does not report language-changed when only TypeScript strictness flips', async () => {
+    const dir = await initYes('next15-src');
+    await writeFile(
+      path.join(dir, 'tsconfig.json'),
+      `${JSON.stringify({ compilerOptions: { strict: false } }, null, 2)}\n`,
+    );
+
+    const result = await runCli(['doctor', '--json', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const report = parseReport(result.stdout);
+    expect(report.issues.filter((issue) => issue.kind === 'language-changed')).toEqual([]);
   });
 });

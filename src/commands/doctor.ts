@@ -156,6 +156,14 @@ async function issuesForManifest(root: string, registry: Registry, manifest: Man
     warnings: plan.warnings,
     legacyFiles: findLegacyFiles(root),
     cliVersions: { running: pkg.version, manifest: manifest.cliVersion },
+    ...(existing
+      ? {
+          language: {
+            saved: manifest.selections.language,
+            detected: detection.draft.language,
+          },
+        }
+      : {}),
   });
 }
 

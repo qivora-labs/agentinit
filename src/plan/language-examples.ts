@@ -1,9 +1,10 @@
+import { languageFamily, type LanguageFamily } from '../language-family.js';
 import type { Language } from '../types.js';
 
 /** HTML comment that marks a fragment or a single directive as TypeScript-only. */
 export const TYPESCRIPT_ONLY_MARKER = '<!-- agentinit:typescript-only -->';
 
-export type ExampleLanguageFamily = 'typescript' | 'javascript';
+export type ExampleLanguageFamily = LanguageFamily;
 
 interface FenceSpan {
   readonly start: number;
@@ -14,7 +15,7 @@ interface FenceSpan {
 
 /** JavaScript family languages select `js`/`jsx` Contract fences and `{{ext}}` → `js`. */
 export function exampleLanguageFamily(language: Language): ExampleLanguageFamily {
-  return language === 'javascript' || language === 'javascript-jsdoc' ? 'javascript' : 'typescript';
+  return languageFamily(language);
 }
 
 /**

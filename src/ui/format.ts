@@ -1,6 +1,8 @@
 import type { ProjectDraft, DetectionWarning } from '../detect/index.js';
+import { languageFamily, languageFamilyLabel, languageLabel } from '../language-family.js';
 import type { Registry } from '../registry/load.js';
 import type { RegistryNotice } from '../registry/resolve.js';
+import type { Language } from '../types.js';
 import { alignColumns } from './align.js';
 import { fragmentName } from './catalog.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
@@ -11,10 +13,11 @@ export const NO_FRAMEWORK_SUMMARY = 'none detected';
 
 export const NO_FRAMEWORK_NOTICE = 'No framework rules matched; generating base rules.';
 
-export interface LowConfidenceNotice {
-  readonly kind: 'low-confidence-architecture';
-  readonly confidence: number;
-}
+export type SetupNotice =
+  | { readonly kind: 'low-confidence-architecture'; readonly confidence: number }
+  | { readonly kind: 'language-changed'; readonly from: Language; readonly to: Language };
+
+export type LowConfidenceNotice = Extract<SetupNotice, { kind: 'low-confidence-architecture' }>;
 
 export interface SummaryText {
   readonly draft: ProjectDraft;
@@ -140,10 +143,27 @@ export function formatWarning(warning: DetectionWarning): string {
 }
 
 export function formatLowConfidence(notice: LowConfidenceNotice, registry: Registry): string {
-  const name = fragmentName(registry, 'flat');
-  const confidence = formatConfidence(notice.confidence);
-  const limit = formatConfidence(LOW_ARCHITECTURE_CONFIDENCE);
-  return `Architecture confidence is ${confidence}, below ${limit}. Using ${name}.`;
+  return formatSetupNotice(notice, registry);
+}
+
+export function formatSetupNotice(notice: SetupNotice, registry: Registry): string {
+  switch (notice.kind) {
+    case 'low-confidence-architecture': {
+      const name = fragmentName(registry, 'flat');
+      const confidence = formatConfidence(notice.confidence);
+      const limit = formatConfidence(LOW_ARCHITECTURE_CONFIDENCE);
+      return `Architecture confidence is ${confidence}, below ${limit}. Using ${name}.`;
+    }
+    case 'language-changed': {
+      const from = languageFamilyLabel(languageFamily(notice.from));
+      const toFamily = languageFamilyLabel(languageFamily(notice.to));
+      return `Language family changed from ${from} to ${toFamily}. Using ${languageLabel(notice.to)}.`;
+    }
+    default: {
+      const unexpected: never = notice;
+      throw new Error(`Unhandled setup notice: ${String(unexpected)}`);
+    }
+  }
 }
 
 export function formatConfidence(confidence: number): string {
@@ -179,23 +199,6 @@ function formatLanguage(draft: ProjectDraft, theme: Theme): string {
   const short = majorMinor(version);
   if (short === undefined) return label;
   return `${label}  ${theme.muted(`typescript ${short}`)}`;
-}
-
-function languageLabel(language: ProjectDraft['language']): string {
-  switch (language) {
-    case 'typescript-strict':
-      return 'TypeScript · strict';
-    case 'typescript':
-      return 'TypeScript';
-    case 'javascript-jsdoc':
-      return 'JavaScript · JSDoc';
-    case 'javascript':
-      return 'JavaScript';
-    default: {
-      const unexpected: never = language;
-      throw new Error(`Unhandled language: ${String(unexpected)}`);
-    }
-  }
 }
 
 function formatArchitecture(

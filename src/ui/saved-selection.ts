@@ -1,5 +1,6 @@
 import { compareText } from '../compare-text.js';
 import type { ProjectDraft } from '../detect/index.js';
+import { languageFamily, languageLabel } from '../language-family.js';
 import type { Registry } from '../registry/load.js';
 import type { AgentTarget, Language } from '../types.js';
 import { alignColumns } from './align.js';
@@ -26,7 +27,9 @@ export interface SavedSelections {
  * Manifest choices replace fresh suggestions when detection does not contradict them.
  * Framework and library membership stays with detection: a new package is added,
  * and a package that is gone is not kept — except ids in `excluded`, which stay out.
- * Architecture, language, and agents are preferences, so the saved values win.
+ * Architecture and agents are preferences, so the saved values win.
+ * Language is a preference within a family; a JavaScript ↔ TypeScript family change
+ * adopts the detected language id instead.
  * Confidence is raised so a later `--yes` run does not replace a saved architecture
  * with `flat`.
  */
@@ -34,7 +37,10 @@ export function draftWithSavedSelections(draft: ProjectDraft, saved: SavedSelect
   const excluded = new Set(saved.excluded);
   return {
     ...draft,
-    language: saved.language,
+    language:
+      languageFamily(saved.language) === languageFamily(draft.language)
+        ? saved.language
+        : draft.language,
     architecture: { id: saved.architecture, confidence: 1 },
     frameworks: draft.frameworks.filter((id) => !excluded.has(id)),
     libraries: draft.libraries.filter((id) => !excluded.has(id)),
@@ -43,9 +49,10 @@ export function draftWithSavedSelections(draft: ProjectDraft, saved: SavedSelect
 }
 
 /**
- * True when the saved framework/library set still matches detection and the
- * project did not just leave greenfield. Architecture and agents are preferences
- * and are not compared here. Excluded detected ids are ignored on both sides.
+ * True when the saved framework/library set still matches detection, the language
+ * family is unchanged, and the project did not just leave greenfield. Architecture,
+ * agents, and strictness/JSDoc within a family are preferences and are not compared.
+ * Excluded detected ids are ignored on both sides.
  */
 export function selectionsMatchDetection(
   saved: SavedSelections,
@@ -53,6 +60,7 @@ export function selectionsMatchDetection(
   fromGreenfield: boolean,
 ): boolean {
   if (fromGreenfield) return false;
+  if (languageFamily(saved.language) !== languageFamily(draft.language)) return false;
   const excluded = new Set(saved.excluded);
   const savedIds = new Set([...saved.frameworks, ...saved.libraries]);
   const detectedIds = new Set([...draft.frameworks, ...draft.libraries]);
@@ -108,6 +116,8 @@ export function formatSelectionChanges(input: {
   const detectedIds = new Set([...input.draft.frameworks, ...input.draft.libraries]);
   const added = listedIds(input.draft, savedIds, excluded);
   const removed = listedSaved(input.saved, detectedIds);
+  const languageChanged =
+    languageFamily(input.saved.language) !== languageFamily(input.draft.language);
   const lines: string[] = [];
   const rows: string[][] = [];
 
@@ -116,7 +126,9 @@ export function formatSelectionChanges(input: {
   }
 
   if (added.length === 0 && removed.length === 0) {
-    if (!input.fromGreenfield) lines.push('No package changes since the last run.');
+    if (!input.fromGreenfield && !languageChanged) {
+      lines.push('No package changes since the last run.');
+    }
   } else {
     for (let index = 0; index < added.length; index += 1) {
       const id = added[index];
@@ -134,6 +146,13 @@ export function formatSelectionChanges(input: {
         fragmentName(input.registry, id),
       ]);
     }
+  }
+
+  if (languageChanged) {
+    rows.push([
+      input.theme.muted('Language'),
+      `${languageLabel(input.saved.language)} → ${languageLabel(input.draft.language)}`,
+    ]);
   }
 
   if (input.fromGreenfield) {

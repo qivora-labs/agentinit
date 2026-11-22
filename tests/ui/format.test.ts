@@ -7,6 +7,7 @@ import {
   NO_FRAMEWORK_SUMMARY,
   formatConfidence,
   formatLowConfidence,
+  formatSetupNotice,
   formatRegistryNotice,
   formatSummary,
   formatSummaryTitle,
@@ -114,6 +115,18 @@ describe('formatLowConfidence', () => {
     expect(formatLowConfidence({ kind: 'low-confidence-architecture', confidence: 0.5 }, bundled)).toBe(
       `Architecture confidence is 0.5, below 0.7. Using ${fragmentName(bundled, 'flat')}.`,
     );
+  });
+});
+
+describe('formatSetupNotice', () => {
+  it('describes a language family switch and the detected id', async () => {
+    const bundled = await bundledRegistry();
+    expect(
+      formatSetupNotice(
+        { kind: 'language-changed', from: 'javascript', to: 'typescript-strict' },
+        bundled,
+      ),
+    ).toBe('Language family changed from JavaScript to TypeScript. Using TypeScript · strict.');
   });
 });
 

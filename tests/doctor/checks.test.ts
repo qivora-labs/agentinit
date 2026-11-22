@@ -3,6 +3,7 @@ import {
   checkAlwaysOn,
   checkChanges,
   checkFragmentPackages,
+  checkLanguageChange,
   checkLegacy,
   checkUnselected,
   cliVersionsDiffer,
@@ -65,6 +66,50 @@ describe('collectDoctorIssues', () => {
         cliVersions: SAME_VERSIONS,
       }),
     ).toEqual([]);
+  });
+
+  it('reports language-changed when the family moves between JavaScript and TypeScript', () => {
+    expect(
+      collectDoctorIssues({
+        initialized: true,
+        changes: [],
+        unselected: [],
+        fragments: [],
+        packages: {},
+        warnings: [],
+        legacyFiles: [],
+        cliVersions: SAME_VERSIONS,
+        language: { saved: 'javascript', detected: 'typescript-strict' },
+      }),
+    ).toEqual([
+      {
+        kind: 'language-changed',
+        severity: 'error',
+        message:
+          'Project language is now TypeScript (manifest has JavaScript; detected TypeScript · strict).',
+        fix: FIX,
+      },
+    ]);
+  });
+});
+
+describe('checkLanguageChange', () => {
+  it.each([
+    ['javascript → typescript-strict', 'javascript', 'typescript-strict', true],
+    ['typescript → javascript-jsdoc', 'typescript', 'javascript-jsdoc', true],
+    ['typescript-strict → typescript (strictness only)', 'typescript-strict', 'typescript', false],
+    ['javascript → javascript-jsdoc (JSDoc only)', 'javascript', 'javascript-jsdoc', false],
+    ['same id', 'typescript-strict', 'typescript-strict', false],
+  ] as const)('%s', (_name, saved, detected, reports) => {
+    const issues = checkLanguageChange({ saved, detected });
+    expect(issues.length > 0).toBe(reports);
+    if (reports) {
+      expect(issues[0]).toMatchObject({ kind: 'language-changed', severity: 'error', fix: FIX });
+    }
+  });
+
+  it('returns nothing when language input is omitted', () => {
+    expect(checkLanguageChange(undefined)).toEqual([]);
   });
 });
 

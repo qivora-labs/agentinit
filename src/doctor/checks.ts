@@ -1,7 +1,13 @@
 import { eq, lt, satisfies, valid } from 'semver';
 import { compareText } from '../compare-text.js';
+import {
+  languageFamily,
+  languageFamilyLabel,
+  languageLabel,
+} from '../language-family.js';
 import { ownedRuleId } from '../owned-paths.js';
 import type { PlanWarning } from '../plan/types.js';
+import type { Language } from '../types.js';
 
 /** Same command `init` prints for users who have not generated rules yet. */
 export const INIT_FIX = 'npx @agentinit/cli init';
@@ -30,6 +36,7 @@ export const DOCTOR_ISSUE_KINDS = [
   'unmanaged',
   'stale',
   'unselected',
+  'language-changed',
   'package-removed',
   'unsupported-version',
   'always-on-tokens',
@@ -94,6 +101,7 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
   unmanaged: 'managed-files',
   stale: 'managed-files',
   unselected: 'detected-packages',
+  'language-changed': 'detected-packages',
   'package-removed': 'package-versions',
   'unsupported-version': 'package-versions',
   'always-on-tokens': 'token-budget',
@@ -114,6 +122,7 @@ const SEVERITY_FOR_KIND = {
   unmanaged: 'error',
   stale: 'error',
   unselected: 'error',
+  'language-changed': 'error',
   'package-removed': 'error',
   'unsupported-version': 'error',
   'always-on-tokens': 'warning',
@@ -131,6 +140,7 @@ function severityFor(kind: DoctorIssueKind): DoctorSeverity {
     case 'unmanaged':
     case 'stale':
     case 'unselected':
+    case 'language-changed':
     case 'package-removed':
     case 'unsupported-version':
     case 'always-on-tokens':
@@ -180,6 +190,12 @@ export interface DoctorCliVersions {
   readonly manifest: string;
 }
 
+/** Saved vs currently detected language; omit when there is no detection draft. */
+export interface DoctorLanguageInput {
+  readonly saved: Language;
+  readonly detected: Language;
+}
+
 export interface DoctorInput {
   readonly initialized: boolean;
   readonly changes: readonly DriftChange[];
@@ -189,6 +205,7 @@ export interface DoctorInput {
   readonly warnings: readonly PlanWarning[];
   readonly legacyFiles: readonly string[];
   readonly cliVersions: DoctorCliVersions;
+  readonly language?: DoctorLanguageInput;
 }
 
 const GROUP_TITLE: Record<DoctorIssueKind, string> = {
@@ -201,6 +218,7 @@ const GROUP_TITLE: Record<DoctorIssueKind, string> = {
   unmanaged: 'Unmanaged',
   stale: 'Stale',
   unselected: 'Not selected',
+  'language-changed': 'Language changed',
   'package-removed': 'Package removed',
   'unsupported-version': 'Unsupported version',
   'always-on-tokens': 'Always-on budget',
@@ -217,6 +235,7 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
   return [
     ...checkChanges(input.changes, input.cliVersions),
     ...checkUnselected(input.unselected),
+    ...checkLanguageChange(input.language),
     ...checkFragmentPackages(input.fragments, input.packages),
     ...checkAlwaysOn(input.warnings),
     ...checkLegacy(input.legacyFiles),
@@ -344,6 +363,23 @@ export function checkUnselected(fragments: readonly NamedFragment[]): DoctorIssu
       fix: INIT_FIX,
     }),
   );
+}
+
+/**
+ * Family only: `typescript` ↔ `typescript-strict` and `javascript` ↔ `javascript-jsdoc`
+ * are preferences and do not produce an issue.
+ */
+export function checkLanguageChange(language: DoctorLanguageInput | undefined): DoctorIssue[] {
+  if (language === undefined) return [];
+  if (languageFamily(language.saved) === languageFamily(language.detected)) return [];
+  const from = languageFamilyLabel(languageFamily(language.saved));
+  const to = languageFamilyLabel(languageFamily(language.detected));
+  return [
+    issue('language-changed', {
+      message: `Project language is now ${to} (manifest has ${from}; detected ${languageLabel(language.detected)}).`,
+      fix: INIT_FIX,
+    }),
+  ];
 }
 
 /**

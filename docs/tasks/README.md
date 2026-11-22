@@ -121,7 +121,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T65](T65-js-examples-libraries-ui-state.md) | Content: JS examples for Tailwind, shadcn, TanStack Query, Zustand | M11 | T62 | M | done |
 | [T66](T66-js-examples-libraries-forms-testing.md) | Content: JS examples for RHF + Zod, Vitest, Playwright | M11 | T62 | M | done |
 | [T67](T67-wizard-summary-js.md) | Wizard, summary, and error text for JavaScript | M11 | T60 | M | done |
-| [T68](T68-language-change-check.md) | Language change check | M11 | T60 | S–M | todo |
+| [T68](T68-language-change-check.md) | Language change check | M11 | T60 | S–M | done |
 | [T69](T69-module-system-js-rules.md) | Module system in JavaScript rules | M11 | T62 | S–M | todo |
 | [T70](T70-js-fixtures-docs.md) | JavaScript fixtures, acceptance tests, and docs | M11 | T61–T69 | M | todo |
 | [T71](T71-doctor-version-aware-unselected.md) | Version-aware `unselected` in `doctor` | M12 | — | S | todo |
