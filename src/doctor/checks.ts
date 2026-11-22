@@ -109,8 +109,10 @@ const CHECK_FOR_KIND: Record<DoctorIssueKind, DoctorCheckId> = {
 };
 
 /**
- * Severity per issue kind (PRD §6.5). A new kind must pick a severity —
+ * Default severity per issue kind (PRD §6.5). A new kind must pick a severity —
  * the `never` branch fails the typecheck until it does.
+ * `unselected` stays `error` here; `checkUnselected` overrides to `warning`
+ * when CLI versions differ (passed via `issue(..., { severity })`).
  */
 const SEVERITY_FOR_KIND = {
   'not-initialized': 'error',
@@ -184,7 +186,7 @@ export interface CheckedFragment {
   readonly appliesTo: Readonly<Record<string, string>>;
 }
 
-/** Running CLI vs the version that wrote the manifest (for `rules-update`). */
+/** Running CLI vs the version that wrote the manifest (`rules-update`, `unselected`). */
 export interface DoctorCliVersions {
   readonly running: string;
   readonly manifest: string;
@@ -234,7 +236,7 @@ export function collectDoctorIssues(input: DoctorInput): DoctorIssue[] {
   if (!input.initialized) return [notInitializedIssue()];
   return [
     ...checkChanges(input.changes, input.cliVersions),
-    ...checkUnselected(input.unselected),
+    ...checkUnselected(input.unselected, input.cliVersions),
     ...checkLanguageChange(input.language),
     ...checkFragmentPackages(input.fragments, input.packages),
     ...checkAlwaysOn(input.warnings),
@@ -356,13 +358,49 @@ export function checkChanges(
   return issues;
 }
 
-export function checkUnselected(fragments: readonly NamedFragment[]): DoctorIssue[] {
-  return fragments.map((fragment) =>
-    issue('unselected', {
+/**
+ * Matching fragment not selected and not excluded. Error when CLI versions match;
+ * warning when they differ so new coverage from a newer CLI does not fail unpinned CI.
+ * When the running CLI is older than the manifest, the fix asks to upgrade doctor
+ * (same directional split as `rulesUpdate`) instead of re-init with the older CLI.
+ */
+export function checkUnselected(
+  fragments: readonly NamedFragment[],
+  cliVersions: DoctorCliVersions,
+): DoctorIssue[] {
+  return fragments.map((fragment) => unselectedIssue(fragment, cliVersions));
+}
+
+function unselectedIssue(fragment: NamedFragment, cliVersions: DoctorCliVersions): DoctorIssue {
+  if (!cliVersionsDiffer(cliVersions)) {
+    return issue('unselected', {
       message: `${fragment.name} (${fragment.id}) matches this project and is not selected.`,
       fix: INIT_FIX,
-    }),
-  );
+    });
+  }
+  return unselectedVersionAware(fragment, cliVersions);
+}
+
+function unselectedVersionAware(
+  fragment: NamedFragment,
+  cliVersions: DoctorCliVersions,
+): DoctorIssue {
+  const running = cliVersions.running;
+  const manifest = cliVersions.manifest;
+  const runningValid = valid(running) !== null;
+  const manifestValid = valid(manifest) !== null;
+  if (runningValid && manifestValid && lt(running, manifest)) {
+    return issue('unselected', {
+      severity: 'warning',
+      message: `${fragment.name} (${fragment.id}) matches this project under a newer agentinit (${manifest}).`,
+      fix: `Run doctor with \`@agentinit/cli@${manifest}\` or newer.`,
+    });
+  }
+  return issue('unselected', {
+    severity: 'warning',
+    message: `${fragment.name} (${fragment.id}) matches this project but was not selected under agentinit ${manifest}.`,
+    fix: `npx @agentinit/cli@${running} init`,
+  });
 }
 
 /**
@@ -432,11 +470,17 @@ export function checkLegacy(paths: readonly string[]): DoctorIssue[] {
 
 function issue(
   kind: DoctorIssueKind,
-  fields: { readonly message: string; readonly fix: string; readonly path?: string },
+  fields: {
+    readonly message: string;
+    readonly fix: string;
+    readonly path?: string;
+    /** Override when a kind's severity depends on inputs (e.g. version-aware `unselected`). */
+    readonly severity?: DoctorSeverity;
+  },
 ): DoctorIssue {
   return {
     kind,
-    severity: severityFor(kind),
+    severity: fields.severity ?? severityFor(kind),
     message: fields.message,
     fix: fields.fix,
     ...(fields.path === undefined ? {} : { path: fields.path }),
