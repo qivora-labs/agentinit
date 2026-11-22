@@ -82,7 +82,7 @@ Public contracts after `0.1.0`:
 
 1. **Fragment ids** — published registry `id`s never change. Deprecate and replace with a new id instead of renaming.
 2. **Manifest** — changes in `0.x` are additive and optional only. From `0.1.1`, readers ignore unknown keys at the top level, in `selections`, and in file entries, and rewrites preserve them. Do not remove or reinterpret known keys without a migration story. A new value in a closed field (`language`, `agents`, `mode`) needs a minor release; from `0.1.2`, older readers that cannot parse the file answer with the upgrade message when `cliVersion` is newer.
-3. **`--json` shapes and exit codes** — these are public. Breaking changes need a minor release (pre-1.0) and a `BREAKING CHANGE` note in the changeset.
+3. **`--json` shapes and exit codes** — these are public. Breaking changes need a minor release (pre-1.0) and a `BREAKING CHANGE` note in the changeset. From `0.2.0`, `doctor --json` issue `kind` may be `language-changed` (consumers that exhaust kinds must handle the new value).
 
 See also the short pointer in [`AGENTS.md`](AGENTS.md) and PRD §6.2 / §9.
 

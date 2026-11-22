@@ -40,6 +40,24 @@ describe('draftWithSavedSelections', () => {
     expect(next.libraries).toEqual(['zustand', 'vitest']);
   });
 
+  it('keeps saved language when only strictness or JSDoc within a family changes', () => {
+    const draft = sampleDraft({ language: 'typescript-strict' });
+    expect(draftWithSavedSelections(draft, saved).language).toBe('typescript');
+    const jsDraft = sampleDraft({ language: 'javascript-jsdoc' });
+    expect(
+      draftWithSavedSelections(jsDraft, { ...saved, language: 'javascript' }).language,
+    ).toBe('javascript');
+  });
+
+  it('adopts detected language when the family changes', () => {
+    const draft = sampleDraft({ language: 'typescript-strict' });
+    expect(
+      draftWithSavedSelections(draft, { ...saved, language: 'javascript' }).language,
+    ).toBe('typescript-strict');
+    const jsDraft = sampleDraft({ language: 'javascript-jsdoc' });
+    expect(draftWithSavedSelections(jsDraft, saved).language).toBe('javascript-jsdoc');
+  });
+
   it('omits excluded detected packages from the defaults', () => {
     const draft = sampleDraft({ libraries: ['zustand', 'vitest'] });
     const next = draftWithSavedSelections(draft, { ...saved, excluded: ['zustand'] });
@@ -57,6 +75,19 @@ describe('selectionsMatchDetection', () => {
         false,
       ),
     ).toBe(true);
+  });
+
+  it('treats a language family change as a mismatch', () => {
+    const draft = sampleDraft({ language: 'javascript' });
+    expect(selectionsMatchDetection(saved, draft, false)).toBe(false);
+  });
+
+  it('ignores strictness flips within the TypeScript family', () => {
+    const draft = sampleDraft({
+      language: 'typescript-strict',
+      libraries: ['vitest', 'playwright'],
+    });
+    expect(selectionsMatchDetection(saved, draft, false)).toBe(true);
   });
 });
 
@@ -112,6 +143,24 @@ describe('formatSelectionChanges', () => {
 
   it('says when nothing about the packages changed', () => {
     const draft = sampleDraft({ libraries: ['vitest', 'playwright'] });
+    const text = formatSelectionChanges({ saved, draft, registry, fromGreenfield: false, theme });
+    expect(text).toBe('No package changes since the last run.');
+  });
+
+  it('lists a language family change without calling it a package change', () => {
+    const draft = sampleDraft({
+      language: 'javascript',
+      libraries: ['vitest', 'playwright'],
+    });
+    const text = formatSelectionChanges({ saved, draft, registry, fromGreenfield: false, theme });
+    expect(text).toBe('Language  TypeScript → JavaScript');
+  });
+
+  it('does not list a strictness-only language preference flip', () => {
+    const draft = sampleDraft({
+      language: 'typescript-strict',
+      libraries: ['vitest', 'playwright'],
+    });
     const text = formatSelectionChanges({ saved, draft, registry, fromGreenfield: false, theme });
     expect(text).toBe('No package changes since the last run.');
   });

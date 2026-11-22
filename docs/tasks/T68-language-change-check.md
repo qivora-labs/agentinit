@@ -37,11 +37,11 @@ Record the answers under **Notes** and in the PRD.
 - Screen snapshots if TTY doctor output gains a row.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**, and the PRD updated.
-- [ ] Manifest `javascript`, project now has `tsconfig.json`: `doctor` exits `2` with the new kind; `init --yes` follows decision 3.
-- [ ] Manifest `typescript-strict`, project still TypeScript but `strict` false: no language-change issue.
-- [ ] `--json` includes the new kind with `severity` per decision 2.
-- [ ] A `minor` changeset exists.
+- [x] Decisions recorded under **Notes**, and the PRD updated.
+- [x] Manifest `javascript`, project now has `tsconfig.json`: `doctor` exits `2` with the new kind; `init --yes` follows decision 3.
+- [x] Manifest `typescript-strict`, project still TypeScript but `strict` false: no language-change issue.
+- [x] `--json` includes the new kind with `severity` per decision 2.
+- [x] A `minor` changeset exists.
 
 ## Verify
 ```bash
@@ -52,4 +52,10 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(doctor): report language family changes between javascript and typescript`
 
 ## Notes
-Recommendations match the 2026-11-13 planning session. Confirm issue kind name before coding (it becomes part of the public `--json` contract).
+Owner confirmed recommendations (2026-11-22):
+1. Compare **language family** only (`typescript`/`typescript-strict` vs `javascript`/`javascript-jsdoc`).
+2. Doctor kind **`language-changed`**, severity **error** (exit `2`), fix: re-run `init`.
+3. `init --yes` switches to the detected family default id, prints a notice, regenerates.
+4. Interactive re-run lists the mismatch; *Use this configuration* adopts detection language; *Customize* can override.
+
+Mapped `language-changed` under the existing `detected-packages` TTY checklist row (no new checklist id / screen snapshot).

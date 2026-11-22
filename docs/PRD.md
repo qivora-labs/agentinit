@@ -180,7 +180,8 @@ Triggered when `package.json` exists in the target directory.
 ### 3.4 Re-Running `init`
 `init` is idempotent and is the update path in v0.1.
 - When a manifest exists, its selections become the defaults. The CLI re-detects the project and lists framework and library ids that were added or removed. Ids in `selections.excluded` are omitted from that list and from the defaults, and the summary card shows them on one muted line (for example *"Excluded: Zustand"*). Layout is included when a greenfield manifest meets a new `package.json`. The manifest does not store package versions, so a version change is left out of that list. Unsupported-version notices and legacy-file warnings are included in the same summary.
-- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed. The up-to-date shortcut also ignores excluded ids when comparing selections to detection.
+- **Language family drift:** when the project moves between JavaScript (`javascript` / `javascript-jsdoc`) and TypeScript (`typescript` / `typescript-strict`), the change list includes a Language line (saved → detected). *Use this configuration* adopts the detected language id for that family; *Customize* can override. Switching only within a family (strictness or JSDoc) is a preference and is not listed.
+- Content is regenerated under the safe-write rules in §6. If nothing changed, nothing is written and the CLI prints *"Already up to date."* Those notices and warnings are still printed. The up-to-date shortcut also ignores excluded ids when comparing selections to detection, and treats a language-family mismatch as a change (so the shortcut does not run).
 - Interactive re-run: when the saved selections still match detection and no file would change, the CLI says so first (*"Already up to date"* with the file and agent counts), then asks *Done* (default) · *Change setup*. It does not ask "Use this configuration, or customize?" in that case.
 - A greenfield manifest followed by a scaffolded project switches to existing mode automatically, keeping the chosen architecture and agents, and adds the project-commands section.
 - In *Customize*, deselecting a fragment that detection suggested adds its id to `selections.excluded`; selecting it again removes the id. Ids that are no longer in the registry are dropped with a notice.
@@ -195,6 +196,7 @@ Every prompt has a defined non-interactive answer:
 | :--- | :--- |
 | Greenfield wizard | Exit `1`: interactive input required |
 | Existing JavaScript project | Detected language defaults (`javascript` or `javascript-jsdoc` when `checkJs` is on) |
+| Language family changed (JS ↔ TS) on re-run | Switch to the detected family default id; print a notice; regenerate |
 | Monorepo root | Exit `1` with instructions to run inside a package |
 | Below the git root | Stay in the current directory |
 | Use detected configuration | Yes |
@@ -628,7 +630,7 @@ Compares the manifest, the current project, and the files on disk. Never writes.
 
 | Severity | Exit | Kinds |
 | :--- | :---: | :--- |
-| **error** | `2` | `not-initialized`, `manifest-invalid`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `package-removed`, `unsupported-version` |
+| **error** | `2` | `not-initialized`, `manifest-invalid`, `missing`, `edited`, `outdated`, `unmanaged`, `stale`, `unselected`, `language-changed`, `package-removed`, `unsupported-version` |
 | **warning** | `0` | `rules-update`, `legacy-file`, `always-on-tokens` |
 
 Checks:
@@ -638,6 +640,7 @@ Checks:
 - A managed file or block is missing, or was edited by hand. The `edited` fix depends on the output kind: for a managed block, move text outside the agentinit markers in that file and re-run `init`; for a rule file, re-run `init` and choose Backup & replace, or exclude the fragment under Customize; for a workflow file, re-run `init` and choose Backup & replace, or pass `--no-workflows`.
 - An owned, unedited file whose content differs from what this CLI would generate is `outdated` (error) when `manifest.cliVersion` matches the running CLI, and `rules-update` (warning) when the versions differ — so a newer release that changes rule text does not fail unpinned CI. While the versions differ, doctor cannot tell a rule-text change from a project change that alters generated text; both are warnings until someone re-runs `init` with the current CLI.
 - A detected package has a matching fragment that isn't selected and isn't in `selections.excluded`.
+- **Language family drift (from 0.2):** the project moved between JavaScript and TypeScript (`language-changed`, error). Strictness and JSDoc preference flips within a family are not an issue. Fix: re-run `init` (with `--yes`, that switches to the detected family default and regenerates).
 - A selected fragment's package was removed, or its version left the `appliesTo` range.
 - The always-on core is over budget (warning).
 - Legacy rule files (`.cursorrules`, `.windsurfrules`) are still present (warning).

@@ -6,7 +6,7 @@ import type { AgentTarget } from '../types.js';
 import { resolvedAgents } from './agents.js';
 import type { PromptedSetup } from './choices.js';
 import { LOW_ARCHITECTURE_CONFIDENCE } from './confidence.js';
-import type { LowConfidenceNotice } from './format.js';
+import type { SetupNotice } from './format.js';
 
 const LOW_CONFIDENCE_ARCHITECTURE = 'flat';
 
@@ -39,7 +39,7 @@ export interface NonInteractiveOptions {
 export interface NonInteractiveSetup extends PromptedSetup {
   /** `--yes` never switches to the git root. */
   readonly useGitRoot: false;
-  readonly notices: readonly LowConfidenceNotice[];
+  readonly notices: readonly SetupNotice[];
   readonly files: FileDefaults;
 }
 
@@ -78,7 +78,7 @@ export function nonInteractiveSelection(
 function existingSelection(draft: ProjectDraft, options: NonInteractiveOptions): NonInteractiveSetup {
   const lowConfidence = draft.architecture.confidence < LOW_ARCHITECTURE_CONFIDENCE;
   const architecture = lowConfidence ? LOW_CONFIDENCE_ARCHITECTURE : draft.architecture.id;
-  const notices: LowConfidenceNotice[] = lowConfidence
+  const notices: SetupNotice[] = lowConfidence
     ? [{ kind: 'low-confidence-architecture', confidence: draft.architecture.confidence }]
     : [];
 

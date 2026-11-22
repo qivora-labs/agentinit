@@ -25,10 +25,10 @@ import { underRail } from '../ui/brand.js';
 import { confirmGitRoot } from '../ui/git-root.js';
 import { isNonInteractiveSetup, nonInteractiveSelection } from '../ui/defaults.js';
 import {
-  formatLowConfidence,
   formatRegistryNotice,
+  formatSetupNotice,
   formatWarning,
-  type LowConfidenceNotice,
+  type SetupNotice,
 } from '../ui/format.js';
 import type { Logger } from '../ui/logger.js';
 import {
@@ -78,7 +78,7 @@ export interface InitOptions {
 interface Setup {
   readonly selection: Selection;
   readonly agents: readonly AgentTarget[];
-  readonly notices: readonly LowConfidenceNotice[];
+  readonly notices: readonly SetupNotice[];
   readonly excluded: readonly string[];
   /** Ids dropped from `excluded` because they left the registry. */
   readonly excludedNotices: readonly string[];
@@ -742,11 +742,15 @@ async function chooseSetup(
       agents === undefined ? {} : { agents },
     );
     if (!isNonInteractiveSetup(selected)) throw selected;
+    const notices: SetupNotice[] = [...selected.notices];
+    if (saved !== undefined && saved.language !== draft.language) {
+      notices.push({ kind: 'language-changed', from: saved.language, to: draft.language });
+    }
     // `--yes` never changes excluded (PRD §3.5).
     return {
       selection: selected.selection,
       agents: selected.agents,
-      notices: selected.notices,
+      notices,
       excluded: prunedExcluded,
       excludedNotices,
       workflows,
@@ -928,7 +932,7 @@ function noticeLines(
   registry: Registry,
   detection: DetectionResult,
   resolved: ResolvedSelection,
-  lowConfidence: readonly LowConfidenceNotice[],
+  setupNotices: readonly SetupNotice[],
   options: {
     readonly legacyWarnings: 'include' | 'omit';
     readonly excludedNotices?: readonly string[];
@@ -946,7 +950,7 @@ function noticeLines(
     }
   }
   for (const notice of resolved.notices) lines.push(formatRegistryNotice(notice, registry));
-  for (const notice of lowConfidence) lines.push(formatLowConfidence(notice, registry));
+  for (const notice of setupNotices) lines.push(formatSetupNotice(notice, registry));
   for (const notice of options.excludedNotices ?? []) lines.push(notice);
   return unique(lines);
 }
