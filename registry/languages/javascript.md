@@ -25,11 +25,19 @@ These rules apply to every `.js` and `.jsx` file. Prefer one module system acros
 
 ## Contract
 ```js
-// ✅ Good: runtime check before property access; ESM matches package "type": "module"
+// ✅ Good: runtime check before property access; match this project's module system
+// ES modules / .mjs:
 export function amount(input) {
   if (typeof input !== 'number') throw new Error('Expected a number');
   return input;
 }
+
+// CommonJS / .cjs:
+function amountCjs(input) {
+  if (typeof input !== 'number') throw new Error('Expected a number');
+  return input;
+}
+module.exports = { amount: amountCjs };
 
 // ❌ Anti-pattern: TypeScript syntax in a .js file; unchecked external input
 export function total(input: any): number {

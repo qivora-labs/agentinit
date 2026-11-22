@@ -662,37 +662,51 @@ describe('agentRuleBody', () => {
     expect(agentRuleBody(library)).toBe(library.body);
   });
 
-  it('states CommonJS for JavaScript + Express when package type is unset', async () => {
-    const bundled = await loadRegistry(defaultRegistryDir());
-    const selection = resolveSelection(bundled, {
-      language: 'javascript',
-      architecture: 'layered',
-      frameworks: ['express'],
-      libraries: [],
-      origin: {},
-    });
-    const body = renderedFragmentBody(
-      renderTargetContext(
-        profile({
-          language: 'javascript',
-          moduleSystem: null,
-          frameworks: ['express'],
-        }),
-        selection,
-      ),
-      'javascript',
-    );
-    expect(body).toContain('treat this project\'s module system as CommonJS');
-    expect(body).not.toContain('{{moduleSystem}}');
-    expect(body).not.toContain('module system as ES modules');
-  });
-
-  it.each(['nextjs-app-router', 'react-vite'] as const)(
-    'states ES modules for JavaScript + %s even without package type module',
-    async (frameworkId) => {
+  it.each(['javascript', 'javascript-jsdoc'] as const)(
+    'states CommonJS for %s + Express when package type is unset',
+    async (language) => {
       const bundled = await loadRegistry(defaultRegistryDir());
       const selection = resolveSelection(bundled, {
-        language: 'javascript',
+        language,
+        architecture: 'layered',
+        frameworks: ['express'],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            language,
+            moduleSystem: null,
+            frameworks: ['express'],
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body).toContain('treat this project\'s module system as CommonJS');
+      expect(body).not.toContain('{{moduleSystem}}');
+      expect(body).not.toContain('module system as ES modules');
+    },
+  );
+
+  it.each(
+    (['javascript', 'javascript-jsdoc'] as const).flatMap((language) =>
+      (
+        [
+          'nextjs-app-router',
+          'nextjs-app-router-15',
+          'nextjs-pages-router',
+          'react-vite',
+        ] as const
+      ).map((frameworkId) => [language, frameworkId] as const),
+    ),
+  )(
+    'states ES modules for %s + %s even without package type module',
+    async (language, frameworkId) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
         architecture: 'layered',
         frameworks: [frameworkId],
         libraries: [],
@@ -701,13 +715,13 @@ describe('agentRuleBody', () => {
       const body = renderedFragmentBody(
         renderTargetContext(
           profile({
-            language: 'javascript',
+            language,
             moduleSystem: null,
             frameworks: [frameworkId],
           }),
           selection,
         ),
-        'javascript',
+        language,
       );
       expect(body).toContain('treat this project\'s module system as ES modules');
       expect(body).not.toContain('{{moduleSystem}}');
@@ -742,31 +756,34 @@ describe('agentRuleBody', () => {
     },
   );
 
-  it('drops the module-system directive for greenfield JavaScript without a bundler', async () => {
-    const bundled = await loadRegistry(defaultRegistryDir());
-    const selection = resolveSelection(bundled, {
-      language: 'javascript',
-      architecture: 'layered',
-      frameworks: [],
-      libraries: [],
-      origin: {},
-    });
-    const body = renderedFragmentBody(
-      renderTargetContext(
-        profile({
-          mode: 'greenfield',
-          language: 'javascript',
-          moduleSystem: null,
-          frameworks: [],
-          packageManager: null,
-          scripts: {},
-        }),
-        selection,
-      ),
-      'javascript',
-    );
-    expect(body).not.toContain('{{moduleSystem}}');
-    expect(body).not.toContain('module system as');
-    expect(body).toContain('**NEVER** write TypeScript-only syntax');
-  });
+  it.each(['javascript', 'javascript-jsdoc'] as const)(
+    'drops the module-system directive for greenfield %s without a bundler',
+    async (language) => {
+      const bundled = await loadRegistry(defaultRegistryDir());
+      const selection = resolveSelection(bundled, {
+        language,
+        architecture: 'layered',
+        frameworks: [],
+        libraries: [],
+        origin: {},
+      });
+      const body = renderedFragmentBody(
+        renderTargetContext(
+          profile({
+            mode: 'greenfield',
+            language,
+            moduleSystem: null,
+            frameworks: [],
+            packageManager: null,
+            scripts: {},
+          }),
+          selection,
+        ),
+        language,
+      );
+      expect(body).not.toContain('{{moduleSystem}}');
+      expect(body).not.toContain('module system as');
+      expect(body).toContain('**NEVER** write TypeScript-only syntax');
+    },
+  );
 });

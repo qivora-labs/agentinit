@@ -267,18 +267,23 @@ describe('ext / jsxExt placeholders', () => {
 });
 
 describe('moduleSystemLabelFor', () => {
-  it('treats bundler frameworks as ES modules even when package type is unset', () => {
+  it.each([
+    'nextjs-app-router',
+    'nextjs-app-router-15',
+    'nextjs-pages-router',
+    'react-vite',
+  ] as const)('treats %s as ES modules even when package type is unset', (frameworkId) => {
     expect(
       moduleSystemLabelFor({
         moduleSystem: null,
-        frameworks: ['express', 'nextjs-app-router'],
+        frameworks: ['express', frameworkId],
         mode: 'existing',
       }),
     ).toBe('ES modules');
     expect(
       moduleSystemLabelFor({
         moduleSystem: 'cjs',
-        frameworks: ['react-vite'],
+        frameworks: [frameworkId],
         mode: 'existing',
       }),
     ).toBe('ES modules');

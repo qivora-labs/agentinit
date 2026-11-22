@@ -29,7 +29,7 @@ These rules apply to every `.js` and `.jsx` file. The project typechecks JavaScr
 
 ## Contract
 ```js
-// ✅ Good: JSDoc types for checkJs; runtime check before property access
+// ✅ Good: JSDoc types for checkJs; runtime check; match this project's module system
 /**
  * @param {unknown} input
  * @returns {number}
@@ -38,6 +38,16 @@ export function amount(input) {
   if (typeof input !== 'number') throw new Error('Expected a number');
   return input;
 }
+
+/**
+ * @param {unknown} input
+ * @returns {number}
+ */
+function amountCjs(input) {
+  if (typeof input !== 'number') throw new Error('Expected a number');
+  return input;
+}
+module.exports = { amount: amountCjs };
 
 /**
  * @typedef {Object} Invoice
