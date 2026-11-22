@@ -529,8 +529,10 @@ describe('renderTargetContext', () => {
     expect(playwrightTsBody).not.toContain('```js');
     expect(playwrightJsBody).toContain('```js');
     expect(playwrightJsBody).not.toContain('```ts');
-    expect(playwrightJsBody).toContain('page.getByRole("button", { name: "Save" })');
-    expect(playwrightJsBody).toContain('await expect(page.getByRole("status"');
+    expect(playwrightJsBody).toContain('const saveButton = page.getByRole("button", { name: "Save" })');
+    expect(playwrightJsBody).toContain('const savedStatus = page.getByRole("status", { name: "Saved Ada" })');
+    expect(playwrightJsBody).toContain('await expect(savedStatus).toBeVisible()');
+    expect(playwrightJsBody).toContain('await expect(savedStatus).toHaveText("Saved Ada")');
   });
 
   it('sorts each scope by order then id, including workflows', () => {

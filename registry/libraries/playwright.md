@@ -57,9 +57,14 @@ import { expect, test } from "@playwright/test";
 
 test("shows the saved name", async ({ page }) => {
   await page.goto("/profile");
-  await page.getByLabel("Name").fill("Ada");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status", { name: "Saved Ada" })).toHaveText("Saved Ada");
+  const nameField = page.getByLabel("Name");
+  const saveButton = page.getByRole("button", { name: "Save" });
+  const savedStatus = page.getByRole("status", { name: "Saved Ada" });
+
+  await nameField.fill("Ada");
+  await saveButton.click();
+  await expect(savedStatus).toBeVisible();
+  await expect(savedStatus).toHaveText("Saved Ada");
 });
 
 // ❌ Anti-pattern: a class selector, a fixed wait, and a check that does not retry
