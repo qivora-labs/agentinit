@@ -57,4 +57,6 @@ pnpm test:screens
 - `NO_PACKAGE_JSON`: "Run inside a project with package.json or an empty folder."
 - Language picker and summary labels for all four ids were already in place from
   T60; this task added coverage tests and the remaining TypeScript-only copy.
+- E2E: greenfield interactive init with JavaScript writes
+  `selections.language` to the manifest (`tests/e2e/init.test.ts`).
 - Changeset: `.changeset/wizard-summary-javascript.md` (`minor`).

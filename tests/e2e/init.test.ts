@@ -77,6 +77,15 @@ const VITE_ANSWERS: readonly FakeAnswer[] = [
   WRITE,
 ];
 
+const VITE_JAVASCRIPT_ANSWERS: readonly FakeAnswer[] = [
+  { type: 'select', value: 'react-vite' },
+  { type: 'select', value: 'javascript' },
+  { type: 'groupMultiselect', value: [] },
+  { type: 'select', value: 'feature-based' },
+  { type: 'multiselect', value: ['cursor'] },
+  WRITE,
+];
+
 const LAYERED_ANSWERS: readonly FakeAnswer[] = [
   { type: 'select', value: 'react-vite' },
   { type: 'select', value: 'typescript-strict' },
@@ -436,6 +445,20 @@ describe('init', () => {
     expect(again.code).toBe(0);
     expect(again.stdout).toMatch(/Already up to date · \d+ files? for \d+ agents?/);
     expect(await treeDigest(dir)).toBe(digest);
+  });
+
+  it('writes selections.language when greenfield chooses JavaScript', async () => {
+    const dir = await emptyDir();
+    const result = await runCli(['init', '--cwd', dir], interactive(VITE_JAVASCRIPT_ANSWERS));
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('This is a bug');
+    expect(result.stdout).toContain('pnpm create vite@latest');
+    expect(result.stdout).not.toMatch(/TypeScript/i);
+
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { language: string };
+    };
+    expect(manifest.selections.language).toBe('javascript');
   });
 
   it('keeps greenfield architecture and agents after a package.json appears', async () => {
