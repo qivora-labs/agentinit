@@ -468,71 +468,76 @@ describe('renderTargetContext', () => {
     }
 
     const rhf = bundled.fragments.find((entry) => entry.meta.id === 'react-hook-form-zod');
-    expect(rhf).toBeDefined();
-    if (rhf === undefined) return;
-    const rhfSelection = resolved([rhf]);
-    const rhfTsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'typescript-strict' }), rhfSelection),
-      'react-hook-form-zod',
-    );
-    const rhfJsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'javascript' }), rhfSelection),
-      'react-hook-form-zod',
-    );
-    expect(rhfTsBody).toContain('```tsx');
-    expect(rhfTsBody).not.toContain('```jsx');
-    expect(rhfJsBody).toContain('```jsx');
-    expect(rhfJsBody).not.toContain('```tsx');
-    expect(rhfTsBody).toContain('z.infer<typeof profileSchema>');
-    expect(rhfTsBody).toContain(
-      'useForm<z.input<typeof profileSchema>, unknown, z.output<typeof profileSchema>>',
-    );
-    expect(rhfTsBody).toContain('take submitted values from `z.infer`');
-    expect(rhfJsBody).not.toContain('z.infer');
-    expect(rhfJsBody).not.toContain('SubmitHandler');
-    expect(rhfJsBody).toContain('useForm({');
-    expect(rhfJsBody).toContain('export function parseProfile(input)');
+    expect.soft(rhf).toBeDefined();
+    if (rhf !== undefined) {
+      const rhfSelection = resolved([rhf]);
+      const rhfTsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'typescript-strict' }), rhfSelection),
+        'react-hook-form-zod',
+      );
+      const rhfJsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'javascript' }), rhfSelection),
+        'react-hook-form-zod',
+      );
+      expect(rhfTsBody).toContain('```tsx');
+      expect(rhfTsBody).not.toContain('```jsx');
+      expect(rhfJsBody).toContain('```jsx');
+      expect(rhfJsBody).not.toContain('```tsx');
+      expect(rhfTsBody).toContain('z.infer<typeof profileSchema>');
+      expect(rhfTsBody).toContain(
+        'useForm<z.input<typeof profileSchema>, unknown, z.output<typeof profileSchema>>',
+      );
+      expect(rhfTsBody).toContain('take submitted values from `z.infer`');
+      expect(rhfJsBody).not.toContain('z.infer');
+      expect(rhfJsBody).not.toContain('SubmitHandler');
+      expect(rhfJsBody).toContain('useForm({');
+      expect(rhfJsBody).toContain('export function parseProfile(input)');
+    }
 
     const vitestFragment = bundled.fragments.find((entry) => entry.meta.id === 'vitest');
-    expect(vitestFragment).toBeDefined();
-    if (vitestFragment === undefined) return;
-    const vitestSelection = resolved([vitestFragment]);
-    const vitestTsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'typescript-strict' }), vitestSelection),
-      'vitest',
-    );
-    const vitestJsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'javascript' }), vitestSelection),
-      'vitest',
-    );
-    expect(vitestTsBody).toContain('```ts');
-    expect(vitestTsBody).not.toContain('```js');
-    expect(vitestJsBody).toContain('```js');
-    expect(vitestJsBody).not.toContain('```ts');
-    expect(vitestTsBody).toContain('function runLater(callback: () => void, ms: number)');
-    expect(vitestJsBody).toContain('function runLater(callback, ms)');
-    expect(vitestJsBody).not.toContain('callback: () => void');
+    expect.soft(vitestFragment).toBeDefined();
+    if (vitestFragment !== undefined) {
+      const vitestSelection = resolved([vitestFragment]);
+      const vitestTsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'typescript-strict' }), vitestSelection),
+        'vitest',
+      );
+      const vitestJsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'javascript' }), vitestSelection),
+        'vitest',
+      );
+      expect(vitestTsBody).toContain('```ts');
+      expect(vitestTsBody).not.toContain('```js');
+      expect(vitestJsBody).toContain('```js');
+      expect(vitestJsBody).not.toContain('```ts');
+      expect(vitestTsBody).toContain('function runLater(callback: () => void, ms: number)');
+      expect(vitestJsBody).toContain('function runLater(callback, ms)');
+      expect(vitestJsBody).not.toContain('callback: () => void');
+    }
 
     const playwrightFragment = bundled.fragments.find((entry) => entry.meta.id === 'playwright');
-    expect(playwrightFragment).toBeDefined();
-    if (playwrightFragment === undefined) return;
-    const playwrightSelection = resolved([playwrightFragment]);
-    const playwrightTsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'typescript-strict' }), playwrightSelection),
-      'playwright',
-    );
-    const playwrightJsBody = renderedFragmentBody(
-      renderTargetContext(profile({ language: 'javascript' }), playwrightSelection),
-      'playwright',
-    );
-    expect(playwrightTsBody).toContain('```ts');
-    expect(playwrightTsBody).not.toContain('```js');
-    expect(playwrightJsBody).toContain('```js');
-    expect(playwrightJsBody).not.toContain('```ts');
-    expect(playwrightJsBody).toContain('const saveButton = page.getByRole("button", { name: "Save" })');
-    expect(playwrightJsBody).toContain('const savedStatus = page.getByRole("status", { name: "Saved Ada" })');
-    expect(playwrightJsBody).toContain('await expect(savedStatus).toBeVisible()');
-    expect(playwrightJsBody).toContain('await expect(savedStatus).toHaveText("Saved Ada")');
+    expect.soft(playwrightFragment).toBeDefined();
+    if (playwrightFragment !== undefined) {
+      const playwrightSelection = resolved([playwrightFragment]);
+      const playwrightTsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'typescript-strict' }), playwrightSelection),
+        'playwright',
+      );
+      const playwrightJsBody = renderedFragmentBody(
+        renderTargetContext(profile({ language: 'javascript' }), playwrightSelection),
+        'playwright',
+      );
+      expect(playwrightTsBody).toContain('```ts');
+      expect(playwrightTsBody).not.toContain('```js');
+      expect(playwrightJsBody).toContain('```js');
+      expect(playwrightJsBody).not.toContain('```ts');
+      for (const body of [playwrightTsBody, playwrightJsBody]) {
+        expect(body).toContain('const saveButton = page.getByRole("button", { name: "Save" })');
+        expect(body).toContain('const savedStatus = page.getByRole("status", { name: "Saved Ada" })');
+        expect(body).toContain('await expect(savedStatus).toBeVisible()');
+        expect(body).toContain('await expect(savedStatus).toHaveText("Saved Ada")');
+      }
+    }
   });
 
   it('sorts each scope by order then id, including workflows', () => {
