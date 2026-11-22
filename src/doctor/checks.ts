@@ -361,24 +361,45 @@ export function checkChanges(
 /**
  * Matching fragment not selected and not excluded. Error when CLI versions match;
  * warning when they differ so new coverage from a newer CLI does not fail unpinned CI.
+ * When the running CLI is older than the manifest, the fix asks to upgrade doctor
+ * (same directional split as `rulesUpdate`) instead of re-init with the older CLI.
  */
 export function checkUnselected(
   fragments: readonly NamedFragment[],
   cliVersions: DoctorCliVersions,
 ): DoctorIssue[] {
-  const differ = cliVersionsDiffer(cliVersions);
-  return fragments.map((fragment) => {
-    if (differ) {
-      return issue('unselected', {
-        severity: 'warning',
-        message: `${fragment.name} (${fragment.id}) matches this project but was not selected under agentinit ${cliVersions.manifest}.`,
-        fix: `npx @agentinit/cli@${cliVersions.running} init`,
-      });
-    }
+  return fragments.map((fragment) => unselectedIssue(fragment, cliVersions));
+}
+
+function unselectedIssue(fragment: NamedFragment, cliVersions: DoctorCliVersions): DoctorIssue {
+  if (!cliVersionsDiffer(cliVersions)) {
     return issue('unselected', {
       message: `${fragment.name} (${fragment.id}) matches this project and is not selected.`,
       fix: INIT_FIX,
     });
+  }
+  return unselectedVersionAware(fragment, cliVersions);
+}
+
+function unselectedVersionAware(
+  fragment: NamedFragment,
+  cliVersions: DoctorCliVersions,
+): DoctorIssue {
+  const running = cliVersions.running;
+  const manifest = cliVersions.manifest;
+  const runningValid = valid(running) !== null;
+  const manifestValid = valid(manifest) !== null;
+  if (runningValid && manifestValid && lt(running, manifest)) {
+    return issue('unselected', {
+      severity: 'warning',
+      message: `${fragment.name} (${fragment.id}) matches this project under a newer agentinit (${manifest}).`,
+      fix: `Run doctor with \`@agentinit/cli@${manifest}\` or newer.`,
+    });
+  }
+  return issue('unselected', {
+    severity: 'warning',
+    message: `${fragment.name} (${fragment.id}) matches this project but was not selected under agentinit ${manifest}.`,
+    fix: `npx @agentinit/cli@${running} init`,
   });
 }
 

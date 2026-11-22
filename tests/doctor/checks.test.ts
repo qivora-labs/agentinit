@@ -357,6 +357,18 @@ describe('checkUnselected', () => {
     ]);
   });
 
+  it('tells the user to upgrade doctor when the manifest is from a newer CLI', () => {
+    const versions: DoctorCliVersions = { running: '0.1.0', manifest: '0.2.0' };
+    expect(checkUnselected([{ id: 'zustand', name: 'Zustand' }], versions)).toEqual([
+      {
+        kind: 'unselected',
+        severity: 'warning',
+        message: 'Zustand (zustand) matches this project under a newer agentinit (0.2.0).',
+        fix: 'Run doctor with `@agentinit/cli@0.2.0` or newer.',
+      },
+    ]);
+  });
+
   it('warns when either CLI version is not valid semver', () => {
     const versions: DoctorCliVersions = { running: '0.1.0', manifest: 'latest' };
     expect(checkUnselected([{ id: 'react', name: 'React' }], versions)).toEqual([

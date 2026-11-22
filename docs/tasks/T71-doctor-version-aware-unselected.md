@@ -53,4 +53,4 @@ Recommendations match the 2026-11-13 planning session. Ship before T72–T74 so 
 
 **Decisions (2026-11-23):**
 1. Reuse kind `unselected`; severity is **warning** when `cliVersionsDiffer`, else **error** (no new kind).
-2. Warning message names the manifest CLI version and fixes with `npx @agentinit/cli@<running> init`; same-version keeps the previous message and `INIT_FIX`.
+2. Warning message names the manifest CLI version and fixes with `npx @agentinit/cli@<running> init` when the running CLI is newer (or either version is not valid semver); when the running CLI is older than the manifest, the fix asks to run doctor with the manifest version or newer (same directional split as `rules-update`). Same-version keeps the previous message and `INIT_FIX`.
