@@ -21,6 +21,6 @@
 │  ○ Backend / API · Express 5
 │  ○                 Express 4
 │  ○                 Fastify
-│  ○ Other TypeScript project (library, CLI, scripts)
+│  ○ Other project (library, CLI, scripts)
 │  ↑/↓ to navigate • Enter: confirm
 └

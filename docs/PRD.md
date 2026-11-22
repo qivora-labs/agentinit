@@ -133,7 +133,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
    - *Web frontend:* React (Vite)
    - *Full-stack web:* Next.js (App Router), Next.js (Pages Router)
    - *Backend / API:* Node.js + Express, Node.js + Fastify
-   - *Other:* Other TypeScript project (library, CLI, scripts) — no framework rules; base rules only (§3.6)
+   - *Other:* Other project (library, CLI, scripts) — no framework rules; base rules only (§3.6)
 2. **Language:** TypeScript Strict — *recommended* · TypeScript · JavaScript · JavaScript with JSDoc
 3. **Libraries** (multi-select, filtered by framework compatibility):
    - *State & Data:* Zustand, TanStack Query
@@ -143,7 +143,7 @@ Triggered when the directory contains no `package.json` and nothing other than i
 4. **Architecture:** `Feature-Based` (`src/features/<domain>`) — *recommended* · `Layered / Clean` · `Atomic Design` · `Flat / Minimal` · `Modular / By Concern`
 5. **Target Agents** (multi-select, all pre-selected): Cursor · Claude Code · Windsurf · GitHub Copilot. Each option's hint names the folder it writes.
 6. **Review & Write:** before anything is written, a review card shows the file count per agent, the shared files, the always-on token estimate against its budget, and how many existing files will need a decision (§6.3). Options: *Write files* (default) · *Preview changes* (prints the dry-run output, then returns to the card) · *Change setup* (runs steps 1–5 again with the current answers preselected). Then it writes rules + `ARCHITECTURE.md`. The project-commands section of `AGENTS.md` is omitted because no `package.json` exists yet.
-7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other TypeScript project", it only recommends re-running after creating `package.json`. The generator command is highlighted as a command, not printed as a plain status line.
+7. **Next step hint:** prints the matching generator command (e.g., `pnpm create next-app@latest`) and recommends re-running `npx @agentinit/cli` after scaffolding (§3.4). For "Other project", it only recommends re-running after creating `package.json`. The generator command is highlighted as a command, not printed as a plain status line.
 
 The wizard opens with one line saying that no `package.json` was found and a new project is being set up. Each question shows its position (for example, "2/5"); the count drops by one when the library step is skipped or `--agents` skips the agent step.
 
@@ -212,7 +212,7 @@ Every prompt has a defined non-interactive answer:
 `conflictsWith` checks apply only to manual selections. Detected packages are always honored, even if their fragments normally conflict (a project really using Jest and Vitest gets both), except ids listed in `selections.excluded`, which stay out of the defaults.
 
 ### 3.6 Projects Without a Supported Framework
-TypeScript libraries, CLIs, scripts, and projects using a framework the registry doesn't cover yet are **supported with base rules**:
+JavaScript and TypeScript libraries, CLIs, scripts, and projects using a framework the registry doesn't cover yet are **supported with base rules**:
 - Generated: architecture, language, compatible libraries, workflows, `ARCHITECTURE.md`, and project commands.
 - Libraries with `compatibleWith` are dropped during detection when no compatible framework is selected, so the saved selections, resolve step, and manifest stay aligned. Libraries without `compatibleWith` (e.g., Vitest) are kept.
 - When a library is dropped because no framework was selected, the notice names what it needs: *"Tailwind CSS needs a supported framework (Next.js, React + Vite); none was selected."* When a framework was selected but is outside that library's `compatibleWith`, the notice is *"… was skipped — it targets a different framework."*

@@ -22,9 +22,16 @@ describe('greenfieldNextSteps', () => {
     expect(greenfieldNextSteps(['nextjs-pages-router']).join('\n')).toContain('Pages Router');
   });
 
-  it('only asks an Other TypeScript project to come back after package.json', () => {
+  it('only asks an Other project to come back after package.json', () => {
     const lines = greenfieldNextSteps([]);
     expect(lines).toEqual(['Create a package.json, then run `npx @agentinit/cli` again.']);
+  });
+
+  it('keeps generator hints language-neutral for a JavaScript greenfield framework', () => {
+    const lines = greenfieldNextSteps(['react-vite']);
+    expect(lines.join('\n')).not.toMatch(/TypeScript/i);
+    expect(lines).toContain('pnpm create vite@latest');
+    expect(lines.join('\n')).toContain('npx @agentinit/cli');
   });
 });
 

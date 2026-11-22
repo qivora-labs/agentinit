@@ -34,12 +34,12 @@ This task owns the rest of the user-visible strings. README / PRD prose polish f
 - Do not change non-TTY / `--json` machine fields except where labels appear in JSON today.
 
 ## Acceptance criteria
-- [ ] Greenfield interactive flow offers the decided language options; selecting JavaScript writes `selections.language` accordingly after init.
-- [ ] "Other … project" label no longer says TypeScript-only.
-- [ ] Summary Language row shows correct labels for all language ids.
-- [ ] No user-facing string claims JavaScript is unsupported.
-- [ ] UI / screen tests updated; PRD §3.2 (and related) updated.
-- [ ] A changeset exists if this PR ships user-visible copy alone.
+- [x] Greenfield interactive flow offers the decided language options; selecting JavaScript writes `selections.language` accordingly after init.
+- [x] "Other … project" label no longer says TypeScript-only.
+- [x] Summary Language row shows correct labels for all language ids.
+- [x] No user-facing string claims JavaScript is unsupported.
+- [x] UI / screen tests updated; PRD §3.2 (and related) updated.
+- [x] A changeset exists if this PR ships user-visible copy alone.
 
 ## Verify
 ```bash
@@ -51,4 +51,12 @@ pnpm test:screens
 `feat(ui): support javascript in wizard and summary copy`
 
 ## Notes
-(Record any label wording the owner picks during implementation.)
+- Sentinel renamed `OTHER_TYPESCRIPT_PROJECT` / `other-typescript-project` →
+  `OTHER_PROJECT` / `other-project`.
+- Label: **Other project (library, CLI, scripts)** (task example).
+- `NO_PACKAGE_JSON`: "Run inside a project with package.json or an empty folder."
+- Language picker and summary labels for all four ids were already in place from
+  T60; this task added coverage tests and the remaining TypeScript-only copy.
+- E2E: greenfield interactive init with JavaScript writes
+  `selections.language` to the manifest (`tests/e2e/init.test.ts`).
+- Changeset: `.changeset/wizard-summary-javascript.md` (`minor`).

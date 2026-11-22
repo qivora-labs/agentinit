@@ -52,13 +52,13 @@ describe('toSelectOptions', () => {
       { value: 'react-vite', label: 'React + Vite', group: 'Web frontend' },
       { value: 'nextjs-app-router', label: 'Next.js App Router', group: 'Full-stack web' },
       { value: 'nextjs-pages-router', label: 'Next.js Pages Router', group: 'Full-stack web' },
-      { value: 'other-typescript-project', label: 'Other TypeScript project', group: 'Other' },
+      { value: 'other-project', label: 'Other project (library, CLI, scripts)', group: 'Other' },
     ]);
     expect(options.map((option) => stripAnsi(option.label ?? ''))).toEqual([
       'Web frontend · React + Vite',
       'Full-stack web · Next.js App Router',
       '                 Next.js Pages Router',
-      'Other TypeScript project',
+      'Other project (library, CLI, scripts)',
     ]);
   });
 });

@@ -17,8 +17,8 @@ import { formatDiff } from './diff.js';
 import { sanitizeDisplayText, sanitizeMultilineDisplayText } from './display-text.js';
 import { colorEnabled, createTheme, supportsUnicode, type Theme } from './theme.js';
 
-/** Same sentinel as `OTHER_TYPESCRIPT_PROJECT` in catalog.ts (avoid a cycle). */
-const OTHER_TYPESCRIPT_PROJECT = 'other-typescript-project';
+/** Same sentinel as `OTHER_PROJECT` in catalog.ts (avoid a cycle). */
+const OTHER_PROJECT = 'other-project';
 
 export interface PromptOption<Value> {
   value: Value;
@@ -221,7 +221,7 @@ export function toClackOptions<Value>(options: readonly PromptOption<Value>[]): 
 
 /**
  * Single-select list with a gray group prefix on the first option of each
- * group and padding so labels line up. "Other TypeScript project" has no prefix.
+ * group and padding so labels line up. "Other project" has no prefix.
  */
 export function toSelectOptions<Value>(options: readonly PromptOption<Value>[]): Option<Value>[] {
   const gray = pc.gray;
@@ -232,7 +232,7 @@ export function toSelectOptions<Value>(options: readonly PromptOption<Value>[]):
     const showGroup =
       group !== undefined
       && group.length > 0
-      && !(option.value === OTHER_TYPESCRIPT_PROJECT && group === 'Other');
+      && !(option.value === OTHER_PROJECT && group === 'Other');
 
     let visible = label;
     if (showGroup) {

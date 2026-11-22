@@ -9,7 +9,7 @@ import {
   languageOptions,
   libraryOptions,
   mayOfferLibraries,
-  OTHER_TYPESCRIPT_PROJECT,
+  OTHER_PROJECT,
   preferredOption,
   valuesInOptions,
   withInitial,
@@ -74,7 +74,7 @@ export async function runGreenfieldWizard(
     ),
   );
   step += 1;
-  const frameworks = framework === OTHER_TYPESCRIPT_PROJECT ? [] : [framework];
+  const frameworks = framework === OTHER_PROJECT ? [] : [framework];
 
   const libraryChoices = libraryOptions(registry, frameworks);
   total = countSetupSteps({ libraries: libraryChoices.length > 0, agents: askAgents });
@@ -136,7 +136,7 @@ function initialFramework(
   options: readonly { readonly value: string }[],
 ): string | undefined {
   if (frameworks === undefined) return undefined;
-  if (frameworks.length === 0) return OTHER_TYPESCRIPT_PROJECT;
+  if (frameworks.length === 0) return OTHER_PROJECT;
   const first = frameworks[0];
   if (first !== undefined && options.some((option) => option.value === first)) return first;
   return undefined;
