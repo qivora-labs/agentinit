@@ -826,6 +826,16 @@ describe('doctor', () => {
       severity: 'error',
       fix: FIX,
     });
+
+    const fixed = await runCli(['init', '--yes', '--json', '--cwd', dir]);
+    expect(fixed.code).toBe(0);
+    const payload = JSON.parse(fixed.stdout) as { notices: string[] };
+    expect(payload.notices.some((notice) => notice.includes('Language family changed'))).toBe(true);
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { language: string };
+    };
+    expect(manifest.selections.language).toBe('javascript');
+    expect((await runCli(['doctor', '--cwd', dir])).code).toBe(0);
   });
 
   it('does not report language-changed when only TypeScript strictness flips', async () => {

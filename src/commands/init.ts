@@ -15,6 +15,7 @@ import { CANCELLED, SUCCESS } from '../exit-codes.js';
 import { applyChanges, type ApplyReportEntry } from '../io/apply.js';
 import { computeChanges, sharedFilesWithOutsideH1, type Change } from '../io/changes.js';
 import { readManifest, withPreservedExtras, type Manifest } from '../io/manifest.js';
+import { languageFamily } from '../language-family.js';
 import { buildPlan } from '../plan/build-plan.js';
 import { ALWAYS_ON_TOKEN_LIMIT } from '../plan/tokens.js';
 import type { Plan, PlanWarning } from '../plan/types.js';
@@ -743,7 +744,10 @@ async function chooseSetup(
     );
     if (!isNonInteractiveSetup(selected)) throw selected;
     const notices: SetupNotice[] = [...selected.notices];
-    if (saved !== undefined && saved.language !== draft.language) {
+    if (
+      saved !== undefined &&
+      languageFamily(saved.language) !== languageFamily(draft.language)
+    ) {
       notices.push({ kind: 'language-changed', from: saved.language, to: draft.language });
     }
     // `--yes` never changes excluded (PRD §3.5).
