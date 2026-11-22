@@ -25,8 +25,9 @@ export interface NextStep {
 }
 
 /**
- * PRD §3.2 step 7. "Other TypeScript project" has no generator: only the
- * reminder to come back after `package.json` exists.
+ * PRD §3.2 step 7. "Other project" has no generator: only the reminder to
+ * come back after `package.json` exists. Wording stays language-neutral so
+ * JavaScript greenfield uses the same generator hints as TypeScript.
  * Pipe and `--json` paths keep these plain strings.
  */
 export function greenfieldNextSteps(frameworks: readonly string[]): string[] {

@@ -189,6 +189,26 @@ describe('formatSummary', () => {
     );
   });
 
+  it.each([
+    ['typescript-strict', 'TypeScript · strict'],
+    ['typescript', 'TypeScript'],
+    ['javascript', 'JavaScript'],
+    ['javascript-jsdoc', 'JavaScript · JSDoc'],
+  ] as const)('labels language %s as %s', async (language, label) => {
+    const bundled = await bundledRegistry();
+    const draft = sampleDraft({
+      frameworks: [],
+      libraries: [],
+      packages: {},
+      packageManager: 'npm',
+      srcDir: '',
+      language,
+      architecture: { id: 'flat', confidence: 0.5 },
+    });
+    const text = formatSummary({ draft, registry: bundled, notices: [], warnings: [], theme: plain });
+    expect(text).toContain(`Language      ${label}`);
+  });
+
   it('shows likely without a number at confidence ≥ 0.7', async () => {
     const bundled = await bundledRegistry();
     const draft = sampleDraft({

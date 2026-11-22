@@ -38,9 +38,9 @@ const LANGUAGE_ORDER = [
 const ARCHITECTURE_ORDER = ['feature-based', 'layered', 'atomic-design', 'flat', 'modular'] as const;
 
 /** Sentinel select value. It is not a fragment id; the wizard maps it to `frameworks: []`. */
-export const OTHER_TYPESCRIPT_PROJECT = 'other-typescript-project';
+export const OTHER_PROJECT = 'other-project';
 
-export const OTHER_TYPESCRIPT_LABEL = 'Other TypeScript project (library, CLI, scripts)';
+export const OTHER_PROJECT_LABEL = 'Other project (library, CLI, scripts)';
 
 const RECOMMENDED_LANGUAGE = 'typescript-strict';
 const RECOMMENDED_ARCHITECTURE = 'feature-based';
@@ -53,8 +53,8 @@ export function frameworkOptions(registry: Registry, includeOther: boolean): Pro
   const options = groupedOptions(registry, 'framework', FRAMEWORK_GROUPS);
   if (!includeOther) return options;
   options.push({
-    value: OTHER_TYPESCRIPT_PROJECT,
-    label: OTHER_TYPESCRIPT_LABEL,
+    value: OTHER_PROJECT,
+    label: OTHER_PROJECT_LABEL,
     hint: 'Base rules only',
     group: 'Other',
   });
@@ -72,7 +72,7 @@ export function libraryOptions(registry: Registry, frameworkIds: readonly string
 
 /**
  * True when at least one listed framework (or an agnostic library) would unlock
- * a library step. Ignores the greenfield "Other TypeScript project" sentinel.
+ * a library step. Ignores the greenfield "Other project" sentinel.
  */
 export function mayOfferLibraries(
   registry: Registry,
@@ -81,7 +81,7 @@ export function mayOfferLibraries(
   if (libraryOptions(registry, []).length > 0) return true;
   const ids = frameworksOffered
     .map((option) => option.value)
-    .filter((id) => id !== OTHER_TYPESCRIPT_PROJECT);
+    .filter((id) => id !== OTHER_PROJECT);
   return libraryOptions(registry, ids).length > 0;
 }
 

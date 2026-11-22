@@ -121,7 +121,7 @@ describe('detectProject', () => {
     expect(error).toBeInstanceOf(AgentInitError);
     if (!(error instanceof AgentInitError)) return;
     expect(error.message).toBe(
-      'No package.json found. Run inside a TypeScript project or an empty folder.',
+      'No package.json found. Run inside a project with package.json or an empty folder.',
     );
     expect(error.exitCode).toBe(ERROR);
   });

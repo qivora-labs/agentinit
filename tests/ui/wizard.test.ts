@@ -3,7 +3,7 @@ import { AGENT_TARGETS } from '../../src/context.js';
 import { CANCELLED } from '../../src/exit-codes.js';
 import { AgentInitError } from '../../src/errors.js';
 import { loadRegistry, type Registry } from '../../src/registry/load.js';
-import { OTHER_TYPESCRIPT_PROJECT } from '../../src/ui/catalog.js';
+import { OTHER_PROJECT } from '../../src/ui/catalog.js';
 import { runGreenfieldWizard } from '../../src/ui/wizard.js';
 import type { FakeAnswer } from '../../src/ui/prompter.js';
 import { choicePrompt, recordingPrompter } from './recording-prompter.js';
@@ -94,9 +94,9 @@ describe('runGreenfieldWizard', () => {
     expect(choicePrompt(multis[0]).initialValues).toEqual([...AGENT_TARGETS]);
   });
 
-  it('maps Other TypeScript project to no frameworks and only agnostic libraries', async () => {
+  it('maps Other project to no frameworks and only agnostic libraries', async () => {
     const { prompter, calls } = recordingPrompter([
-      { type: 'select', value: OTHER_TYPESCRIPT_PROJECT },
+      { type: 'select', value: OTHER_PROJECT },
       { type: 'select', value: 'typescript' },
       { type: 'groupMultiselect', value: ['vitest', 'playwright'] },
       { type: 'select', value: 'flat' },
@@ -114,6 +114,27 @@ describe('runGreenfieldWizard', () => {
     ]);
   });
 
+  it('records JavaScript when the language step selects it', async () => {
+    const { prompter, calls } = recordingPrompter([
+      { type: 'select', value: 'react-vite' },
+      { type: 'select', value: 'javascript' },
+      { type: 'groupMultiselect', value: ['vitest'] },
+      { type: 'select', value: 'feature-based' },
+      { type: 'multiselect', value: ['cursor'] },
+    ]);
+
+    const result = await runGreenfieldWizard(prompter, await bundledRegistry());
+    const languagePrompt = calls.filter((call) => call.method === 'select')[1];
+
+    expect(result.selection.language).toBe('javascript');
+    expect(choicePrompt(languagePrompt).options.map((option) => option.value)).toEqual([
+      'typescript-strict',
+      'typescript',
+      'javascript',
+      'javascript-jsdoc',
+    ]);
+  });
+
   it('skips the library prompt when every library is incompatible', async () => {
     const stub = registryOf([
       ruleFragment('typescript-strict', 'language'),
@@ -121,7 +142,7 @@ describe('runGreenfieldWizard', () => {
       ruleFragment('zustand', 'library', 'compatibleWith:\n  - react-vite\n'),
     ]);
     const { prompter, calls } = recordingPrompter([
-      { type: 'select', value: OTHER_TYPESCRIPT_PROJECT },
+      { type: 'select', value: OTHER_PROJECT },
       { type: 'select', value: 'typescript-strict' },
       { type: 'select', value: 'feature-based' },
       { type: 'multiselect', value: ['cursor'] },

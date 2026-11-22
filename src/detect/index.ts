@@ -48,7 +48,7 @@ const IGNORABLE_ENTRIES = new Set([
 ]);
 
 const NO_PACKAGE_JSON =
-  'No package.json found. Run inside a TypeScript project or an empty folder.';
+  'No package.json found. Run inside a project with package.json or an empty folder.';
 
 export interface ProjectDraft extends Omit<ProjectProfile, 'agents'> {
   /** Empty means all four agents. The caller applies that default (PRD §3.5). */

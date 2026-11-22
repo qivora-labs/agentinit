@@ -6,8 +6,8 @@ import {
   languageOptions,
   libraryOptions,
   mayOfferLibraries,
-  OTHER_TYPESCRIPT_LABEL,
-  OTHER_TYPESCRIPT_PROJECT,
+  OTHER_PROJECT_LABEL,
+  OTHER_PROJECT,
 } from '../../src/ui/catalog.js';
 import { registryOf, ruleFragment } from './stub-registry.js';
 
@@ -29,7 +29,7 @@ describe('frameworkOptions', () => {
       ['Backend / API', 'express', 'Express 5'],
       ['Backend / API', 'express-4', 'Express 4'],
       ['Backend / API', 'fastify', 'Fastify'],
-      ['Other', OTHER_TYPESCRIPT_PROJECT, OTHER_TYPESCRIPT_LABEL],
+      ['Other', OTHER_PROJECT, OTHER_PROJECT_LABEL],
     ]);
   });
 
@@ -76,7 +76,7 @@ describe('frameworkOptions', () => {
     expect(options.map((option) => [option.group, option.value])).toEqual([
       ['Web frontend', 'react-vite'],
       ['Other', 'hono'],
-      ['Other', OTHER_TYPESCRIPT_PROJECT],
+      ['Other', OTHER_PROJECT],
     ]);
   });
 });
@@ -113,7 +113,7 @@ describe('libraryOptions', () => {
 describe('mayOfferLibraries', () => {
   it('is true when an agnostic library exists, even with only the Other sentinel', () => {
     const registry = registryOf([ruleFragment('vitest', 'library')]);
-    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(true);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_PROJECT }])).toBe(true);
   });
 
   it('ignores the Other sentinel and counts only real framework ids', () => {
@@ -123,10 +123,10 @@ describe('mayOfferLibraries', () => {
     expect(
       mayOfferLibraries(registry, [
         { value: 'react-vite' },
-        { value: OTHER_TYPESCRIPT_PROJECT },
+        { value: OTHER_PROJECT },
       ]),
     ).toBe(true);
-    expect(mayOfferLibraries(registry, [{ value: OTHER_TYPESCRIPT_PROJECT }])).toBe(false);
+    expect(mayOfferLibraries(registry, [{ value: OTHER_PROJECT }])).toBe(false);
   });
 });
 
