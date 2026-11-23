@@ -13,6 +13,7 @@ export const BUNDLER_FRAMEWORK_IDS: ReadonlySet<string> = new Set([
   'nextjs-app-router-15',
   'nextjs-pages-router',
   'react-vite',
+  'react-vite-18',
 ]);
 
 export type ModuleSystemLabel = 'ES modules' | 'CommonJS';

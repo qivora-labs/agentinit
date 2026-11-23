@@ -272,6 +272,7 @@ describe('moduleSystemLabelFor', () => {
     'nextjs-app-router-15',
     'nextjs-pages-router',
     'react-vite',
+    'react-vite-18',
   ] as const)('treats %s as ES modules even when package type is unset', (frameworkId) => {
     expect(
       moduleSystemLabelFor({

@@ -19,6 +19,7 @@ const FIXTURES = [
   'next-app-and-pages',
   'vite-react',
   'vite-react-js',
+  'vite-react18',
   'express-ts',
   'express-cjs',
   'fastify-ts',

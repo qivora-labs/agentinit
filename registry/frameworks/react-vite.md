@@ -2,7 +2,7 @@
 id: react-vite
 name: React + Vite
 category: framework
-version: 1.1.0
+version: 1.2.0
 order: 30
 description: React 19 actions and use, public Vite env vars, and lazy-loaded components.
 hint: React 19 actions/use, Vite env, lazy load
@@ -13,7 +13,7 @@ detect:
   packages: ["react", "vite"]
 appliesTo:
   react: ">=19"
-  vite: ">=6"
+  vite: ">=5"
 sources:
   - https://react.dev/reference/react/use
   - https://react.dev/reference/react/useActionState
@@ -21,7 +21,9 @@ sources:
   - https://react.dev/blog/2024/12/05/react-19
   - https://vite.dev/guide/env-and-mode
   - https://vite.dev/config/shared-options
-verifiedAt: 2026-11-19
+  - https://v5.vite.dev/guide/env-and-mode
+  - https://v5.vite.dev/config/shared-options
+verifiedAt: 2026-11-23
 ---
 ## Map
 | Path | Responsibility |

@@ -268,6 +268,18 @@ describe('detection', () => {
     expect(manifest.selections.frameworks).toEqual(['express-4']);
   });
 
+  it('React 18 + Vite 5 gets react-vite-18 rules', async () => {
+    const dir = await temp.copyFixture('vite-react18');
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-react-vite-18.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[] };
+    };
+    expect(manifest.selections.frameworks).toEqual(['react-vite-18']);
+  });
+
   it('An unsupported Next.js version gets one clear notice and no different-framework library skip', async () => {
     const dir = await temp.copyFixture('next15-app');
     const pkgPath = path.join(dir, 'package.json');

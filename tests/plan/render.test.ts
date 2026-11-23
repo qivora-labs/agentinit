@@ -32,6 +32,7 @@ const FRAMEWORK_IDS = [
   'nextjs-app-router-15',
   'nextjs-pages-router',
   'react-vite',
+  'react-vite-18',
 ] as const;
 
 const UI_STATE_LIBRARY_IDS = ['shadcn', 'tailwind', 'tanstack-query', 'zustand'] as const;

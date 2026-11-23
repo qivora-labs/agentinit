@@ -127,7 +127,7 @@ function compatibleFrameworkFamilies(registry: Registry, libraryId: string): str
 
 function frameworkFamilyLabel(id: string): string {
   if (id.startsWith('nextjs-')) return 'Next.js';
-  if (id === 'react-vite') return 'React + Vite';
+  if (id.startsWith('react-vite')) return 'React + Vite';
   if (id.startsWith('express')) return 'Express';
   if (id === 'fastify') return 'Fastify';
   return id;

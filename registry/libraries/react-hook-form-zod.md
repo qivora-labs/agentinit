@@ -2,7 +2,7 @@
 id: react-hook-form-zod
 name: React Hook Form + Zod
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: One Zod schema for field types, resolver errors, and server parsing.
 hint: One Zod schema for fields, errors, server
@@ -22,6 +22,7 @@ compatibleWith:
   - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
+  - react-vite-18
 sources:
   - https://react-hook-form.com/integrations/zod
   - https://react-hook-form.com/faqs

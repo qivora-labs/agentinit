@@ -2,7 +2,7 @@
 id: zustand
 name: Zustand
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: Small client stores, stable selectors, and useShallow.
 hint: Small stores, stable selectors, useShallow
@@ -21,6 +21,7 @@ compatibleWith:
   - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
+  - react-vite-18
 sources:
   - https://github.com/pmndrs/zustand
   - https://zustand.docs.pmnd.rs/reference/hooks/use-shallow
