@@ -280,6 +280,35 @@ describe('detection', () => {
     expect(manifest.selections.frameworks).toEqual(['react-vite-18']);
   });
 
+  it('React 19 + Vite 5 gets react-vite rules', async () => {
+    const dir = await temp.copyFixture('vite-react');
+    const pkgPath = path.join(dir, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+      dependencies: Record<string, string>;
+      devDependencies: Record<string, string>;
+    };
+    pkg.devDependencies.vite = '5.4.11';
+    await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+    const lockPath = path.join(dir, 'package-lock.json');
+    const lock = JSON.parse(await readFile(lockPath, 'utf8')) as {
+      packages: Record<string, { version: string }>;
+    };
+    const vitePkg = lock.packages['node_modules/vite'];
+    if (vitePkg !== undefined) vitePkg.version = '5.4.11';
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('detected — no matching rules yet.');
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-react-vite.mdc');
+    expect(files).not.toContain('.cursor/rules/agentinit-react-vite-18.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[] };
+    };
+    expect(manifest.selections.frameworks).toEqual(['react-vite']);
+  });
+
   it('An unsupported Next.js version gets one clear notice and no different-framework library skip', async () => {
     const dir = await temp.copyFixture('next15-app');
     const pkgPath = path.join(dir, 'package.json');
