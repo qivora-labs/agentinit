@@ -2,7 +2,7 @@
 id: zustand
 name: Zustand
 category: library
-version: 1.2.0
+version: 1.3.0
 order: 40
 description: Small client stores, stable selectors, and useShallow.
 hint: Small stores, stable selectors, useShallow
@@ -15,7 +15,7 @@ globs:
 detect:
   packages: ["zustand"]
 appliesTo:
-  zustand: ">=5"
+  zustand: ">=4"
 compatibleWith:
   - nextjs-app-router
   - nextjs-app-router-15
@@ -26,10 +26,10 @@ sources:
   - https://github.com/pmndrs/zustand
   - https://zustand.docs.pmnd.rs/reference/hooks/use-shallow
   - https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-verifiedAt: 2026-11-19
+verifiedAt: 2026-11-24
 ---
 ## Boundary
-A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run, and in v5 that can update forever. `useShallow` from `zustand/react/shallow` keeps the previous result when a shallow compare matches.
+A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run (extra re-renders; in v5 that can update forever). Prefer `useShallow` from `zustand/react/shallow` (Zustand 4.4.2+) so a shallow match keeps the previous result.
 
 ## Directives
 - **ALWAYS** keep a store to one concern, and define its actions in the same `create` call. **NEVER** cache an API response in the store.
@@ -64,7 +64,7 @@ export function CartButton() {
   return <button onClick={add}>{count}</button>;
 }
 
-// ❌ Anti-pattern: a new array every render, which can loop in v5
+// ❌ Anti-pattern: a new array every render (extra updates; can loop in v5)
 export function Bad() {
   const [count, add] = useCartStore((state) => [state.count, state.add]);
   return <button onClick={add}>{count}</button>;
@@ -92,7 +92,7 @@ export function CartButton() {
   return <button onClick={add}>{count}</button>;
 }
 
-// ❌ Anti-pattern: a new array every render, which can loop in v5
+// ❌ Anti-pattern: a new array every render (extra updates; can loop in v5)
 export function Bad() {
   const [count, add] = useCartStore((state) => [state.count, state.add]);
   return <button onClick={add}>{count}</button>;

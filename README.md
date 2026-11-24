@@ -134,7 +134,7 @@ From `npx @agentinit/cli list` (TypeScript and JavaScript web projects). A fragm
 | **Libraries** | Tailwind CSS (`tailwind`) | `tailwindcss >=4` |
 | | shadcn/ui (`shadcn`) | any version |
 | | TanStack Query (`tanstack-query`) | `@tanstack/react-query >=5` |
-| | Zustand (`zustand`) | `zustand >=5` |
+| | Zustand (`zustand`) | `zustand >=4` |
 | | React Hook Form + Zod (`react-hook-form-zod`) | `react-hook-form >=7`, `zod >=4` |
 | | Vitest (`vitest`) | `vitest >=3` |
 | | Playwright (`playwright`) | `@playwright/test >=1.40` |

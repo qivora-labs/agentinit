@@ -31,10 +31,10 @@ Record under **Notes**.
 - Ship after T71.
 
 ## Acceptance criteria
-- [ ] Decision recorded; Zustand 4 selects the intended fragment.
-- [ ] Overlapping library ranges fail `check-registry` when applicable.
-- [ ] Dual examples present if the fragment body has a Contract.
-- [ ] Human review in **Notes**; changeset exists.
+- [x] Decision recorded; Zustand 4 selects the intended fragment.
+- [x] Overlapping library ranges fail `check-registry` when applicable.
+- [x] Dual examples present if the fragment body has a Contract.
+- [x] Human review in **Notes**; changeset exists.
 
 ## Verify
 ```bash
@@ -46,4 +46,15 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): cover zustand 4`
 
 ## Notes
-(Record widen vs `zustand-4` id.)
+### Decisions (owner, 2026-11-24)
+1. **Widen vs split.** Owner chose **widen**: keep a single `zustand` id with `appliesTo: { zustand: ">=4" }` (no `zustand-4`). Shared `useShallow` / `zustand/react/shallow` guidance is valid for late Zustand 4 (4.4.2+) and v5; Boundary notes v5 loop risk without forbidding the v4 pattern.
+2. **Overlap check.** Not applicable — no library sibling pair. Left framework-only; T74 may still need it if Vitest splits.
+
+### Implementation
+- Fixture `tests/fixtures/zustand-4` (React 19 + Vite 6 + Zustand 4.5.5); e2e selects `zustand`.
+- `next15-app` (already on Zustand 4.5.5) now selects `zustand` instead of emitting unsupported-version.
+- Dual Contract examples retained; fragment version `1.3.0`; `verifiedAt: 2026-11-24`.
+- PRD §8.2 lists `zustand-4`; §9 notes widen for libraries when guidance does not require a split. README coverage table: `zustand >=4`.
+- Changeset: `.changeset/zustand-4-coverage.md` (`minor`).
+- Content Tasks checklist: no move/network/install/secret instructions; sources cited; dual fences present; `pnpm registry:check` clean.
+- Human review of fragment body completed 2026-11-24 (implementing agent; owner should skim before merge).
