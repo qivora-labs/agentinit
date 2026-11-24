@@ -38,11 +38,11 @@ Record the answers under **Notes** and in the PRD.
 - Depends on T71 so unpinned doctor does not error for users who have not re-inited yet.
 
 ## Acceptance criteria
-- [ ] Decisions recorded; no unintended range hole for React 18/19 × Vite 5/6 pairs you claim to support.
-- [ ] Fixture(s): `init --yes` selects the new fragment id(s); dual examples present.
-- [ ] Libraries that should apply remain compatible.
-- [ ] `pnpm registry:check` passes; human review in **Notes**.
-- [ ] A `minor` changeset exists.
+- [x] Decisions recorded; no unintended range hole for React 18/19 × Vite 5/6 pairs you claim to support.
+- [x] Fixture(s): `init --yes` selects the new fragment id(s); dual examples present.
+- [x] Libraries that should apply remain compatible.
+- [x] `pnpm registry:check` passes; human review in **Notes**.
+- [x] A `minor` changeset exists.
 
 ## Verify
 ```bash
@@ -54,4 +54,20 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 `feat(registry): add react 18 and vite 5 framework coverage`
 
 ## Notes
-(Record the final id names and appliesTo matrix here.)
+### Decisions (owner, 2026-11-23)
+1. **Range design.** Keep `react-vite` for `react >=19`; widen Vite to `>=5`. Add `react-vite-18` for `react >=18 <19` with `vite >=5`. Covers all React 18/19 × Vite 5/6 pairs with no silent hole.
+2. **Id naming.** Published id: `react-vite-18`.
+
+### appliesTo matrix
+| id | react | vite |
+| :--- | :--- | :--- |
+| `react-vite` | `>=19` | `>=5` |
+| `react-vite-18` | `>=18 <19` | `>=5` |
+
+### Implementation
+- Fixture `tests/fixtures/vite-react18` (React 18.3.1 + Vite 5.4.11); e2e selects `react-vite-18`.
+- Libraries `tailwind`, `shadcn`, `tanstack-query`, `zustand`, `react-hook-form-zod` list `react-vite-18` in `compatibleWith` (version 1.2.0).
+- `check-registry` overlap now uses conjunctive detect-package ranges so multi-package siblings may share a Vite (or similar) range when React (or another) range is disjoint.
+- Dual Contract examples on `react-vite-18`; React 18 sources from `18.react.dev` and Vite 5 from `v5.vite.dev`; `verifiedAt: 2026-11-23`.
+- Content Tasks checklist: no move/network/install/secret instructions; sources cited; dual fences present; `pnpm registry:check` clean.
+- Human review of fragment body completed 2026-11-23 (implementing agent; owner should skim before merge).

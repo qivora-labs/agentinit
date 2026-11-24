@@ -99,9 +99,10 @@ export function checkFragments(fragments: readonly Fragment[], today: string): R
 }
 
 /**
- * Version-split framework siblings share detect packages and globs. Their
- * `appliesTo` ranges for those packages must not overlap (App vs Pages keep
- * different globs so they may both cover `next`).
+ * Version-split framework siblings share detect packages and globs. A project
+ * can match both only when every shared detect package's `appliesTo` ranges
+ * overlap at once (App vs Pages keep different globs so they may both cover
+ * `next`). Disjointness on any one package is enough.
  */
 function overlappingFrameworkRangeProblems(fragments: readonly Fragment[]): RegistryProblem[] {
   const frameworks = fragments.filter((fragment) => fragment.meta.category === 'framework');
@@ -123,7 +124,7 @@ function overlappingFrameworkRangeProblems(fragments: readonly Fragment[]): Regi
       if (!sameStringList(detectPackages, rightMeta.detect?.packages)) continue;
       if (!sameStringList(leftMeta.globs, rightMeta.globs)) continue;
 
-      const overlap = overlappingAppliesToPackage(leftMeta, rightMeta);
+      const overlap = conjunctiveAppliesToOverlap(leftMeta, rightMeta, detectPackages);
       if (overlap === undefined) continue;
       problems.push(
         problem(
@@ -145,22 +146,25 @@ function overlappingFrameworkRangeProblems(fragments: readonly Fragment[]): Regi
   return problems;
 }
 
-function overlappingAppliesToPackage(
+/**
+ * True conjunctive overlap: every detect package's ranges intersect. Returns
+ * the first overlapping package name for the error message, or undefined when
+ * any package is disjoint (no project can match both siblings).
+ */
+function conjunctiveAppliesToOverlap(
   left: RuleFragmentMeta,
   right: RuleFragmentMeta,
+  detectPackages: readonly string[],
 ): string | undefined {
-  const packages = new Set([
-    ...(left.detect?.packages ?? []),
-    ...Object.keys(left.appliesTo ?? {}),
-    ...Object.keys(right.appliesTo ?? {}),
-  ]);
-  const names = [...packages].sort(compareText);
+  const names = [...detectPackages].sort(compareText);
+  let firstOverlap: string | undefined;
   for (const name of names) {
     const leftRange = left.appliesTo?.[name] ?? '*';
     const rightRange = right.appliesTo?.[name] ?? '*';
-    if (rangesOverlap(leftRange, rightRange)) return name;
+    if (!rangesOverlap(leftRange, rightRange)) return undefined;
+    firstOverlap ??= name;
   }
-  return undefined;
+  return firstOverlap;
 }
 
 function rangesOverlap(left: string, right: string): boolean {

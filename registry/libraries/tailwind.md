@@ -2,7 +2,7 @@
 id: tailwind
 name: Tailwind CSS
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: CSS-first tokens, complete class strings, and cn for conflicting utilities.
 hint: CSS-first tokens, full class strings, cn()
@@ -19,6 +19,7 @@ compatibleWith:
   - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
+  - react-vite-18
 sources:
   - https://tailwindcss.com/docs/functions-and-directives
   - https://tailwindcss.com/docs/theme

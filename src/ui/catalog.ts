@@ -10,7 +10,7 @@ import type { PromptOption, SelectPrompt } from './prompter.js';
  * listed here is offered after the known groups.
  */
 const FRAMEWORK_GROUPS: readonly { readonly label: string; readonly ids: readonly string[] }[] = [
-  { label: 'Web frontend', ids: ['react-vite'] },
+  { label: 'Web frontend', ids: ['react-vite', 'react-vite-18'] },
   {
     label: 'Full-stack web',
     ids: ['nextjs-app-router', 'nextjs-app-router-15', 'nextjs-pages-router'],

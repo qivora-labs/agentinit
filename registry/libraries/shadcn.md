@@ -2,7 +2,7 @@
 id: shadcn
 name: shadcn/ui
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: Project-owned UI primitives, extended with variants instead of rewrites.
 hint: Owned UI primitives; extend with variants
@@ -19,6 +19,7 @@ compatibleWith:
   - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
+  - react-vite-18
 sources:
   - https://ui.shadcn.com/docs/components-json
   - https://ui.shadcn.com/docs/installation/manual

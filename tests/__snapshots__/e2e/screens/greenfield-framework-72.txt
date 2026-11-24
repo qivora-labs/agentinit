@@ -16,6 +16,7 @@
 ◆  1/5 Which framework are you using?
 │  ● Web frontend · React + Vite (React 19 actions/use, Vite 
 │  env, lazy load)
+│  ○                React 18 + Vite
 │  ○ Full-stack web · Next.js App Router 16
 │  ○                  Next.js App Router 15
 │  ○                  Next.js Pages Router

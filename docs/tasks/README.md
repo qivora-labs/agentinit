@@ -125,7 +125,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T69](T69-module-system-js-rules.md) | Module system in JavaScript rules | M11 | T62 | S–M | done |
 | [T70](T70-js-fixtures-docs.md) | JavaScript fixtures, acceptance tests, and docs | M11 | T61–T69 | M | done |
 | [T71](T71-doctor-version-aware-unselected.md) | Version-aware `unselected` in `doctor` | M12 | — | S | done |
-| [T72](T72-react18-vite5.md) | Older majors: React 18 / Vite 5 | M12 | T62, T64, T71 | L | todo |
+| [T72](T72-react18-vite5.md) | Older majors: React 18 / Vite 5 | M12 | T62, T64, T71 | L | done |
 | [T73](T73-zustand-4.md) | Older majors: Zustand 4 | M12 | T62, T65, T71 | M | todo |
 | [T74](T74-vitest-2.md) | Older majors: Vitest 2 | M12 | T62, T66, T71 | S–M | todo |
 | [T75](T75-js-effectiveness-eval.md) | Effectiveness eval on a JavaScript fixture | M13 | T70 | M | todo |

@@ -190,6 +190,42 @@ describe('checkFragments', () => {
     expect(checkFragments([app, pages], TODAY)).toEqual([]);
   });
 
+  it('allows multi-package siblings when one detect package is disjoint', () => {
+    const current = multiPackageFramework('react-vite-a', {
+      react: '>=19',
+      vite: '>=5',
+    });
+    const previous = multiPackageFramework('react-vite-b', {
+      react: '>=18 <19',
+      vite: '>=5',
+    });
+    expect(checkFragments([current, previous], TODAY)).toEqual([]);
+  });
+
+  it('rejects multi-package siblings when every detect package overlaps', () => {
+    const left = multiPackageFramework('react-vite-a', {
+      react: '>=18',
+      vite: '>=5',
+    });
+    const right = multiPackageFramework('react-vite-b', {
+      react: '>=18.3',
+      vite: '>=5.4',
+    });
+    const problems = checkFragments([left, right], TODAY);
+    expect(problems).toEqual([
+      {
+        path: 'frameworks/react-vite-a.md',
+        severity: 'error',
+        message: 'appliesTo.react overlaps frameworks/react-vite-b.md (>=18 ∩ >=18.3)',
+      },
+      {
+        path: 'frameworks/react-vite-b.md',
+        severity: 'error',
+        message: 'appliesTo.react overlaps frameworks/react-vite-a.md (>=18.3 ∩ >=18)',
+      },
+    ]);
+  });
+
   it('accepts a tilde fence and a fence indented by three spaces', () => {
     const tilde = marked(['ALWAYS keep the boundary.', '', '~~~ts', 'const ok = true;', '~~~'].join('\n'));
     const indented = marked(
@@ -556,6 +592,7 @@ describe('runRegistryCheck', () => {
       'nextjs-app-router-15',
       'nextjs-pages-router',
       'react-vite',
+      'react-vite-18',
       'playwright',
       'react-hook-form-zod',
       'shadcn',
@@ -649,8 +686,16 @@ describe('runRegistryCheck', () => {
         id: 'react-vite',
         scope: 'auto',
         globs: ['{{src}}**/*.tsx'],
-        appliesTo: { react: '>=19', vite: '>=6' },
-        verifiedAt: '2026-11-19',
+        appliesTo: { react: '>=19', vite: '>=5' },
+        verifiedAt: '2026-11-23',
+        sourced: true,
+      },
+      {
+        id: 'react-vite-18',
+        scope: 'auto',
+        globs: ['{{src}}**/*.tsx'],
+        appliesTo: { react: '>=18 <19', vite: '>=5' },
+        verifiedAt: '2026-11-23',
         sourced: true,
       },
     ]);
@@ -672,7 +717,13 @@ describe('runRegistryCheck', () => {
         sourced: fragment.meta.sources.length > 0,
       };
     });
-    const web = ['nextjs-app-router', 'nextjs-app-router-15', 'nextjs-pages-router', 'react-vite'];
+    const web = [
+      'nextjs-app-router',
+      'nextjs-app-router-15',
+      'nextjs-pages-router',
+      'react-vite',
+      'react-vite-18',
+    ];
     expect(libraries).toEqual([
       {
         id: 'playwright',
@@ -1134,6 +1185,35 @@ detect:
   packages: ["express"]
 appliesTo:
   express: "${range}"
+sources:
+  - https://example.com/docs
+verifiedAt: 2026-10-17
+---
+${VALID_RULE}`,
+    `frameworks/${id}.md`,
+  );
+}
+
+function multiPackageFramework(id: string, appliesTo: Readonly<Record<string, string>>): Fragment {
+  const appliesLines = Object.entries(appliesTo)
+    .map(([name, range]) => `  ${name}: "${range}"`)
+    .join('\n');
+  return parseFragment(
+    `---
+id: ${id}
+name: Sample ${id}
+category: framework
+version: 1.0.0
+order: 30
+description: A sample framework.
+hint: Sample framework hint.
+scope: auto
+globs:
+  - "{{src}}**/*.tsx"
+detect:
+  packages: ["react", "vite"]
+appliesTo:
+${appliesLines}
 sources:
   - https://example.com/docs
 verifiedAt: 2026-10-17

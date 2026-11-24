@@ -2,7 +2,7 @@
 id: tanstack-query
 name: TanStack Query
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: Query key factories, queryOptions, mutation invalidation, and Suspense.
 hint: Query keys, queryOptions, invalidation
@@ -21,6 +21,7 @@ compatibleWith:
   - nextjs-app-router-15
   - nextjs-pages-router
   - react-vite
+  - react-vite-18
 sources:
   - https://tanstack.com/query/latest/docs/framework/react/guides/query-keys
   - https://tanstack.com/query/latest/docs/framework/react/guides/query-options
