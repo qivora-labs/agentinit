@@ -2,7 +2,7 @@
 id: zustand
 name: Zustand
 category: library
-version: 1.3.0
+version: 1.3.1
 order: 40
 description: Small client stores, stable selectors, and useShallow.
 hint: Small stores, stable selectors, useShallow
@@ -15,7 +15,7 @@ globs:
 detect:
   packages: ["zustand"]
 appliesTo:
-  zustand: ">=4"
+  zustand: ">=4.4.3"
 compatibleWith:
   - nextjs-app-router
   - nextjs-app-router-15
@@ -26,10 +26,10 @@ sources:
   - https://github.com/pmndrs/zustand
   - https://zustand.docs.pmnd.rs/reference/hooks/use-shallow
   - https://zustand.docs.pmnd.rs/reference/migrations/migrating-to-v5
-verifiedAt: 2026-11-24
+verifiedAt: 2026-11-25
 ---
 ## Boundary
-A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run (extra re-renders; in v5 that can update forever). Prefer `useShallow` from `zustand/react/shallow` (Zustand 4.4.2+) so a shallow match keeps the previous result.
+A Zustand store holds one client concern and the actions that change it. `create` compares a selector result with `Object.is`. A new object or array is a new result on every run (extra re-renders; in v5 that can update forever). Prefer `useShallow` from `zustand/react/shallow` (Zustand 4.4.3+) so a shallow match keeps the previous result.
 
 ## Directives
 - **ALWAYS** keep a store to one concern, and define its actions in the same `create` call. **NEVER** cache an API response in the store.
