@@ -127,7 +127,7 @@ From `npx @agentinit/cli list` (TypeScript and JavaScript web projects). A fragm
 | | Next.js App Router 15 (`nextjs-app-router-15`) | `next >=15.0.0 <16.3.0` |
 | | Next.js Pages Router (`nextjs-pages-router`) | `next >=13` |
 | | React + Vite (`react-vite`) | `react >=19`, `vite >=5` |
-| | React + Vite 18 (`react-vite-18`) | `react >=18 <19`, `vite >=5` |
+| | React 18 + Vite (`react-vite-18`) | `react >=18 <19`, `vite >=5` |
 | | Express 5 (`express`) | `express >=5` |
 | | Express 4 (`express-4`) | `express >=4 <5` |
 | | Fastify (`fastify`) | `fastify >=5` |

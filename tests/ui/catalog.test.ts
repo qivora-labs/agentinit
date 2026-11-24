@@ -23,7 +23,7 @@ describe('frameworkOptions', () => {
     const options = frameworkOptions(await bundledRegistry(), true);
     expect(options.map((option) => [option.group, option.value, option.label])).toEqual([
       ['Web frontend', 'react-vite', 'React + Vite'],
-      ['Web frontend', 'react-vite-18', 'React + Vite 18'],
+      ['Web frontend', 'react-vite-18', 'React 18 + Vite'],
       ['Full-stack web', 'nextjs-app-router', 'Next.js App Router 16'],
       ['Full-stack web', 'nextjs-app-router-15', 'Next.js App Router 15'],
       ['Full-stack web', 'nextjs-pages-router', 'Next.js Pages Router'],

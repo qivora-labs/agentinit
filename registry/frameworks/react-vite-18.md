@@ -1,6 +1,6 @@
 ---
 id: react-vite-18
-name: React + Vite 18
+name: React 18 + Vite
 category: framework
 version: 1.0.0
 order: 30
