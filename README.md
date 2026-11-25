@@ -136,7 +136,7 @@ From `npx @agentinit/cli list` (TypeScript and JavaScript web projects). A fragm
 | | TanStack Query (`tanstack-query`) | `@tanstack/react-query >=5` |
 | | Zustand (`zustand`) | `zustand >=4.4.3` |
 | | React Hook Form + Zod (`react-hook-form-zod`) | `react-hook-form >=7`, `zod >=4` |
-| | Vitest (`vitest`) | `vitest >=3` |
+| | Vitest (`vitest`) | `vitest >=2` |
 | | Playwright (`playwright`) | `@playwright/test >=1.40` |
 | **Languages** | TypeScript, TypeScript Strict, JavaScript, JavaScript with JSDoc | — |
 | **Architectures** | Flat / Minimal, Feature-Based, Layered / Clean, Atomic Design, Modular / By Concern | — |

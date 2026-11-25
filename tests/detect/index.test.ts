@@ -368,19 +368,10 @@ describe('detectProject', () => {
     const result = asExisting(detectProject(root, await detectionRegistry()));
 
     expect(result.draft.frameworks).toEqual(['nextjs-app-router-15']);
-    expect(result.draft.libraries).toEqual(['tailwind', 'zustand']);
-    expect(result.notices).toEqual(
-      expect.arrayContaining([
-        {
-          kind: 'unsupported-version',
-          package: 'vitest',
-          version: '2.1.9',
-          fragmentId: 'vitest',
-        },
-      ]),
-    );
+    expect(result.draft.libraries).toEqual(['tailwind', 'vitest', 'zustand']);
     expect(result.notices).not.toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ package: 'vitest', kind: 'unsupported-version' }),
         expect.objectContaining({ package: 'zustand', kind: 'unsupported-version' }),
       ]),
     );

@@ -21,6 +21,7 @@ const FIXTURES = [
   'vite-react-js',
   'vite-react18',
   'zustand-4',
+  'vitest-2',
   'express-ts',
   'express-cjs',
   'fastify-ts',

@@ -2,7 +2,7 @@
 id: vitest
 name: Vitest
 category: library
-version: 1.1.0
+version: 1.2.0
 order: 40
 description: Behavior assertions, top-level vi.mock, and fake timers.
 hint: Behavior asserts, top-level mock, fake timers
@@ -34,15 +34,18 @@ globs:
 detect:
   packages: ["vitest"]
 appliesTo:
-  vitest: ">=3"
+  vitest: ">=2"
 sources:
-  - https://vitest.dev/guide/learn/writing-tests
-  - https://vitest.dev/guide/learn/testing-in-practice
-  - https://vitest.dev/api/vi
-  - https://vitest.dev/guide/mocking/timers
-  - https://vitest.dev/guide/snapshot
+  - https://v3.vitest.dev/guide/
+  - https://v2.vitest.dev/guide/
+  - https://v3.vitest.dev/api/vi
+  - https://v2.vitest.dev/api/vi
   - https://v3.vitest.dev/guide/mocking
-verifiedAt: 2026-11-21
+  - https://v2.vitest.dev/guide/mocking
+  - https://v3.vitest.dev/guide/snapshot
+  - https://v2.vitest.dev/guide/snapshot
+  - https://v3.vitest.dev/guide/migration
+verifiedAt: 2026-11-25
 ---
 ## Boundary
 `describe` groups the tests for one unit. `it` and `test` are the same function. `vi.mock` is hoisted to the top of the file and runs before imports. `vi.useFakeTimers` replaces `setTimeout`, `setInterval`, and `Date` until `vi.useRealTimers`. `toMatchSnapshot` compares serialized output with a file stored next to the test.

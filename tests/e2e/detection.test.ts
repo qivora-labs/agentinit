@@ -244,9 +244,9 @@ describe('detection', () => {
       fragments: Record<string, string>;
     };
     expect(manifest.selections.frameworks).toEqual(['nextjs-app-router-15']);
-    expect(manifest.selections.libraries).toEqual(['tailwind', 'zustand']);
+    expect(manifest.selections.libraries).toEqual(['tailwind', 'vitest', 'zustand']);
     expect(Object.keys(manifest.fragments)).toEqual(
-      expect.arrayContaining(['nextjs-app-router-15', 'tailwind', 'zustand']),
+      expect.arrayContaining(['nextjs-app-router-15', 'tailwind', 'vitest', 'zustand']),
     );
     expect(manifest.selections.libraries.every((id) => id in manifest.fragments)).toBe(true);
     expect(manifest.selections.frameworks.every((id) => id in manifest.fragments)).toBe(true);
@@ -292,6 +292,46 @@ describe('detection', () => {
     };
     expect(manifest.selections.frameworks).toEqual(['react-vite']);
     expect(manifest.selections.libraries).toContain('zustand');
+  });
+
+  it('Vitest 2 gets vitest rules', async () => {
+    const dir = await temp.copyFixture('vitest-2');
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('vitest@');
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-vitest.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { libraries: string[] };
+    };
+    expect(manifest.selections.libraries).toContain('vitest');
+  });
+
+  it('Vitest 3 still gets vitest rules', async () => {
+    const dir = await temp.copyFixture('vitest-2');
+    const pkgPath = path.join(dir, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    pkg.devDependencies.vitest = '3.0.5';
+    await writeFile(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+    const lockPath = path.join(dir, 'package-lock.json');
+    const lock = JSON.parse(await readFile(lockPath, 'utf8')) as {
+      packages: Record<string, { version: string }>;
+    };
+    const vitestPkg = lock.packages['node_modules/vitest'];
+    if (vitestPkg !== undefined) vitestPkg.version = '3.0.5';
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('vitest@');
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-vitest.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { libraries: string[] };
+    };
+    expect(manifest.selections.libraries).toContain('vitest');
   });
 
   it('React 19 + Vite 5 gets react-vite rules', async () => {

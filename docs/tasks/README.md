@@ -127,7 +127,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T71](T71-doctor-version-aware-unselected.md) | Version-aware `unselected` in `doctor` | M12 | — | S | done |
 | [T72](T72-react18-vite5.md) | Older majors: React 18 / Vite 5 | M12 | T62, T64, T71 | L | done |
 | [T73](T73-zustand-4.md) | Older majors: Zustand 4 | M12 | T62, T65, T71 | M | done |
-| [T74](T74-vitest-2.md) | Older majors: Vitest 2 | M12 | T62, T66, T71 | S–M | todo |
+| [T74](T74-vitest-2.md) | Older majors: Vitest 2 | M12 | T62, T66, T71 | S–M | done |
 | [T75](T75-js-effectiveness-eval.md) | Effectiveness eval on a JavaScript fixture | M13 | T70 | M | todo |
 | [T76](T76-release-gate-0-2.md) | 0.2 release gate and docs | M13 | T70, T72–T75 | M | todo |
 
