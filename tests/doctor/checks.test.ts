@@ -32,7 +32,7 @@ const zustand = {
   id: 'zustand',
   name: 'Zustand',
   packages: ['zustand'],
-  appliesTo: { zustand: '>=5' },
+  appliesTo: { zustand: '>=4.4.3' },
 };
 
 describe('collectDoctorIssues', () => {
@@ -394,19 +394,24 @@ describe('checkFragmentPackages', () => {
     ]);
   });
 
-  it('reports a selected fragment whose version left appliesTo', () => {
-    expect(checkFragmentPackages([zustand], { zustand: '4.5.0' })).toEqual([
+  it.each([
+    ['3.7.0', 'Zustand (zustand) is selected, but zustand@3.7.0 is outside >=4.4.3.'],
+    ['4.4.2', 'Zustand (zustand) is selected, but zustand@4.4.2 is outside >=4.4.3.'],
+  ])('reports a selected fragment whose version left appliesTo (%s)', (version, message) => {
+    expect(checkFragmentPackages([zustand], { zustand: version })).toEqual([
       {
         kind: 'unsupported-version',
         severity: 'error',
-        message: 'Zustand (zustand) is selected, but zustand@4.5.0 is outside >=5.',
+        message,
         fix: FIX,
       },
     ]);
   });
 
   it.each([
-    ['in range', { zustand: '5.0.0' }],
+    ['in range (v5)', { zustand: '5.0.0' }],
+    ['in range (v4.4.3+)', { zustand: '4.4.3' }],
+    ['in range (v4.5)', { zustand: '4.5.0' }],
     ['unknown version', { zustand: null }],
   ])('stays quiet when the package is %s', (_name, packages) => {
     expect(checkFragmentPackages([zustand], packages)).toEqual([]);

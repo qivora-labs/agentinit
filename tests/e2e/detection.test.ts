@@ -244,9 +244,9 @@ describe('detection', () => {
       fragments: Record<string, string>;
     };
     expect(manifest.selections.frameworks).toEqual(['nextjs-app-router-15']);
-    expect(manifest.selections.libraries).toEqual(['tailwind']);
+    expect(manifest.selections.libraries).toEqual(['tailwind', 'zustand']);
     expect(Object.keys(manifest.fragments)).toEqual(
-      expect.arrayContaining(['nextjs-app-router-15', 'tailwind']),
+      expect.arrayContaining(['nextjs-app-router-15', 'tailwind', 'zustand']),
     );
     expect(manifest.selections.libraries.every((id) => id in manifest.fragments)).toBe(true);
     expect(manifest.selections.frameworks.every((id) => id in manifest.fragments)).toBe(true);
@@ -278,6 +278,20 @@ describe('detection', () => {
       selections: { frameworks: string[] };
     };
     expect(manifest.selections.frameworks).toEqual(['react-vite-18']);
+  });
+
+  it('Zustand 4 gets zustand rules', async () => {
+    const dir = await temp.copyFixture('zustand-4');
+    const result = await runCli(['init', '--yes', '--cwd', dir]);
+    expect(result.code).toBe(0);
+    expect(result.stderr).not.toContain('zustand@');
+    const files = await listFiles(dir);
+    expect(files).toContain('.cursor/rules/agentinit-zustand.mdc');
+    const manifest = JSON.parse(await readFile(path.join(dir, '.agentinit/manifest.json'), 'utf8')) as {
+      selections: { frameworks: string[]; libraries: string[] };
+    };
+    expect(manifest.selections.frameworks).toEqual(['react-vite']);
+    expect(manifest.selections.libraries).toContain('zustand');
   });
 
   it('React 19 + Vite 5 gets react-vite rules', async () => {

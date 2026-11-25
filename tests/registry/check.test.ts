@@ -835,10 +835,10 @@ describe('runRegistryCheck', () => {
           '{{src}}**/*.store.tsx',
         ],
         detect: { packages: ['zustand'] },
-        appliesTo: { zustand: '>=5' },
+        appliesTo: { zustand: '>=4.4.3' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-11-19',
+        verifiedAt: '2026-11-25',
         sourced: true,
       },
     ]);
