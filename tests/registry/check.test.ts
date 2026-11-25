@@ -819,10 +819,10 @@ describe('runRegistryCheck', () => {
           '__tests__/**/*.spec.ts',
         ],
         detect: { packages: ['vitest'] },
-        appliesTo: { vitest: '>=3' },
+        appliesTo: { vitest: '>=2' },
         requires: undefined,
         compatibleWith: undefined,
-        verifiedAt: '2026-11-21',
+        verifiedAt: '2026-11-25',
         sourced: true,
       },
       {
