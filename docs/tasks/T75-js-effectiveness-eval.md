@@ -34,9 +34,9 @@ Record under **Notes** and in `docs/evals/`.
 - If the gate fails, revise fragments or seeds, re-run affected cells, and record an addendum — do not ship 0.2.
 
 ## Acceptance criteria
-- [ ] Decisions recorded under **Notes**.
-- [ ] JS eval materials exist (README, checklist, prompts).
-- [ ] `results-v0.2.md` filled; ≥ 4 of 5 tasks pass; owner signed go (or documented no-go blocking T76).
+- [x] Decisions recorded under **Notes**.
+- [x] JS eval materials exist (README, checklist, prompts).
+- [x] `results-v0.2.md` filled; ≥ 4 of 5 tasks pass; owner signed go (or documented no-go blocking T76).
 
 ## Verify
 Manual: complete the eval matrix and owner review. No `pnpm test` requirement beyond ensuring the eval fixture still `init`s:
@@ -49,4 +49,14 @@ pnpm build
 `docs(evals): add javascript effectiveness eval for 0.2`
 
 ## Notes
-(Owner sign-off date and pass count.)
+### Decisions (2026-11-25)
+1. All five tasks on JS Next.js (`next15-src-js`).
+2. Re-run full TypeScript matrix for 0.2; record in `results-v0.2.md` (v0.1 superseded for the gate).
+3. Cursor Task stand-ins; Claude seat = `composer-2.5` (no Claude API tokens for `claude-sonnet-5-5-high`).
+
+### Eval outcome
+- JS: **2 / 5** (T3, T5 pass; T1/T2/T4 ties).
+- TS re-run: **2 / 5** (same pattern).
+- **No-go** recorded in `docs/evals/results-v0.2.md`; **blocks T76**.
+- Follow-up: resolve `stores/**` vs `flat` placement for T2; consider instrument tweaks for T1/T4 ties.
+- Baselines built at `7178100`; workdirs under `/tmp/agentinit-eval-v02/`.

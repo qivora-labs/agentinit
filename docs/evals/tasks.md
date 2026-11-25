@@ -2,7 +2,11 @@
 
 Paste each prompt **verbatim** into a fresh agent session. Do not add setup commentary in the session; seed files and packages come from [README.md](./README.md).
 
-Prompts assume the project root is the eval workdir (`src/app/…`, flat layout).
+Use the **TypeScript** section for the `next15-src` cell and the **JavaScript** appendix for the `next15-src-js` cell. Prompts assume the project root is the eval workdir (`src/app/…`, flat layout).
+
+---
+
+# TypeScript cell
 
 ## Seed files (add during fixture setup)
 
@@ -171,3 +175,168 @@ Requirements:
 ```
 
 **Fragments in play:** `vitest`, `typescript-strict`, `flat` (and `write-tests` workflow if invoked)
+
+---
+
+# JavaScript appendix (`next15-src-js`)
+
+Same five task ids. Seeds and prompts use `.js` / `.jsx` paths with **no TypeScript syntax**. Paste the prompts in this section for the JavaScript cell.
+
+## Seed files (JS)
+
+### `src/components/user-panel.jsx` (task 4)
+
+```jsx
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export function UserPanel({ userId }) {
+  const [user, setUser] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    void fetch(`/api/users/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setUser(data));
+  }, [userId]);
+
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen((value) => !value)}>
+        {open ? 'Hide' : 'Show'}
+      </button>
+      {open && user ? <p>{user.name}</p> : null}
+    </div>
+  );
+}
+```
+
+### `src/app/users/[id]/page.jsx` (task 4)
+
+```jsx
+import { UserPanel } from '@/components/user-panel';
+
+export default async function UserPage({ params }) {
+  const { id } = await params;
+  return <UserPanel userId={id} />;
+}
+```
+
+### `src/utils/rates.js` (task 5 dependency)
+
+```js
+/** Returns a currency multiplier for the active market. Fixed for the fixture. */
+export function loadRate() {
+  return 1;
+}
+```
+
+### `src/utils/cart-total.js` (task 5)
+
+```js
+import { loadRate } from './rates';
+
+export function cartTotal(lines) {
+  const rate = loadRate();
+  return lines.reduce((sum, line) => {
+    const discount = line.discountPercent ?? 0;
+    return sum + line.unitPrice * line.quantity * (1 - discount / 100) * rate;
+  }, 0);
+}
+```
+
+---
+
+## Task 1 (JS) — Form + Server Action
+
+**Id:** `T1-form-server-action`
+
+```text
+Add a newsletter signup feature under the App Router.
+
+Requirements:
+- A page at /newsletter with an email field and a submit button.
+- Submitting the form calls a Server Action that accepts the email.
+- Persist is out of scope: the action may no-op after handling the input, but it must be a real Server Action wired to the form.
+- This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
+- Follow whatever conventions this repository already documents for forms, validation, and Server Actions.
+```
+
+**Fragments in play:** `nextjs-app-router`, `react-hook-form-zod`, `javascript`, `flat`
+
+---
+
+## Task 2 (JS) — Client UI store
+
+**Id:** `T2-ui-store`
+
+```text
+Add a client-side store for a sidebar open/closed flag used by the app shell.
+
+Requirements:
+- The store holds only that UI flag and the actions that toggle or set it.
+- A small client component reads the flag and renders a toggle button.
+- Do not fetch or cache server/API data in the store.
+- This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
+- Follow whatever conventions this repository already documents for client state.
+```
+
+**Fragments in play:** `zustand`, `javascript`, `flat`, `nextjs-app-router` (if the component lands under `app/`)
+
+---
+
+## Task 3 (JS) — Data-fetching hook
+
+**Id:** `T3-data-hook`
+
+```text
+Add a data-fetching hook that loads a post by id from an external HTTP API.
+
+Requirements:
+- Assume GET https://jsonplaceholder.typicode.com/posts/:id returns JSON { userId, id, title, body }.
+- Expose a hook a client component can call with a post id.
+- Include a tiny demo client component that renders the post title for id "1".
+- This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
+- Follow whatever conventions this repository already documents for server-state fetching.
+```
+
+**Fragments in play:** `tanstack-query`, `javascript`, `flat`, `nextjs-app-router` (demo placement)
+
+---
+
+## Task 4 (JS) — Refactor mixed server/client component
+
+**Id:** `T4-refactor-rsc`
+
+```text
+Refactor src/components/user-panel.jsx and src/app/users/[id]/page.jsx.
+
+Goal:
+- Keep the same user-visible behavior (toggle show/hide; show the user's name when open).
+- Separate server data loading from client UI state using App Router conventions.
+- Prefer Server Components for data; keep 'use client' on the smallest interactive leaf.
+- Do not change the public URL (/users/[id]).
+- This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
+```
+
+**Fragments in play:** `nextjs-app-router`, `javascript`, `flat` (and `refactor` workflow if invoked)
+
+---
+
+## Task 5 (JS) — Tests for an existing utility
+
+**Id:** `T5-write-tests`
+
+```text
+Write tests for src/utils/cart-total.js.
+
+Requirements:
+- Cover the observable behavior of cartTotal (empty cart, multiple lines, optional discountPercent).
+- cartTotal reads loadRate from ./rates. Follow the project's test conventions for dependencies.
+- Use the project's test runner and conventions.
+- This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
+- Do not change cart-total.js or rates.js unless a test reveals a clear bug; prefer characterizing current behavior.
+```
+
+**Fragments in play:** `vitest`, `javascript`, `flat` (and `write-tests` workflow if invoked)

@@ -128,7 +128,7 @@ Size: **S** ≈ under 1 hour of agent work · **M** ≈ 1–3 hours · **L** ≈
 | [T72](T72-react18-vite5.md) | Older majors: React 18 / Vite 5 | M12 | T62, T64, T71 | L | done |
 | [T73](T73-zustand-4.md) | Older majors: Zustand 4 | M12 | T62, T65, T71 | M | done |
 | [T74](T74-vitest-2.md) | Older majors: Vitest 2 | M12 | T62, T66, T71 | S–M | done |
-| [T75](T75-js-effectiveness-eval.md) | Effectiveness eval on a JavaScript fixture | M13 | T70 | M | todo |
+| [T75](T75-js-effectiveness-eval.md) | Effectiveness eval on a JavaScript fixture | M13 | T70 | M | done |
 | [T76](T76-release-gate-0-2.md) | 0.2 release gate and docs | M13 | T70, T72–T75 | M | todo |
 
 **M11 — JavaScript projects** comes from PRD §7 v0.2 and backlog J1–J6, plus the language-change check (T68) and module-system line (T69) approved on 2026-11-13. Removing the TypeScript gate alone would write scoped rules that never load; globs, dual examples, language fragments, wizard copy, and fixtures ship as one milestone. T60 carries the `minor` changeset with a `BREAKING CHANGE` note (JavaScript-only projects exit `0`).
