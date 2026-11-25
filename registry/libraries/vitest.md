@@ -36,13 +36,14 @@ detect:
 appliesTo:
   vitest: ">=2"
 sources:
-  - https://vitest.dev/guide/learn/writing-tests
-  - https://vitest.dev/guide/learn/testing-in-practice
-  - https://vitest.dev/api/vi
-  - https://vitest.dev/guide/mocking/timers
-  - https://vitest.dev/guide/snapshot
+  - https://v3.vitest.dev/guide/
+  - https://v2.vitest.dev/guide/
+  - https://v3.vitest.dev/api/vi
+  - https://v2.vitest.dev/api/vi
   - https://v3.vitest.dev/guide/mocking
   - https://v2.vitest.dev/guide/mocking
+  - https://v3.vitest.dev/guide/snapshot
+  - https://v2.vitest.dev/guide/snapshot
   - https://v3.vitest.dev/guide/migration
 verifiedAt: 2026-11-25
 ---

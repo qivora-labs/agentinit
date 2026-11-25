@@ -47,12 +47,12 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Notes
 ### Decisions (owner, 2026-11-25)
-1. **Widen vs split.** Owner chose **widen**: keep a single `vitest` id with `appliesTo: { vitest: ">=2" }`. No `vitest-2` sibling — every directive holds on Vitest 2 and 3 (hoisting / timers / asserts / snapshots); Vitest 5 top-level `vi.mock` throw is out of range. Checked: https://v2.vitest.dev/guide/mocking, https://v3.vitest.dev/guide/mocking, https://v3.vitest.dev/api/vi, https://vitest.dev/guide/mocking/timers, https://vitest.dev/guide/snapshot, https://v3.vitest.dev/guide/migration, https://vitest.dev/guide/migration/ (v5 note only).
+1. **Widen vs split.** Owner chose **widen**: keep a single `vitest` id with `appliesTo: { vitest: ">=2" }`. No `vitest-2` sibling — every directive holds on Vitest 2 and 3 (hoisting / timers / asserts / snapshots); Vitest 5 top-level `vi.mock` throw is out of range. Checked (version-pinned): https://v2.vitest.dev/guide/, https://v3.vitest.dev/guide/, https://v2.vitest.dev/api/vi, https://v3.vitest.dev/api/vi, https://v2.vitest.dev/guide/mocking, https://v3.vitest.dev/guide/mocking, https://v2.vitest.dev/guide/snapshot, https://v3.vitest.dev/guide/snapshot, https://v3.vitest.dev/guide/migration (v5 migration note only, not listed in sources).
 
 ### Implementation
 - Fixture `tests/fixtures/vitest-2` (TypeScript + Vitest 2.1.9); e2e selects `vitest` for 2.1.9 and for a mutated 3.0.5 copy.
 - `next15-app` (already on Vitest 2.1.9) now selects `vitest` instead of emitting unsupported-version.
-- Dual Contract examples retained; fragment version `1.2.0`; `verifiedAt: 2026-11-25`.
+- Dual Contract examples retained; fragment version `1.2.0`; `verifiedAt: 2026-11-25`; `sources` pinned to `v2.` / `v3.` docs (no unversioned `vitest.dev`).
 - PRD §8.2 lists `vitest-2`; §9 notes widen for `vitest >=2`. README coverage table: `vitest >=2`.
 - Changeset: `.changeset/vitest-2-coverage.md` (`minor`).
 - Overlap check: not applicable — no library sibling pair.
