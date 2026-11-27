@@ -2,14 +2,14 @@
 id: flat
 name: Flat / Minimal
 category: architecture
-version: 1.2.0
+version: 1.2.1
 order: 10
 description: Group a small project by file type, and start a feature folder for the next domain.
 hint: Group by type; add a feature folder as you grow
 scope: always
 sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md
-verifiedAt: 2026-11-27
+verifiedAt: 2026-11-28
 ---
 ## Summary
 - Put new components in `{{src}}components/` and new hooks in `{{src}}hooks/`.
@@ -42,18 +42,24 @@ Use this layout while the project is small enough that each folder holds one kin
 // ✅ Good: one domain, grouped by file type
 // {{src}}components/button.{{ext}}
 // {{src}}hooks/use-theme.{{ext}}
+// {{src}}features/cart/cart.store.{{ext}}
 
-// ❌ Anti-pattern: components/ mixing invoices and comments
+// ❌ Anti-pattern: components/ mixing invoices and comments; top-level stores/ or lib/
 // {{src}}components/invoice-table.{{ext}}
 // {{src}}components/comment-thread.{{ext}}
+// {{src}}stores/cart.store.{{ext}}
+// {{src}}lib/format-money.{{ext}}
 ```
 
 ```js
 // ✅ Good: one domain, grouped by file type
 // {{src}}components/button.{{ext}}
 // {{src}}hooks/use-theme.{{ext}}
+// {{src}}features/cart/cart.store.{{ext}}
 
-// ❌ Anti-pattern: components/ mixing invoices and comments
+// ❌ Anti-pattern: components/ mixing invoices and comments; top-level stores/ or lib/
 // {{src}}components/invoice-table.{{ext}}
 // {{src}}components/comment-thread.{{ext}}
+// {{src}}stores/cart.store.{{ext}}
+// {{src}}lib/format-money.{{ext}}
 ```

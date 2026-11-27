@@ -23,7 +23,7 @@ backups/
   },
   "fragments": {
     "express": "1.1.0",
-    "flat": "1.2.0",
+    "flat": "1.2.1",
     "typescript-strict": "1.1.0"
   },
   "files": {
