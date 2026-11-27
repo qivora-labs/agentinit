@@ -6,11 +6,13 @@ An agent can prepare these materials and run the matrix. **A human reviews the r
 
 ## Agents
 
-Use the same two runners for every release so results stay comparable. Record the model id in the results file and keep it fixed for every run of that release.
+Prefer **two distinct agent products** (for example Cursor Agent and Claude Code) when both seats are available. Same-product stand-ins are allowed when a seat is missing; record that choice in the results file. Do not reuse one model id for both seats unless the owner approves it for that release.
+
+Within a release, keep the chosen runners fixed so cells stay comparable. Record each model id in the results file.
 
 v0.1 used Cursor Task stand-ins. Claude Code was not installed on the eval host. The owner accepted those runs and their scores for this release ([results-v0.1.md](./results-v0.1.md)).
 
-v0.2 keeps Cursor Task stand-ins. The Claude Code seat uses a second Cursor composer model when Claude API tokens are unavailable (recorded in [results-v0.2.md](./results-v0.2.md)).
+v0.2 keeps Cursor Task stand-ins. The Claude Code seat uses a second Cursor composer model when Claude API tokens are unavailable (recorded in [results-v0.2.md](./results-v0.2.md)). Future minors should restore a real Claude (or other second-product) seat when credentials allow.
 
 | Agent label | v0.1 runner | v0.2 runner |
 | :--- | :--- | :--- |

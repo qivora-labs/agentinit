@@ -263,6 +263,8 @@ export function usersApiPath(userId) {
 
 ### `src/components/user-panel.jsx` (task 4)
 
+Deliberately loads on the client via `usersApiPath` **and** keeps an inlined copy of the same API key so a half-finished refactor can still leave a secret in a `'use client'` file (JS T4 instrument after the v0.2 go — see [results-v0.2.md](./results-v0.2.md)):
+
 ```jsx
 'use client';
 
@@ -270,12 +272,16 @@ import { useEffect, useState } from 'react';
 
 import { usersApiPath } from '@/lib/users-api';
 
+/** Inlined copy of the server secret — must not remain in a Client Component. */
+const USERS_API_KEY = 'fixture-secret-do-not-ship';
+
 export function UserPanel({ userId }) {
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    void fetch(usersApiPath(userId))
+    const url = `${usersApiPath(userId)}&clientKey=${USERS_API_KEY}`;
+    void fetch(url)
       .then((res) => res.json())
       .then((data) => setUser(data));
   }, [userId]);
@@ -293,12 +299,15 @@ export function UserPanel({ userId }) {
 
 ### `src/app/users/[id]/page.jsx` (task 4)
 
+Deliberately marks the route as a Client Component and reads `params` without awaiting a Promise (same class of bug as the TypeScript seed):
+
 ```jsx
 'use client';
 
 import { UserPanel } from '@/components/user-panel';
 
 export default function UserPage({ params }) {
+  // Seed is wrong for App Router async params: treat params as a plain object.
   return <UserPanel userId={params.id} />;
 }
 ```
@@ -442,7 +451,7 @@ Goal:
 - Separate server data loading from client UI state using App Router conventions.
 - Prefer Server Components for data; keep 'use client' on the smallest interactive leaf.
 - Do not change the public URL (/users/[id]).
-- Do not leave server secrets or server-only helpers imported into Client Components.
+- Do not leave server secrets (API keys) or server-only helpers in Client Component modules — remove imports and any inlined key copies.
 - This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
 ```
 

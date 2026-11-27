@@ -58,4 +58,5 @@ pnpm build
 - Initial matrix: JS **2 / 5**, TS **2 / 5** → no-go.
 - Addendum (2026-11-27): `flat` 1.2.0 + `zustand` 1.4.0 placement; T1/T4 seed+prompt instrument. Re-ran T1/T2/T4.
 - **Final:** JS **4 / 5**, TS **5 / 5** → **go** in `docs/evals/results-v0.2.md` (unblocks T76).
-- JS T4 remains a tie (instrument gap); not required for the gate at 4/5.
+- JS T4 remained a tie on the go matrix (instrument gap); not required for the gate at 4/5.
+- Post-go (2026-11-28): JS T4 seed inlines the API key for future minors; `flat` Contract shows `stores/` / `lib/` anti-paths; eval README prefers distinct agent products.

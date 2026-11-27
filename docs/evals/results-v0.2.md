@@ -184,6 +184,10 @@ Baselines rebuilt after `pnpm build` + `init --yes` on extended fixtures with ne
 
 **Tasks passed (JS, final):** 4 / 5 — T4 still ties (both baselines complete a correct RSC split on JS).
 
+### Post-go instrument note (2026-11-28)
+
+JS T4 seed/prompt in [tasks.md](./tasks.md) now also inlines the API key in the client panel so a half-finished refactor can still score **4.4**. That change is for **future minors**; the v0.2 go above used the pre-inline seed and was not re-run.
+
 ## Decision (final)
 
 - [x] **Go** — each required language cell reduced violations in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
