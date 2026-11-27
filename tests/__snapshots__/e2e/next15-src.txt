@@ -22,7 +22,7 @@ backups/
     "workflows": true
   },
   "fragments": {
-    "flat": "1.1.0",
+    "flat": "1.2.0",
     "nextjs-app-router": "1.1.0",
     "typescript-strict": "1.1.0"
   },
@@ -79,10 +79,10 @@ backups/
       "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
     },
     "AGENTS.md#core": {
-      "sha256": "4cba78b8ba2524a952187af9c8ce012332ff22ef7c628ef8d2f07be977852faa"
+      "sha256": "76c6cdc0e86c47a0a15b1163638e45a6057a577e1c42d50a71709f4b724c7d4f"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "67e5978cf3c2bd7dd932017e3e36ca996f3ceddf905f0adba57f99a678632930"
+      "sha256": "e6ef9d968755916a3707ccdd14f59f4c1acd3fd2931a6ea452b1c94d3b3226de"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
@@ -612,6 +612,7 @@ Always-on rules for this project. Scoped rules and workflows stay in each agent'
 - Put new helpers in `src/utils/` and shared types in `src/types/`.
 - Keep each new file to one component, one hook, or one helper.
 - When a type folder would take on a second domain, add `src/features/<feature>/` for the new domain.
+- Put a new client store under `src/features/<feature>/` (or next to its UI in `src/components/`). Do not add `src/stores/` or `src/lib/` for new files.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
 
@@ -695,6 +696,7 @@ Describes the folders that exist today and the conventions for new code. Existin
 - **ALWAYS** give a new file a single component, hook, or helper.
 - **PREFER** `src/features/<feature>/` for new code once a type folder would mix a second domain.
 - **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+- **NEVER** add `src/stores/` or `src/lib/` for new files; use `features/`, `components/`, `hooks/`, `utils/`, or `types/` instead.
 <!-- agentinit:end id=architecture -->
 
 ===== CLAUDE.md

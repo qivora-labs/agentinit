@@ -12,14 +12,29 @@ Use the **TypeScript** section for the `next15-src` cell and the **JavaScript** 
 
 Create these before `init` and before splitting `with-rules` / `without-rules`.
 
+### `src/lib/users-api.ts` (task 4 — secret seam)
+
+Deliberate server-only value so a correct refactor moves the fetch off the client (and stops importing this module into `'use client'` files):
+
+```ts
+/** Fixture-only. Treat as a server secret — never import from a Client Component. */
+export const USERS_API_KEY = 'fixture-secret-do-not-ship';
+
+export function usersApiPath(userId: string): string {
+  return `/api/users/${userId}?key=${USERS_API_KEY}`;
+}
+```
+
 ### `src/components/user-panel.tsx` (task 4)
 
-Deliberately mixes server data fetching with client UI state so a refactor has a clear target:
+Deliberately mixes server data fetching with client UI state and imports the secret helper:
 
 ```tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+
+import { usersApiPath } from '@/lib/users-api';
 
 type User = { id: string; name: string };
 
@@ -28,7 +43,7 @@ export function UserPanel({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    void fetch(`/api/users/${userId}`)
+    void fetch(usersApiPath(userId))
       .then((res) => res.json())
       .then((data: User) => setUser(data));
   }, [userId]);
@@ -46,16 +61,66 @@ export function UserPanel({ userId }: { userId: string }) {
 
 ### `src/app/users/[id]/page.tsx` (task 4)
 
+Deliberately marks the route as a Client Component and reads `params` without `await`:
+
 ```tsx
+'use client';
+
 import { UserPanel } from '@/components/user-panel';
 
-export default async function UserPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return <UserPanel userId={id} />;
+export default function UserPage({ params }: { params: { id: string } }) {
+  return <UserPanel userId={params.id} />;
+}
+```
+
+### `src/app/newsletter/page.tsx` (task 1 — incomplete seed)
+
+Started as a Client Component with field rules on `register` and no shared Zod schema. Agents should finish validation and Server Action wiring per project conventions:
+
+```tsx
+'use client';
+
+import { useForm } from 'react-hook-form';
+
+import { subscribeNewsletter } from './actions';
+
+type FormValues = { email: string };
+
+export default function NewsletterPage() {
+  const { register, handleSubmit } = useForm<FormValues>({
+    defaultValues: { email: '' },
+  });
+
+  return (
+    <main>
+      <h1>Newsletter</h1>
+      <form
+        onSubmit={handleSubmit(async (values) => {
+          await subscribeNewsletter(values.email);
+        })}
+      >
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          {...register('email', { required: true, pattern: /.+@.+/ })}
+        />
+        <button type="submit">Subscribe</button>
+      </form>
+    </main>
+  );
+}
+```
+
+### `src/app/newsletter/actions.ts` (task 1 — incomplete seed)
+
+Trusts the client string with no schema parse:
+
+```ts
+'use server';
+
+export async function subscribeNewsletter(email: string): Promise<void> {
+  void email;
 }
 ```
 
@@ -93,13 +158,13 @@ export function cartTotal(lines: CartLine[]): number {
 **Id:** `T1-form-server-action`
 
 ```text
-Add a newsletter signup feature under the App Router.
+Finish the newsletter signup under the App Router. Seeds already exist at src/app/newsletter/page.tsx and src/app/newsletter/actions.ts.
 
 Requirements:
-- A page at /newsletter with an email field and a submit button.
-- Submitting the form calls a Server Action that accepts the email.
+- Keep a page at /newsletter with an email field and a submit button.
+- Submitting the form must call a Server Action that accepts the email.
 - Persist is out of scope: the action may no-op after handling the input, but it must be a real Server Action wired to the form.
-- Follow whatever conventions this repository already documents for forms, validation, and Server Actions.
+- Fix validation and Server Action handling to match whatever conventions this repository already documents for forms, validation, and Server Actions.
 ```
 
 **Fragments in play:** `nextjs-app-router`, `react-hook-form-zod`, `typescript-strict`, `flat`
@@ -147,13 +212,14 @@ Requirements:
 **Id:** `T4-refactor-rsc`
 
 ```text
-Refactor src/components/user-panel.tsx and src/app/users/[id]/page.tsx.
+Refactor src/components/user-panel.tsx, src/app/users/[id]/page.tsx, and any helpers they use (including src/lib/users-api.ts).
 
 Goal:
 - Keep the same user-visible behavior (toggle show/hide; show the user's name when open).
 - Separate server data loading from client UI state using App Router conventions.
 - Prefer Server Components for data; keep 'use client' on the smallest interactive leaf.
 - Do not change the public URL (/users/[id]).
+- Do not leave server secrets or server-only helpers imported into Client Components.
 ```
 
 **Fragments in play:** `nextjs-app-router`, `typescript-strict`, `flat` (and `refactor` workflow if invoked)
@@ -184,6 +250,17 @@ Same five task ids. Seeds and prompts use `.js` / `.jsx` paths with **no TypeScr
 
 ## Seed files (JS)
 
+### `src/lib/users-api.js` (task 4 — secret seam)
+
+```js
+/** Fixture-only. Treat as a server secret — never import from a Client Component. */
+export const USERS_API_KEY = 'fixture-secret-do-not-ship';
+
+export function usersApiPath(userId) {
+  return `/api/users/${userId}?key=${USERS_API_KEY}`;
+}
+```
+
 ### `src/components/user-panel.jsx` (task 4)
 
 ```jsx
@@ -191,12 +268,14 @@ Same five task ids. Seeds and prompts use `.js` / `.jsx` paths with **no TypeScr
 
 import { useEffect, useState } from 'react';
 
+import { usersApiPath } from '@/lib/users-api';
+
 export function UserPanel({ userId }) {
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    void fetch(`/api/users/${userId}`)
+    void fetch(usersApiPath(userId))
       .then((res) => res.json())
       .then((data) => setUser(data));
   }, [userId]);
@@ -215,11 +294,57 @@ export function UserPanel({ userId }) {
 ### `src/app/users/[id]/page.jsx` (task 4)
 
 ```jsx
+'use client';
+
 import { UserPanel } from '@/components/user-panel';
 
-export default async function UserPage({ params }) {
-  const { id } = await params;
-  return <UserPanel userId={id} />;
+export default function UserPage({ params }) {
+  return <UserPanel userId={params.id} />;
+}
+```
+
+### `src/app/newsletter/page.jsx` (task 1 — incomplete seed)
+
+```jsx
+'use client';
+
+import { useForm } from 'react-hook-form';
+
+import { subscribeNewsletter } from './actions';
+
+export default function NewsletterPage() {
+  const { register, handleSubmit } = useForm({
+    defaultValues: { email: '' },
+  });
+
+  return (
+    <main>
+      <h1>Newsletter</h1>
+      <form
+        onSubmit={handleSubmit(async (values) => {
+          await subscribeNewsletter(values.email);
+        })}
+      >
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          {...register('email', { required: true, pattern: /.+@.+/ })}
+        />
+        <button type="submit">Subscribe</button>
+      </form>
+    </main>
+  );
+}
+```
+
+### `src/app/newsletter/actions.js` (task 1 — incomplete seed)
+
+```js
+'use server';
+
+export async function subscribeNewsletter(email) {
+  void email;
 }
 ```
 
@@ -253,14 +378,14 @@ export function cartTotal(lines) {
 **Id:** `T1-form-server-action`
 
 ```text
-Add a newsletter signup feature under the App Router.
+Finish the newsletter signup under the App Router. Seeds already exist at src/app/newsletter/page.jsx and src/app/newsletter/actions.js.
 
 Requirements:
-- A page at /newsletter with an email field and a submit button.
-- Submitting the form calls a Server Action that accepts the email.
+- Keep a page at /newsletter with an email field and a submit button.
+- Submitting the form must call a Server Action that accepts the email.
 - Persist is out of scope: the action may no-op after handling the input, but it must be a real Server Action wired to the form.
 - This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
-- Follow whatever conventions this repository already documents for forms, validation, and Server Actions.
+- Fix validation and Server Action handling to match whatever conventions this repository already documents for forms, validation, and Server Actions.
 ```
 
 **Fragments in play:** `nextjs-app-router`, `react-hook-form-zod`, `javascript`, `flat`
@@ -310,13 +435,14 @@ Requirements:
 **Id:** `T4-refactor-rsc`
 
 ```text
-Refactor src/components/user-panel.jsx and src/app/users/[id]/page.jsx.
+Refactor src/components/user-panel.jsx, src/app/users/[id]/page.jsx, and any helpers they use (including src/lib/users-api.js).
 
 Goal:
 - Keep the same user-visible behavior (toggle show/hide; show the user's name when open).
 - Separate server data loading from client UI state using App Router conventions.
 - Prefer Server Components for data; keep 'use client' on the smallest interactive leaf.
 - Do not change the public URL (/users/[id]).
+- Do not leave server secrets or server-only helpers imported into Client Components.
 - This project is JavaScript (`.js` / `.jsx`). Do not add TypeScript syntax.
 ```
 

@@ -2,20 +2,21 @@
 id: flat
 name: Flat / Minimal
 category: architecture
-version: 1.1.0
+version: 1.2.0
 order: 10
 description: Group a small project by file type, and start a feature folder for the next domain.
 hint: Group by type; add a feature folder as you grow
 scope: always
 sources:
   - https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md
-verifiedAt: 2026-11-19
+verifiedAt: 2026-11-27
 ---
 ## Summary
 - Put new components in `{{src}}components/` and new hooks in `{{src}}hooks/`.
 - Put new helpers in `{{src}}utils/` and shared types in `{{src}}types/`.
 - Keep each new file to one component, one hook, or one helper.
 - When a type folder would take on a second domain, add `{{src}}features/<feature>/` for the new domain.
+- Put a new client store under `{{src}}features/<feature>/` (or next to its UI in `{{src}}components/`). Do not add `{{src}}stores/` or `{{src}}lib/` for new files.
 
 ## Map
 | Path | Responsibility |
@@ -24,16 +25,17 @@ verifiedAt: 2026-11-19
 | `{{src}}hooks/` | Hooks. Each new file holds one hook. |
 | `{{src}}utils/` | Helpers with no UI. Each new file holds one helper. |
 | `{{src}}types/` | Types shared across those folders. |
-| `{{src}}features/<feature>/` | The next domain, once a type folder would mix two domains. New files for that domain go here. |
+| `{{src}}features/<feature>/` | The next domain, once a type folder would mix two domains. New files for that domain go here (including client stores). |
 
 ## Boundary
-Use this layout while the project is small enough that each folder holds one kind of file. A second, unrelated domain is the point to add `{{src}}features/<feature>/` for new files of that domain. Files already in the type folders stay in place.
+Use this layout while the project is small enough that each folder holds one kind of file. A second, unrelated domain is the point to add `{{src}}features/<feature>/` for new files of that domain. Files already in the type folders stay in place. Top-level `stores/` and `lib/` are outside this map — do not create them for new code.
 
 ## Directives
 - **DEFAULT** to one folder per file type: `components/`, `hooks/`, `utils/`, and `types/` under `{{src}}`.
 - **ALWAYS** give a new file a single component, hook, or helper.
 - **PREFER** `{{src}}features/<feature>/` for new code once a type folder would mix a second domain.
 - **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+- **NEVER** add `{{src}}stores/` or `{{src}}lib/` for new files; use `features/`, `components/`, `hooks/`, `utils/`, or `types/` instead.
 
 ## Contract
 ```ts

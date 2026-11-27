@@ -55,8 +55,7 @@ pnpm build
 3. Cursor Task stand-ins; Claude seat = `composer-2.5` (no Claude API tokens for `claude-sonnet-5-5-high`).
 
 ### Eval outcome
-- JS: **2 / 5** (T3, T5 pass; T1/T2/T4 ties).
-- TS re-run: **2 / 5** (same pattern).
-- **No-go** recorded in `docs/evals/results-v0.2.md`; **blocks T76**.
-- Follow-up: resolve `stores/**` vs `flat` placement for T2; consider instrument tweaks for T1/T4 ties.
-- Baselines built at `7178100`; workdirs under `/tmp/agentinit-eval-v02/`.
+- Initial matrix: JS **2 / 5**, TS **2 / 5** → no-go.
+- Addendum (2026-11-27): `flat` 1.2.0 + `zustand` 1.4.0 placement; T1/T4 seed+prompt instrument. Re-ran T1/T2/T4.
+- **Final:** JS **4 / 5**, TS **5 / 5** → **go** in `docs/evals/results-v0.2.md` (unblocks T76).
+- JS T4 remains a tie (instrument gap); not required for the gate at 4/5.

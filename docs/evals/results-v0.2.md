@@ -105,21 +105,88 @@
 
 ---
 
-## Decision
+## Decision (initial — superseded)
 
-- [ ] **Go** — each required language cell reduced violations in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
-- [x] **No-go** — fewer than 4 tasks passed in a required cell; revise the failing fragments, or the seed when a checklist item cannot occur, and re-run the affected cells before release.
+- [ ] **Go**
+- [x] **No-go** — initial matrix 2 / 5 per language cell. See addendum.
 
-**Blocks T76** until each language cell reaches ≥ 4 / 5.
+Owner sign-off (initial): Tajnur — accepted recorded scores and **no-go**. Date: 2026-11-25.
 
-### Failure analysis (for follow-up)
+### Failure analysis (initial)
 
 | Task | Issue |
 | :--- | :--- |
-| T1 (both) | Tie at 0/0. Without-rules agents still used Zod `safeParse` (deps present). JS language items (TS-in-`.js`, module mix) did not occur. Instrument gap more than fragment failure. |
-| T2 (both) | Tie: every cell put the store under `src/stores/` (**2.7**). With-rules used `useShallow` correctly; without used single-field selectors. Zustand globs (`stores/**`, `*.store.*`) appear to pull placement away from `flat` / `features/`. Fragment or architecture guidance conflict — candidate for a registry fix, then T2 re-run. |
-| T4 (both) | Tie at 0/0 after correct RSC splits on both baselines (same pattern as v0.1 T45). Instrument gap for this prompt/seed. |
+| T1 (both) | Tie at 0/0. Instrument gap. |
+| T2 (both) | Tie on **2.7** (`src/stores/`). Zustand globs vs `flat`. |
+| T4 (both) | Tie at 0/0. Instrument gap. |
 
-T3 and T5 pass clearly on both languages (queryOptions / flat / runtime checks; vitest mock-call discipline).
+---
 
-Owner sign-off: Tajnur — accepted recorded scores and **no-go** for 0.2 §8.3 (agent-run matrix; Claude seat = `composer-2.5`). Date: 2026-11-25.
+## Addendum — T1 + T2 + T4 re-run (2026-11-27)
+
+**Fragment change:** `zustand` `1.4.0` and `flat` `1.2.0` — place new client stores under `features/` / `components/`; do not add top-level `stores/` or `lib/` for new files. Globs are not a folder mandate.
+
+**Instrument change:** incomplete newsletter seeds (client page + `register` rules + unvalidated action); T4 seeds mark the route `'use client'`, skip `await params`, and import `src/lib/users-api` (secret) from the client panel. Prompts updated to “finish / refactor including helpers.”
+
+Baselines rebuilt after `pnpm build` + `init --yes` on extended fixtures with new seeds. Workdirs under `/tmp/agentinit-eval-v02/runs-rerun/`. Same models as Meta.
+
+### TypeScript re-run
+
+| Run | Agent | Task | Rules | Violations | Hit items | Notes |
+| :--- | :--- | :--- | :--- | ---: | :--- | :--- |
+| A1 | Cursor | T1-form-server-action | with | 0 | — | [Server page + RHF/Zod form](bcc2f478-d985-4b0a-8661-a54666ec5358); schema + typed action |
+| A2 | Cursor | T1-form-server-action | without | 1 | 1.1 | [Page remains `'use client'`](c2419bad-92ae-4a5a-aefb-b9e5d0103192) |
+| A3 | Claude | T1-form-server-action | with | 0 | — | [Server page + client form](d720676e-7866-493c-9bc6-6cafd95ef967) |
+| A4 | Claude | T1-form-server-action | without | 1 | 1.1 | [Page remains `'use client'`](838a6bc2-a632-43e0-ae9d-d88fdb336022) |
+| A5 | Cursor | T2-ui-store | with | 0 | — | [`features/shell/sidebar.store.ts`](0a4c3784-b85f-49a1-9fd2-e318909636a4) |
+| A6 | Cursor | T2-ui-store | without | 1 | 2.7 | [`src/stores/`](f943a1c9-8df7-41f7-97e0-00ce7b8318d3) |
+| A7 | Claude | T2-ui-store | with | 0 | — | [`features/shell/sidebar.store.ts`](f342d69d-be78-42c1-9dff-296a79442f8d) |
+| A8 | Claude | T2-ui-store | without | 1 | 2.7 | [`src/stores/`](558e6eb6-6348-4486-938c-13f9ceb55408) |
+| A9 | Cursor | T4-refactor-rsc | with | 0 | — | [Server load + `await params`; client leaf](4b737a97-83bc-4737-92ee-8d8e2490a13c) |
+| A10 | Cursor | T4-refactor-rsc | without | 1 | 4.3 | [Server load but `params` not a Promise / not awaited](becf2ebd-dd43-42e6-82c5-1cfdb142a82e) |
+| A11 | Claude | T4-refactor-rsc | with | 0 | — | [Same correct split](53a89084-912e-448c-a26a-9c4af8b97b87) |
+| A12 | Claude | T4-refactor-rsc | without | 1 | 4.3 | [`params.id` without `await`](3ea9370e-5682-4782-9239-b254b3363e40) |
+
+| Task | total_with | total_without | Pass? | Source |
+| :--- | ---: | ---: | :--- | :--- |
+| T1-form-server-action | 0 | 2 | yes | addendum |
+| T2-ui-store | 0 | 2 | yes | addendum |
+| T3-data-hook | 1 | 5 | yes | initial |
+| T4-refactor-rsc | 0 | 2 | yes | addendum |
+| T5-write-tests | 0 | 2 | yes | initial |
+
+**Tasks passed (TS, final):** 5 / 5
+
+### JavaScript re-run
+
+| Run | Agent | Task | Rules | Violations | Hit items | Notes |
+| :--- | :--- | :--- | :--- | ---: | :--- | :--- |
+| JA1 | Cursor | T1-form-server-action | with | 0 | — | [Server page + client form + Zod](aecc7bf3-607f-4825-bd29-59a7677d0d94) |
+| JA2 | Cursor | T1-form-server-action | without | 2 | 1.1, 1.7 | [Page `'use client'`; schema in `src/lib/`](a3f45716-fef8-41de-8223-9e7ed03c45fd) |
+| JA3 | Claude | T1-form-server-action | with | 0 | — | [Server page + client form](7af295cb-dddd-49df-8b0a-b503d0e163d4) |
+| JA4 | Claude | T1-form-server-action | without | 1 | 1.1 | [Page `'use client'`](56101d50-d054-48e1-927c-aacbca7702e8) |
+| JA5 | Cursor | T2-ui-store | with | 0 | — | [`components/sidebar.store.js`](ae5fbca7-ab47-473c-b6d9-7c0580e7cddf) |
+| JA6 | Cursor | T2-ui-store | without | 1 | 2.7 | [`src/stores/`](37233807-4c13-4176-b8c8-f69b1761a2b4) |
+| JA7 | Claude | T2-ui-store | with | 0 | — | [`components/sidebar.store.js`](b1d8ba89-e9d6-4a8c-9c44-646258fc8bf3) |
+| JA8 | Claude | T2-ui-store | without | 1 | 2.7 | [`src/stores/`](587abf60-407e-41d8-8e3a-a10949ba6661) |
+| JA9 | Cursor | T4-refactor-rsc | with | 0 | — | [Correct RSC split](8e8e6282-cf0a-4356-9f91-4cad94a382f1) |
+| JA10 | Cursor | T4-refactor-rsc | without | 0 | — | [Same](18e13ff7-dfbb-490d-9b63-b25641e1d8de) |
+| JA11 | Claude | T4-refactor-rsc | with | 0 | — | [Same](9810e0eb-d7d4-4bb8-9091-af594cb70228) |
+| JA12 | Claude | T4-refactor-rsc | without | 0 | — | [Same](2fa807ab-fd76-4c1b-9e82-9e9c3807b7f5) |
+
+| Task | total_with | total_without | Pass? | Source |
+| :--- | ---: | ---: | :--- | :--- |
+| T1-form-server-action | 0 | 3 | yes | addendum |
+| T2-ui-store | 0 | 2 | yes | addendum |
+| T3-data-hook | 0 | 6 | yes | initial |
+| T4-refactor-rsc | 0 | 0 | no (tie) | addendum |
+| T5-write-tests | 0 | 2 | yes | initial |
+
+**Tasks passed (JS, final):** 4 / 5 — T4 still ties (both baselines complete a correct RSC split on JS).
+
+## Decision (final)
+
+- [x] **Go** — each required language cell reduced violations in ≥ 4 of 5 tasks; safe to treat §8.3 as satisfied for this minor.
+- [ ] **No-go**
+
+Owner sign-off: Tajnur — accepted addendum scores and **go** for 0.2 §8.3 (agent-run matrix; Claude seat = `composer-2.5`). Date: 2026-11-27.

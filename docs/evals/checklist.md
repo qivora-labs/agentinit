@@ -94,7 +94,7 @@ Note: Mocking `./rates` at top level is allowed when the assertion is still an o
 
 ## Shared notes
 
-- Zustand globs (`stores/**`, `*.store.ts` / `*.store.js`, `*.store.tsx` / `*.store.jsx`) and TanStack Query globs (`hooks/**`, `queries/**`) only decide where those library rules load. They are not placement requirements. `src/stores/` and `src/queries/` are outside the flat layout, so they count for **2.7** / **3.7**.
+- Zustand globs (`stores/**`, `*.store.ts` / `*.store.js`, `*.store.tsx` / `*.store.jsx`) and TanStack Query globs (`hooks/**`, `queries/**`) only decide where those library rules load. They are not placement requirements. `src/stores/`, `src/lib/`, and `src/queries/` are outside the flat layout, so new files there count for **1.7** / **2.7** / **3.7**. Leaving a seed import of `src/lib/users-api` in a `'use client'` file after the T4 refactor counts for **4.4**.
 - If the agent skips a library entirely (e.g. no Zod on task 1), still score the items that apply to what it wrote; missing validation when a Server Action accepts input is **1.2** / **1.4**. On the JavaScript cell, missing runtime checks on external input also score **1.10** / **3.9**.
 - Return-type items (**1.5**, **2.6**, **3.6**, **4.6**): after T45, do **not** score missing return types on React components or framework entry files (`page`, `layout`, route handlers). Other exported functions still count. These items are **N/A on pure JS runs**.
 - `any`-type items (**1.6**, **2.5**, **3.5**, **4.5**, **5.6**) are **N/A on pure JS runs**.
