@@ -49,14 +49,12 @@ const temp = createTempProject('agentinit-dup-');
 afterEach(() => temp.cleanup());
 
 describe('output', () => {
-  it('No rule text appears in more than one generated file (excluding pointers and imports)', async () => {
-    const failures: string[] = [];
-    for (const name of FIXTURES) {
-      const found = await duplicatesFor(name);
-      failures.push(...found);
-    }
-    expect(failures).toEqual([]);
-  });
+  it.each(FIXTURES)(
+    'No rule text appears in more than one generated file for %s (excluding pointers and imports)',
+    async (name) => {
+      expect(await duplicatesFor(name)).toEqual([]);
+    },
+  );
 });
 
 async function duplicatesFor(name: string): Promise<string[]> {
