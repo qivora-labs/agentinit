@@ -831,6 +831,8 @@ describe('runRegistryCheck', () => {
         globs: [
           '{{src}}**/stores/**/*.ts',
           '{{src}}**/stores/**/*.tsx',
+          '{{src}}**/features/**/stores/**/*.ts',
+          '{{src}}**/features/**/stores/**/*.tsx',
           '{{src}}**/*.store.ts',
           '{{src}}**/*.store.tsx',
         ],
@@ -838,7 +840,7 @@ describe('runRegistryCheck', () => {
         appliesTo: { zustand: '>=4.4.3' },
         requires: undefined,
         compatibleWith: web,
-        verifiedAt: '2026-11-25',
+        verifiedAt: '2026-11-27',
         sourced: true,
       },
     ]);

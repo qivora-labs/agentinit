@@ -22,7 +22,7 @@ backups/
     "workflows": true
   },
   "fragments": {
-    "flat": "1.1.0",
+    "flat": "1.2.1",
     "react-vite": "1.2.0",
     "typescript-strict": "1.1.0"
   },
@@ -79,10 +79,10 @@ backups/
       "sha256": "64b7849490df1002d0fd63b93ec5a81765797f75051c612afa8638f331e946b2"
     },
     "AGENTS.md#core": {
-      "sha256": "4cba78b8ba2524a952187af9c8ce012332ff22ef7c628ef8d2f07be977852faa"
+      "sha256": "76c6cdc0e86c47a0a15b1163638e45a6057a577e1c42d50a71709f4b724c7d4f"
     },
     "ARCHITECTURE.md#architecture": {
-      "sha256": "91c1205933e997f976b9fd0dafe20571715b202bf9e14c926922df25f7e5f047"
+      "sha256": "da3cea97f8a80ac8331f707c8608089582a3fc60d598aa7b1539a2f10e0e1006"
     },
     "CLAUDE.md#claude": {
       "sha256": "907549e403e4b3958c1ab783dafa38a811510aae2b8a4ce1a731a3ed2e4a0a7c"
@@ -602,6 +602,7 @@ Always-on rules for this project. Scoped rules and workflows stay in each agent'
 - Put new helpers in `src/utils/` and shared types in `src/types/`.
 - Keep each new file to one component, one hook, or one helper.
 - When a type folder would take on a second domain, add `src/features/<feature>/` for the new domain.
+- Put a new client store under `src/features/<feature>/` (or next to its UI in `src/components/`). Do not add `src/stores/` or `src/lib/` for new files.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the folder map and conventions for new code.
 
@@ -683,6 +684,7 @@ No folders were detected under the source root.
 - **ALWAYS** give a new file a single component, hook, or helper.
 - **PREFER** `src/features/<feature>/` for new code once a type folder would mix a second domain.
 - **NEVER** put a second domain into `components/`, `hooks/`, `utils/`, or `types/` to avoid a feature folder.
+- **NEVER** add `src/stores/` or `src/lib/` for new files; use `features/`, `components/`, `hooks/`, `utils/`, or `types/` instead.
 <!-- agentinit:end id=architecture -->
 
 ===== CLAUDE.md

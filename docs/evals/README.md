@@ -1,28 +1,41 @@
 # Rule-Effectiveness Eval
 
-Manual check from PRD §8.3 / §11. Before each minor release, run the five fixed tasks in [tasks.md](./tasks.md) in **two agents**, **with** and **without** generated rules, on an extended copy of `tests/fixtures/next15-src`. Ship only if rules reduce violations in **at least 4 of 5** tasks.
+Manual check from PRD §8.3 / §11. Before each minor release, run the five fixed tasks in [tasks.md](./tasks.md) in **two agents**, **with** and **without** generated rules, on an extended fixture. From **0.2** on, the gate includes a **JavaScript** cell in addition to TypeScript. Ship only if rules reduce violations in **at least 4 of 5** tasks **per language cell**.
 
-An agent can prepare these materials. **A human reviews the results and signs go/no-go.** Automation is out of scope until v0.5+.
+An agent can prepare these materials and run the matrix. **A human reviews the results and signs go/no-go.** Automation is out of scope until v0.5+.
 
 ## Agents
 
-Use the same two runners for every release so results stay comparable. Record the model id in the results file and keep it fixed for every run of that release.
+Prefer **two distinct agent products** (for example Cursor Agent and Claude Code) when both seats are available. Same-product stand-ins are allowed when a seat is missing; record that choice in the results file. Do not reuse one model id for both seats unless the owner approves it for that release.
 
-v0.1 used Cursor Task stand-ins. Claude Code was not installed on the eval host. The owner accepted those runs and their scores for this release ([results-v0.1.md](./results-v0.1.md)). Later minors keep this pair.
+Within a release, keep the chosen runners fixed so cells stay comparable. Record each model id in the results file.
 
-| Agent | v0.1 runner | Model |
+v0.1 used Cursor Task stand-ins. Claude Code was not installed on the eval host. The owner accepted those runs and their scores for this release ([results-v0.1.md](./results-v0.1.md)).
+
+v0.2 keeps Cursor Task stand-ins. The Claude Code seat uses a second Cursor composer model when Claude API tokens are unavailable (recorded in [results-v0.2.md](./results-v0.2.md)). Future minors should restore a real Claude (or other second-product) seat when credentials allow.
+
+| Agent label | v0.1 runner | v0.2 runner |
 | :--- | :--- | :--- |
-| Cursor | Cursor Task (`generalPurpose`) | `composer-2.5-fast` |
-| Claude | Cursor Task (`generalPurpose`) | `claude-sonnet-5-5-high` |
+| Cursor | Cursor Task (`generalPurpose`) · `composer-2.5-fast` | same |
+| Claude | Cursor Task (`generalPurpose`) · `claude-sonnet-5-5-high` | Cursor Task (`generalPurpose`) · `composer-2.5` (Claude stand-in) |
 
-## Fixture setup
+## Language cells
+
+| Cell | Fixture base | Results | Language fragment |
+| :--- | :--- | :--- | :--- |
+| TypeScript | `tests/fixtures/next15-src` | [results-v0.1.md](./results-v0.1.md); re-runs in [results-v0.2.md](./results-v0.2.md) | `typescript-strict` |
+| JavaScript | `tests/fixtures/next15-src-js` | [results-v0.2.md](./results-v0.2.md) | `javascript` |
+
+Score each cell with the matching checklist column in [checklist.md](./checklist.md). Paste the matching prompt from [tasks.md](./tasks.md) (TypeScript body or JavaScript appendix).
+
+## Fixture setup — TypeScript
 
 Stock `next15-src` only selects `typescript-strict`, `nextjs-app-router`, and `flat`. The eval tasks also exercise library fragments, so extend the fixture once, then clone that tree for every run.
 
 From the repository root:
 
 ```bash
-EVAL_ROOT="$(mktemp -d)/agentinit-eval"
+EVAL_ROOT="$(mktemp -d)/agentinit-eval-ts"
 cp -R tests/fixtures/next15-src/. "$EVAL_ROOT/"
 cd "$EVAL_ROOT"
 ```
@@ -69,7 +82,7 @@ export default defineConfig({
 });
 ```
 
-Add the seed files from [tasks.md](./tasks.md) (required for tasks 4 and 5). Then generate rules:
+Add the **TypeScript** seed files from [tasks.md](./tasks.md). Then generate rules:
 
 ```bash
 # From the agentinit repo, after pnpm build:
@@ -82,6 +95,73 @@ Confirm `.agentinit/manifest.json` selections include at least:
 - `frameworks`: `nextjs-app-router`
 - `libraries`: `zustand`, `tanstack-query`, `react-hook-form-zod`, `vitest`
 - `architecture`: `flat`
+
+## Fixture setup — JavaScript
+
+Stock `next15-src-js` only selects `javascript`, `nextjs-app-router`, and `flat`. Extend it the same way as TypeScript, with JavaScript paths and seeds (no TypeScript syntax in `.js` / `.jsx`).
+
+From the repository root:
+
+```bash
+EVAL_ROOT="$(mktemp -d)/agentinit-eval-js"
+cp -R tests/fixtures/next15-src-js/. "$EVAL_ROOT/"
+cd "$EVAL_ROOT"
+```
+
+```bash
+pnpm add zustand@^5 @tanstack/react-query@^5 react-hook-form@^7 zod@^4 @hookform/resolvers@^5
+pnpm add -D vitest@^3
+```
+
+In `package.json`, set `"test": "vitest run"` under `scripts`.
+
+Extend `jsconfig.json` so seed `.jsx` files and the `@/` import resolve:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "checkJs": false,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.js", "src/**/*.jsx", "vitest.config.js"]
+}
+```
+
+Add a minimal `vitest.config.js`:
+
+```js
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+  },
+});
+```
+
+Add the **JavaScript** seed files from [tasks.md](./tasks.md) (JS appendix). Then:
+
+```bash
+node /path/to/agentinit/dist/cli.js init --yes --cwd "$EVAL_ROOT"
+```
+
+Confirm `.agentinit/manifest.json` selections include at least:
+
+- `language`: `javascript`
+- `frameworks`: `nextjs-app-router`
+- `libraries`: `zustand`, `tanstack-query`, `react-hook-form-zod`, `vitest`
+- `architecture`: `flat`
+
+Seeds and prompts must not introduce TypeScript syntax into `.js` / `.jsx` files. Do not enable `checkJs` for this cell (that would select `javascript-jsdoc` and change the language directives under test).
+
+## Baselines (both languages)
 
 Copy the finished tree to two baselines and keep them immutable:
 
@@ -97,17 +177,17 @@ Each run starts from a **fresh copy** of the matching baseline (never reuse a di
 1. Copy the correct baseline into a new empty directory.
 2. Open a **fresh** session in the runner from the Agents table. Do not carry prior eval context.
 3. Point the agent at that directory as the project root.
-4. Paste **only** the task prompt from [tasks.md](./tasks.md). No extra instructions, no “follow the rules”, no hints about violations.
+4. Paste **only** the task prompt from [tasks.md](./tasks.md) (TypeScript or JavaScript section). No extra instructions, no “follow the rules”, no hints about violations.
 5. Let the agent finish (or stop after a clear first deliverable if it loops). Do not steer mid-run.
-6. Score the resulting diff against [checklist.md](./checklist.md) for that task.
-7. Record the row in your results file (copy [results-template.md](./results-template.md) → `results-v0.1.md` for the first release).
+6. Score the resulting diff against [checklist.md](./checklist.md) for that task and language cell.
+7. Record the row in your results file (copy [results-template.md](./results-template.md) → `results-vX.Y.md`).
 8. Discard the workdir.
 
-Matrix: **5 tasks × 2 agents × with/without rules = 20 runs**.
+Matrix per language cell: **5 tasks × 2 agents × with/without rules = 20 runs**.
 
 ## Scoring
 
-- Use only the checklist items listed for that task.
+- Use only the checklist items listed for that task **and language cell**.
 - Each item is **0 or 1** per run: `1` if the violation appears at least once in files the agent created or edited; `0` otherwise.
 - **Violation count** for the run = sum of those items.
 - Notes: short quotes or paths that justify a `1` (enough for a second reader to agree).
@@ -123,12 +203,12 @@ The task **passes** if `total_with < total_without`. Ties and increases fail tha
 
 ### Release gate
 
-**Go** if ≥ 4 of 5 tasks pass. Otherwise **no-go**: revise the failing fragments, re-run the affected tasks (all four cells), and record a new results file or an addendum. When a checklist item cannot occur on the current seed, revise that seed and its task prompt together — the same prompt on both baselines — and name the instrument change in the addendum. A tie on a task the seed cannot provoke is an instrument gap. It is not, by itself, a fragment failure.
+**Go** if ≥ 4 of 5 tasks pass **in every required language cell** for the release. From 0.2 on, both TypeScript and JavaScript cells are required. Otherwise **no-go**: revise the failing fragments, re-run the affected tasks (all four cells), and record a new results file or an addendum. When a checklist item cannot occur on the current seed, revise that seed and its task prompt together — the same prompt on both baselines — and name the instrument change in the addendum. A tie on a task the seed cannot provoke is an instrument gap. It is not, by itself, a fragment failure.
 
 ## Recording results
 
 1. Copy `results-template.md` to `results-v0.1.md` (or `results-vX.Y.md` for later minors).
-2. Fill every run row and the per-task summary table.
+2. Fill every run row and the per-task summary table (one block per language cell when both run).
 3. Set the go/no-go decision and sign the owner line.
 
-Owner review of materials and of the filled results file is part of the gate (see T33).
+Owner review of materials and of the filled results file is part of the gate (see T33 / T75).

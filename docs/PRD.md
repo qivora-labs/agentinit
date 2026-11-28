@@ -773,6 +773,8 @@ Each criterion is covered by an automated test unless marked *(manual)*.
 ### 8.3 Rule-Effectiveness Check (release gate)
 Before each minor release, run 5 fixed tasks (e.g., "add a feature with a form and server action") in two agents on a fixture project, with and without generated rules. Record convention violations per run in `docs/evals/`. Ship only if the rules reduce violations in at least 4 of 5 tasks. This is manual in v0.1 and automated in v0.5+.
 
+From **0.2** on, the gate includes a **JavaScript** cell (`tests/fixtures/next15-src-js`, language fragment `javascript`) in addition to the TypeScript cell (`next15-src`). Each language cell must pass ≥ 4 of 5 tasks on its own. Checklist items that only apply to TypeScript (`any`, explicit return types) are N/A on pure JavaScript runs; JavaScript cells score module-system, no-TypeScript-syntax-in-`.js`/`.jsx`, and runtime-input checks instead.
+
 ---
 
 ## 9. Distribution & Registry Policy
